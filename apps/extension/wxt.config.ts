@@ -1,5 +1,8 @@
 import tailwindcss from '@tailwindcss/vite';
+import { loadEnv } from 'vite';
 import { defineConfig } from 'wxt';
+
+const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
@@ -8,27 +11,54 @@ export default defineConfig({
   vite: () => ({
     plugins: [tailwindcss()],
   }),
-  manifest: ({ manifestVersion }) => ({
-    name: 'Pocket Career',
-    description:
-      'Track job applications from any job posting. Local-first, synced to your own Google Drive.',
-    // Minimal permissions: no host access. `activeTab` grants the current tab only when the user
-    // opens the popup, presses the shortcut or uses the context menu; `scripting` then injects
-    // the extractor into that tab. `storage` holds the context-menu hand-off to the popup and
-    // which reminders were shown; `alarms` runs the ghost check and reminders; `notifications`
-    // shows follow-up and interview reminders.
-    permissions: ['activeTab', 'scripting', 'contextMenus', 'storage', 'alarms', 'notifications'],
-    // All-sites access only for the opt-in saved-job page badge (dashboard toggle): it lets the
-    // background see tab URLs and inject the badge into pages of saved jobs. MV2 (Firefox) has
-    // no `optional_host_permissions`; origins go in `optional_permissions` there.
-    ...(manifestVersion === 3
-      ? { optional_host_permissions: ['<all_urls>'] }
-      : { optional_permissions: ['<all_urls>'] }),
-    commands: {
-      'save-job': {
-        suggested_key: { default: 'Alt+Shift+S' },
-        description: 'Save the job on this page (opens the popup if details are missing)',
+  manifest: ({ browser, manifestVersion, mode }) => {
+    // OAuth client IDs etc. come from apps/extension/.env (see .env.example and
+    // docs/google-setup.md). Without them the extension builds fine and sync stays off.
+    const env = loadEnv(mode, process.cwd(), 'WXT_');
+    return {
+      name: 'Pocket Career',
+      description:
+        'Track job applications from any job posting. Local-first, synced to your own Google Drive.',
+      // Minimal permissions: no host access. `activeTab` grants the current tab only when the user
+      // opens the popup, presses the shortcut or uses the context menu; `scripting` then injects
+      // the extractor into that tab. `storage` holds the context-menu hand-off to the popup and
+      // which reminders were shown; `alarms` runs the ghost check and reminders; `notifications`
+      // shows follow-up and interview reminders.
+      // `identity` signs in to Google for Drive sync (drive.appdata scope only).
+      permissions: [
+        'activeTab',
+        'scripting',
+        'contextMenus',
+        'storage',
+        'alarms',
+        'notifications',
+        'identity',
+      ],
+      // Chrome signs in with `identity.getAuthToken`, which reads the client ID from here. Edge
+      // and Firefox use `launchWebAuthFlow` with the web client ID instead (read in the code).
+      ...(browser === 'chrome' && env.WXT_GOOGLE_CLIENT_ID_CHROME
+        ? { oauth2: { client_id: env.WXT_GOOGLE_CLIENT_ID_CHROME, scopes: [DRIVE_SCOPE] } }
+        : {}),
+      // Pins the Chrome extension ID in development so it matches the OAuth client's item ID.
+      ...(browser === 'chrome' && env.WXT_CHROME_EXTENSION_KEY
+        ? { key: env.WXT_CHROME_EXTENSION_KEY }
+        : {}),
+      // A fixed add-on ID keeps Firefox's identity redirect URL stable across installs.
+      ...(browser === 'firefox'
+        ? { browser_specific_settings: { gecko: { id: 'pocket-career@pocket-career' } } }
+        : {}),
+      // All-sites access only for the opt-in saved-job page badge (dashboard toggle): it lets the
+      // background see tab URLs and inject the badge into pages of saved jobs. MV2 (Firefox) has
+      // no `optional_host_permissions`; origins go in `optional_permissions` there.
+      ...(manifestVersion === 3
+        ? { optional_host_permissions: ['<all_urls>'] }
+        : { optional_permissions: ['<all_urls>'] }),
+      commands: {
+        'save-job': {
+          suggested_key: { default: 'Alt+Shift+S' },
+          description: 'Save the job on this page (opens the popup if details are missing)',
+        },
       },
-    },
-  }),
+    };
+  },
 });

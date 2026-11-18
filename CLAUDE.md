@@ -28,6 +28,9 @@ apps/
     src/entrypoints/    popup/, dashboard/ (extension page), background.ts, extract.content.ts,
                         job-badge.content.ts (saved-job page badge, injected by background)
     src/lib/background.ts  auto-ghosting, reminder notifications, goal badge, page badge
+    src/lib/google-auth.ts getAuthToken (Chrome) / launchWebAuthFlow (Firefox, Edge)
+    src/lib/sync.ts     background sync runner + status in extension storage
+docs/google-setup.md    creating the OAuth client IDs (env vars in apps/extension/.env)
     wxt.config.ts       manifest + Vite plugins (Tailwind)
   web/                  SvelteKit static dashboard
     src/routes/         pages; +layout.ts sets `prerender = true`
@@ -39,7 +42,7 @@ packages/
     src/merge.ts        mergeJobs: last-write-wins merge, tombstone purge
     src/url.ts          normalizeUrl (strips hash + tracking params) for duplicate detection
     src/validate.ts     sanitizeRecord(s) for untrusted data (Drive file, imports)
-    src/sync/           Drive appDataFolder client + sync orchestration
+    src/sync/           Drive appDataFolder client (fetch, ETags) + sync orchestration
     src/scrapers/       extractJob(doc, url): JSON-LD > site adapters (sites/) > meta tags;
                         HTML fixtures in __fixtures__ (excluded from Prettier)
   ui/                   shared Svelte components + Tailwind theme
@@ -135,10 +138,14 @@ type Job = {
 
 ### Sync / merge
 
-The Drive file `pocket-career.json` in `appDataFolder` holds `{ version: 1, updatedAt, records }`.
-Sync = pull, sanitize, `mergeJobs(local, remote)` (per id, last write wins by `updatedAt` /
-`deletedAt`; a tombstone wins a tie; equal-timestamp live versions are ordered by content so
-every device converges), write locally in one transaction (`mergeIntoLocal`), push.
+The Drive file `pocket-career.json` in `appDataFolder` holds `{ schemaVersion: 1, updatedAt, records }`
+(older files and exports used `version: 1`, still read). Sync = download, sanitize,
+`mergeJobs(local, remote)` (per id, last write wins by `updatedAt` / `deletedAt`; a tombstone
+wins a tie; equal-timestamp live versions are ordered by content so every device converges),
+write locally in one transaction (`mergeIntoLocal`), upload only if the merged set differs from
+Drive, conditional on the downloaded ETag (`If-Match`; a 412 restarts the round). A file with a
+newer `schemaVersion` is never overwritten. In the extension only the background syncs: on popup
+open, 3 s after a change (`jobs-changed` message), every 15 min and on start-up.
 `exportJSON()` writes the same format; `importJSON()` merges it the same way.
 
 Job URLs are stored normalized (`normalizeUrl`), so `getJobByUrl` is an indexed lookup.

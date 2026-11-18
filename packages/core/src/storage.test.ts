@@ -240,7 +240,7 @@ describe('exportJSON / importJSON', () => {
     const gone = await repo().addJob(input());
     await repo().deleteJob(gone.id);
     const json = await repo().exportJSON();
-    expect(JSON.parse(json)).toMatchObject({ version: 1, updatedAt: 1_000 });
+    expect(JSON.parse(json)).toMatchObject({ schemaVersion: 1, updatedAt: 1_000 });
 
     const other = new PocketCareerDB(`test-${crypto.randomUUID()}`);
     try {
@@ -309,8 +309,8 @@ describe('exportJSON / importJSON', () => {
     const a = await repo().addJob(input());
     await expect(repo().importJSON('{nope')).rejects.toThrow('not valid JSON');
     await expect(repo().importJSON('null')).rejects.toThrow('not a Pocket Career export');
-    await expect(repo().importJSON('{"version":2,"records":[]}')).rejects.toThrow(
-      'not a Pocket Career export',
+    await expect(repo().importJSON('{"schemaVersion":2,"records":[]}')).rejects.toThrow(
+      'newer version',
     );
     await expect(repo().importJSON('[]')).rejects.toThrow('not a Pocket Career export');
     expect(await repo().getJobs()).toEqual([a]);

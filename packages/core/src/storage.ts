@@ -1,6 +1,6 @@
 import { Dexie, type Table, liveQuery } from 'dexie';
 import { mergeJobs } from './merge';
-import type { SyncSnapshot } from './sync/drive';
+import { SCHEMA_VERSION, type SyncSnapshot } from './sync/drive';
 import {
   DEFAULT_SETTINGS,
   type Goals,
@@ -229,7 +229,7 @@ export function createJobRepository(db: PocketCareerDB, now: () => number = Date
      */
     async exportJSON(): Promise<string> {
       const snapshot: SyncSnapshot = {
-        version: 1,
+        schemaVersion: SCHEMA_VERSION,
         updatedAt: now(),
         records: await getAllRecords(),
       };
@@ -248,9 +248,14 @@ export function createJobRepository(db: PocketCareerDB, now: () => number = Date
       } catch {
         throw new Error('Import failed: the file is not valid JSON.');
       }
-      const snapshot = data as Partial<SyncSnapshot> | null;
-      if (!snapshot || snapshot.version !== 1 || !Array.isArray(snapshot.records)) {
-        throw new Error('Import failed: not a Pocket Career export (version 1).');
+      // Exports from before `schemaVersion` used `version: 1`, the same format.
+      const snapshot = data as (Partial<SyncSnapshot> & { version?: unknown }) | null;
+      const schema = snapshot?.schemaVersion ?? snapshot?.version;
+      if (!snapshot || !Array.isArray(snapshot.records) || typeof schema !== 'number') {
+        throw new Error('Import failed: not a Pocket Career export.');
+      }
+      if (schema > SCHEMA_VERSION) {
+        throw new Error('Import failed: this file is from a newer version of Pocket Career.');
       }
       const { records, skipped } = sanitizeRecords(snapshot.records);
       await mergeIntoLocal(records);

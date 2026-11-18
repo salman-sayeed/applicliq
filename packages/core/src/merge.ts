@@ -1,7 +1,7 @@
 import { type JobRecord, TOMBSTONE_TTL_MS, isTombstone, recordTimestamp } from './types';
 
 /** JSON with object keys sorted, so equal content always serializes the same way. */
-function canonical(value: unknown): string {
+export function canonical(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
   if (value && typeof value === 'object') {
     const entries = Object.entries(value)

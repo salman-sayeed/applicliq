@@ -7,7 +7,7 @@
   import { type Draft, draftFrom, isDraftValid, toNewJob } from '@/lib/draft';
   import { takePendingLink } from '@/lib/pending-link';
   import { showGoalBadge } from '@/lib/badge';
-  import { notifyJobsChanged } from '@/lib/messages';
+  import { notifyJobsChanged, requestSync } from '@/lib/messages';
   import { extractFromTab, getActiveTab, isSavableUrl } from '@/lib/tabs';
   import JobForm from './JobForm.svelte';
   import RecentJobs from './RecentJobs.svelte';
@@ -110,6 +110,8 @@
   }
 
   onMount(() => {
+    // Opening the popup pulls changes from other devices (no-op when signed out).
+    requestSync();
     void loadRecent();
     void load().catch(() => (view = { kind: 'unsupported' }));
     void browser.commands
