@@ -74,9 +74,11 @@ export function recordTimestamp(record: JobRecord): number {
 
 export type Theme = 'system' | 'light' | 'dark';
 
+/** Application targets; 0 turns a goal off. */
 export type Goals = {
-  /** Target number of applications sent per week. */
-  applicationsPerWeek: number;
+  daily: number;
+  weekly: number;
+  monthly: number;
 };
 
 /** Local-only app preferences (one row in the `settings` table). */
@@ -87,8 +89,10 @@ export type Settings = {
   theme: Theme;
 };
 
+export type SettingsPatch = Partial<Omit<Settings, 'goals'>> & { goals?: Partial<Goals> };
+
 export const DEFAULT_SETTINGS: Settings = {
-  goals: { applicationsPerWeek: 10 },
+  goals: { daily: 2, weekly: 10, monthly: 40 },
   ghostedAfterDays: 30,
   theme: 'system',
 };

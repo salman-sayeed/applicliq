@@ -1,5 +1,6 @@
 <script lang="ts">
   import {
+    type Goals,
     type Job,
     type JobFilter,
     type JobPatch,
@@ -17,6 +18,7 @@
   import JobTable from './JobTable.svelte';
   import KanbanBoard from './KanbanBoard.svelte';
   import Toast from './Toast.svelte';
+  import StatsView from './stats/StatsView.svelte';
   import Toolbar from './Toolbar.svelte';
   import type { DashboardView, ToastMessage } from './types';
 
@@ -40,7 +42,8 @@
 
   function readView(): DashboardView {
     try {
-      return localStorage.getItem(VIEW_KEY) === 'board' ? 'board' : 'list';
+      const saved = localStorage.getItem(VIEW_KEY);
+      return saved === 'board' || saved === 'stats' ? saved : 'list';
     } catch {
       return 'list';
     }
@@ -52,6 +55,7 @@
   let loaded = $state(false);
   let loadError = $state<string>();
   let view = $state<DashboardView>(readView());
+  let goals = $state<Goals>();
   let filter = $state<JobFilter>({});
   let sortKey = $state<JobSortKey>('updatedAt');
   let sortDir = $state<SortDirection>('desc');
@@ -72,6 +76,23 @@
       },
     ),
   );
+
+  $effect(() => {
+    adapter.getSettings().then(
+      (settings) => (goals = settings.goals),
+      (error) => reportError('load your goals', error),
+    );
+  });
+
+  async function saveGoals(next: Goals) {
+    try {
+      goals = (await adapter.updateSettings({ goals: next })).goals;
+      showToast({ message: 'Goals saved' });
+    } catch (error) {
+      reportError('save your goals', error);
+      throw error;
+    }
+  }
 
   $effect(() => {
     try {
@@ -172,6 +193,8 @@
       </div>
     {:else if loadError}
       <p role="alert" class="text-status-rejected text-sm">{loadError}</p>
+    {:else if view === 'stats'}
+      <StatsView {jobs} {goals} onsavegoals={saveGoals} />
     {:else if jobs.length === 0}
       <div class="text-ink-muted mx-auto mt-16 max-w-sm text-center text-sm">
         <p class="text-ink mb-1 text-base font-semibold">No jobs yet</p>

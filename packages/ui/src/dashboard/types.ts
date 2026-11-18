@@ -5,4 +5,4 @@ export type ToastMessage = {
   tone?: 'info' | 'error';
 };
 
-export type DashboardView = 'list' | 'board';
+export type DashboardView = 'list' | 'board' | 'stats';

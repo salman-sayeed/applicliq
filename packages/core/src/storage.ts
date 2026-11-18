@@ -3,10 +3,12 @@ import { mergeJobs } from './merge';
 import type { SyncSnapshot } from './sync/drive';
 import {
   DEFAULT_SETTINGS,
+  type Goals,
   type Job,
   type JobRecord,
   type JobStatus,
   type Settings,
+  type SettingsPatch,
   TOMBSTONE_TTL_MS,
   isLiveJob,
 } from './types';
@@ -74,10 +76,24 @@ export function createJobRepository(db: PocketCareerDB, now: () => number = Date
     return all.filter(isLiveJob);
   }
 
+  /** Stored goals over the defaults; ignores bad values and reads the old weekly-only shape. */
+  function readGoals(stored: unknown): Goals {
+    const raw = (stored ?? {}) as Partial<Goals> & { applicationsPerWeek?: unknown };
+    const pick = (value: unknown, fallback: number) =>
+      typeof value === 'number' && Number.isFinite(value) && value >= 0
+        ? Math.floor(value)
+        : fallback;
+    return {
+      daily: pick(raw.daily, DEFAULT_SETTINGS.goals.daily),
+      weekly: pick(raw.weekly ?? raw.applicationsPerWeek, DEFAULT_SETTINGS.goals.weekly),
+      monthly: pick(raw.monthly, DEFAULT_SETTINGS.goals.monthly),
+    };
+  }
+
   async function getSettings(): Promise<Settings> {
     const row = await db.settings.get(SETTINGS_ID);
     return {
-      goals: { ...DEFAULT_SETTINGS.goals, ...row?.goals },
+      goals: readGoals(row?.goals),
       ghostedAfterDays: row?.ghostedAfterDays ?? DEFAULT_SETTINGS.ghostedAfterDays,
       theme: row?.theme ?? DEFAULT_SETTINGS.theme,
     };
@@ -243,13 +259,13 @@ export function createJobRepository(db: PocketCareerDB, now: () => number = Date
 
     getSettings,
 
-    async updateSettings(patch: Partial<Settings>): Promise<Settings> {
+    async updateSettings(patch: SettingsPatch): Promise<Settings> {
       return db.transaction('rw', db.settings, async () => {
         const current = await getSettings();
         const next: Settings = {
           ...current,
           ...patch,
-          goals: { ...current.goals, ...patch.goals },
+          goals: readGoals({ ...current.goals, ...patch.goals }),
         };
         await db.settings.put({ id: SETTINGS_ID, ...next });
         return next;

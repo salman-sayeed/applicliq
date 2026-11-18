@@ -7,4 +7,6 @@ export const dashboardAdapter: DashboardAdapter = {
   updateJob: repo.updateJob,
   deleteJob: repo.deleteJob,
   restoreJob: repo.restoreJob,
+  getSettings: repo.getSettings,
+  updateSettings: repo.updateSettings,
 };
