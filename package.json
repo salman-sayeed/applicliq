@@ -14,6 +14,7 @@
     "dev:web": "pnpm --filter @pocket-career/web dev",
     "build": "pnpm -r --filter \"./apps/*\" build",
     "build:ext": "pnpm --filter @pocket-career/extension build:all",
+    "deploy:web": "pnpm --filter @pocket-career/web build && pnpm dlx wrangler@4 pages deploy apps/web/build --project-name pocket-career",
     "test": "pnpm -r --if-present test",
     "typecheck": "tsc -b && pnpm -r --if-present check",
     "lint": "eslint .",

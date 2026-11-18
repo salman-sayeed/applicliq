@@ -86,8 +86,9 @@ This one client serves Chrome, Firefox, Edge and the web dashboard.
 
 1. **Create credentials → OAuth client ID**, application type **Web application**.
 2. **Authorized JavaScript origins** (for the web dashboard):
-   - `http://localhost:5173` (`pnpm dev:web`)
+   - `http://localhost:5173` (`pnpm dev:web`) and `http://localhost:4173` (`vite preview`)
    - your Cloudflare Pages URL, e.g. `https://pocket-career.pages.dev`, and any custom domain
+     (origins only: no path, no trailing slash)
 3. **Authorized redirect URIs** (for the extension's `launchWebAuthFlow`). Each browser
    derives one from the extension ID:
    - **Firefox**: `https://<hash>.extensions.allizom.org/`. The add-on ID is fixed to
@@ -106,7 +107,8 @@ This one client serves Chrome, Firefox, Edge and the web dashboard.
 
    Paste it **including the trailing slash**.
 
-4. Copy the client ID into `WXT_GOOGLE_CLIENT_ID_WEB`.
+4. Copy the client ID into `WXT_GOOGLE_CLIENT_ID_WEB` (extension) and `VITE_GOOGLE_CLIENT_ID`
+   (web dashboard).
 
 ## 5. Put the IDs in the build
 
@@ -124,6 +126,20 @@ WXT_CHROME_EXTENSION_KEY=MIIBIjANBgkqh...
 
 Then `pnpm dev:ext` or `pnpm build:ext`. In CI, set the same variables in the environment
 instead of using a file.
+
+For the web dashboard, put the same Web client ID in `apps/web/.env` (copy `.env.example`):
+
+```ini
+VITE_GOOGLE_CLIENT_ID=1234-def.apps.googleusercontent.com
+```
+
+On Cloudflare Pages, set `VITE_GOOGLE_CLIENT_ID` as a build environment variable instead (see
+[deploy-web.md](deploy-web.md)). Restart `pnpm dev:web` after changing it.
+
+The web dashboard signs in with Google Identity Services. Browser tokens last an hour and can't be
+renewed without a click, so after an hour the sync menu asks to **Sign in again** (one click; the
+dashboard keeps working from local data meanwhile). Signing out on the web also clears that
+browser's copy, since the website may be used on a shared computer.
 
 ## How sync behaves
 
