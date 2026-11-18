@@ -5,9 +5,12 @@ import type { BackgroundMessage } from '@/lib/messages';
 import { setPendingLink } from '@/lib/pending-link';
 import {
   ALARM_GHOST_CHECK,
+  ALARM_SYNC,
   ensureAlarms,
   jobIdFromNotification,
   refresh,
+  syncAndRefresh,
+  syncSoon,
   updatePageBadge,
 } from '@/lib/background';
 import { extractFromTab, getActiveTab, isSavableUrl, openPopup, readLinkText } from '@/lib/tabs';
@@ -48,19 +51,28 @@ export default defineBackground(() => {
 
   // Listeners are registered synchronously on every start so events wake the background.
   // Ghosting runs on start-up (the 6-hour alarm may have been missed while the browser was
-  // closed) and then every 6 hours; reminders and the goal badge follow every change.
-  browser.runtime.onInstalled.addListener(() => void refresh({ ghost: true }));
-  browser.runtime.onStartup.addListener(() => void refresh({ ghost: true }));
+  // closed) and then every 6 hours; reminders and the goal badge follow every change. Drive
+  // sync runs on start-up, every 15 minutes, 3 s after a change and when the popup opens.
+  const onStart = () => {
+    void refresh({ ghost: true });
+    void syncAndRefresh();
+  };
+  browser.runtime.onInstalled.addListener(onStart);
+  browser.runtime.onStartup.addListener(onStart);
   void ensureAlarms();
 
   browser.alarms.onAlarm.addListener((alarm) => {
-    void refresh({ ghost: alarm.name === ALARM_GHOST_CHECK });
+    if (alarm.name === ALARM_SYNC) void syncAndRefresh();
+    else void refresh({ ghost: alarm.name === ALARM_GHOST_CHECK });
   });
 
   browser.runtime.onMessage.addListener((message: unknown, sender) => {
     if (sender.id !== browser.runtime.id) return;
     const m = message as BackgroundMessage;
-    if (m?.type === 'pocket-career:jobs-changed') void refresh();
+    if (m?.type === 'pocket-career:jobs-changed') {
+      void refresh();
+      syncSoon();
+    } else if (m?.type === 'pocket-career:sync-now') void syncAndRefresh();
     else if (m?.type === 'pocket-career:open-job' && typeof m.jobId === 'string') {
       void openDashboard(m.jobId);
     }
@@ -102,5 +114,6 @@ async function saveFromShortcut(tabId?: number) {
   }
   await repo.addJob({ ...job, url: job.url, title: job.title, company: job.company });
   void refresh();
+  syncSoon();
   await flashBadge('✓', '#16a34a', 'Saved to Pocket Career');
 }

@@ -2,6 +2,7 @@
   import { Dashboard } from '@pocket-career/ui';
   import { dashboardAdapter } from '@/lib/dashboard-adapter';
   import PageBadgeToggle from './PageBadgeToggle.svelte';
+  import SyncControl from './SyncControl.svelte';
 
   let { initialJobId }: { initialJobId?: string } = $props();
 </script>
@@ -10,7 +11,10 @@
   {#snippet header()}
     <img src="/icon/32.png" alt="" class="size-6" />
     <h1 class="text-base font-semibold">Pocket Career</h1>
-    <div class="ml-auto"><PageBadgeToggle /></div>
+    <div class="ml-auto flex items-center gap-4">
+      <PageBadgeToggle />
+      <SyncControl />
+    </div>
   {/snippet}
   {#snippet emptyHint()}
     <p>

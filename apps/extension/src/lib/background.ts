@@ -13,25 +13,47 @@ import { STATUS_LABELS } from '@pocket-career/ui';
 import { showGoalBadge } from './badge';
 import { repo } from './db';
 import type { PageBadgeMessage } from './messages';
+import { clearStaleSyncing, runSync, scheduleSync } from './sync';
 import { isSavableUrl } from './tabs';
 
 /** Background-only work: auto-ghosting, reminders, the goal badge and the saved-job page badge. */
 
 export const ALARM_GHOST_CHECK = 'ghost-check';
+export const ALARM_SYNC = 'sync';
 const ALARM_REMINDER = 'reminder';
 const ALARM_MIDNIGHT = 'midnight';
 const GHOST_CHECK_MINUTES = 6 * 60;
+const SYNC_MINUTES = 15;
 
 /** Keys of reminders already shown, so each one notifies once (extension storage, local). */
 const SHOWN_REMINDERS_KEY = 'shownReminders';
 const NOTIFICATION_PREFIX = 'pocket-career-reminder:';
 
-/** Creates the 6-hour ghost check unless it exists (re-creating would restart its period). */
+/**
+ * Creates the periodic alarms (6-hour ghost check, 15-minute sync) unless they exist:
+ * re-creating one would restart its period.
+ */
 export async function ensureAlarms(): Promise<void> {
-  if (await browser.alarms.get(ALARM_GHOST_CHECK)) return;
-  await browser.alarms.create(ALARM_GHOST_CHECK, {
-    delayInMinutes: GHOST_CHECK_MINUTES,
-    periodInMinutes: GHOST_CHECK_MINUTES,
+  const periodic = [
+    [ALARM_GHOST_CHECK, GHOST_CHECK_MINUTES],
+    [ALARM_SYNC, SYNC_MINUTES],
+  ] as const;
+  for (const [name, minutes] of periodic) {
+    if (await browser.alarms.get(name)) continue;
+    await browser.alarms.create(name, { delayInMinutes: minutes, periodInMinutes: minutes });
+  }
+  await clearStaleSyncing();
+}
+
+/** Syncs with Drive, then redraws what depends on the jobs if Drive brought changes. */
+export async function syncAndRefresh(): Promise<void> {
+  if (await runSync()) await refresh();
+}
+
+/** Syncs a few seconds after a change made here or in a page. */
+export function syncSoon(): void {
+  scheduleSync((pulled) => {
+    if (pulled) void refresh();
   });
 }
 
@@ -58,13 +80,15 @@ export function refresh({ ghost = false } = {}): Promise<void> {
 /** Marks jobs left in `applied` longer than `settings.ghostedAfterDays` as ghosted. */
 async function autoGhost(): Promise<void> {
   const [jobs, settings] = await Promise.all([repo.getJobs(), repo.getSettings()]);
-  for (const job of jobsToGhost(jobs, settings.ghostedAfterDays, Date.now())) {
+  const stale = jobsToGhost(jobs, settings.ghostedAfterDays, Date.now());
+  for (const job of stale) {
     try {
       await repo.updateJob(job.id, { status: 'ghosted' });
     } catch {
       // Deleted meanwhile (e.g. from the dashboard): nothing to mark.
     }
   }
+  if (stale.length > 0) syncSoon();
 }
 
 async function checkReminders(jobs: readonly Job[]): Promise<void> {
