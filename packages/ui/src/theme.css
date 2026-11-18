@@ -7,6 +7,7 @@
 
 /* Let Tailwind see the classes used by shared components. */
 @source './components';
+@source './status.ts';
 
 @theme {
   --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;

@@ -8,10 +8,13 @@
     job,
     justSaved,
     onstatus,
+    onopen,
   }: {
     job: Job;
     justSaved: boolean;
     onstatus: (status: JobStatus) => Promise<void>;
+    /** Opens the job in the dashboard to edit everything else. */
+    onopen: () => void;
   } = $props();
 
   let updating = $state(false);
@@ -80,4 +83,12 @@
       Mark applied
     </Button>
   {/if}
+
+  <button
+    type="button"
+    onclick={onopen}
+    class="text-accent focus-visible:ring-accent self-start rounded text-xs font-medium hover:underline focus-visible:ring-2 focus-visible:outline-none"
+  >
+    Edit details, notes and dates in the dashboard ↗
+  </button>
 </section>

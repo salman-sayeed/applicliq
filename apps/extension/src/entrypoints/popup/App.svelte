@@ -2,7 +2,7 @@
   import type { Job, JobStatus } from '@pocket-career/core';
   import { onMount } from 'svelte';
   import { fly, slide } from 'svelte/transition';
-  import { DASHBOARD_URL, SAVE_SHORTCUT_COMMAND } from '@/lib/config';
+  import { SAVE_SHORTCUT_COMMAND, openDashboard } from '@/lib/config';
   import { repo } from '@/lib/db';
   import { type Draft, draftFrom, isDraftValid, toNewJob } from '@/lib/draft';
   import { takePendingLink } from '@/lib/pending-link';
@@ -122,14 +122,13 @@
       <img src="/icon/32.png" alt="" class="size-5" />
       Pocket Career
     </h1>
-    <a
-      href={DASHBOARD_URL}
-      target="_blank"
-      rel="noreferrer"
+    <button
+      type="button"
+      onclick={() => openDashboard()}
       class="text-accent focus-visible:ring-accent rounded text-xs font-medium hover:underline focus-visible:ring-2 focus-visible:outline-none"
     >
       Open dashboard ↗
-    </a>
+    </button>
   </header>
 
   {#key view.kind}
@@ -161,7 +160,12 @@
           </p>
         {/if}
       {:else}
-        <SavedJob job={view.job} justSaved={view.justSaved} onstatus={setStatus} />
+        <SavedJob
+          job={view.job}
+          justSaved={view.justSaved}
+          onstatus={setStatus}
+          onopen={() => openDashboard(view.kind === 'saved' ? view.job.id : undefined)}
+        />
       {/if}
     </div>
   {/key}
