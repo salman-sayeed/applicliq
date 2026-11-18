@@ -207,12 +207,30 @@ describe('settings', () => {
 
   it('merges partial updates, including nested goals, and persists them', async () => {
     await repo().updateSettings({ theme: 'dark' });
-    await repo().updateSettings({ ghostedAfterDays: 14, goals: { applicationsPerWeek: 3 } });
+    await repo().updateSettings({ ghostedAfterDays: 14, goals: { weekly: 3 } });
     expect(await createJobRepository(db).getSettings()).toEqual({
       theme: 'dark',
       ghostedAfterDays: 14,
-      goals: { applicationsPerWeek: 3 },
+      goals: { daily: 2, weekly: 3, monthly: 40 },
     });
+  });
+});
+
+describe('settings goals', () => {
+  it('reads the old weekly-only goal shape', async () => {
+    await db.settings.put({ id: 'app', goals: { applicationsPerWeek: 7 } } as never);
+    expect((await repo().getSettings()).goals).toEqual({ daily: 2, weekly: 7, monthly: 40 });
+  });
+
+  it('ignores negative or non-numeric goals and rounds down', async () => {
+    const settings = await repo().updateSettings({
+      goals: { daily: -1, weekly: 4.7, monthly: Number.NaN },
+    });
+    expect(settings.goals).toEqual({ daily: 2, weekly: 4, monthly: 40 });
+  });
+
+  it('accepts 0 to turn a goal off', async () => {
+    expect((await repo().updateSettings({ goals: { daily: 0 } })).goals.daily).toBe(0);
   });
 });
 

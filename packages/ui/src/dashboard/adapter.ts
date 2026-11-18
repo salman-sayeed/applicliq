@@ -1,4 +1,4 @@
-import type { Job, JobPatch } from '@pocket-career/core';
+import type { Job, JobPatch, Settings, SettingsPatch } from '@pocket-career/core';
 
 /**
  * Everything the dashboard needs from storage. The dashboard never touches extension or
@@ -12,4 +12,7 @@ export type DashboardAdapter = {
   deleteJob(id: string): Promise<boolean>;
   /** Undo for `deleteJob`. */
   restoreJob(job: Job): Promise<Job>;
+  /** Preferences, including the application goals shown in the Stats view. */
+  getSettings(): Promise<Settings>;
+  updateSettings(patch: SettingsPatch): Promise<Settings>;
 };
