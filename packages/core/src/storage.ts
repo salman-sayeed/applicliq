@@ -1,23 +1,38 @@
 import { Dexie, type Table, liveQuery } from 'dexie';
 import { mergeJobs } from './merge';
-import { SCHEMA_VERSION, type SyncSnapshot } from './sync/drive';
 import {
   DEFAULT_SETTINGS,
-  type Goals,
-  type Job,
-  type JobRecord,
-  type JobStatus,
   type Settings,
   type SettingsPatch,
-  TOMBSTONE_TTL_MS,
-  isLiveJob,
-} from './types';
+  type SettingsSection,
+  type SyncedSettings,
+  applySettingsPatch,
+  combineSettings,
+  isNewerSettings,
+  mergeSyncedSettings,
+  sameSyncedValues,
+  sanitizeSyncedSettings,
+  splitSettings,
+} from './settings';
+import { SCHEMA_VERSION, type SyncSnapshot } from './sync/drive';
+import { type Job, type JobRecord, type JobStatus, TOMBSTONE_TTL_MS, isLiveJob } from './types';
 import { normalizeUrl } from './url';
 import { sanitizeRecords } from './validate';
 
-const SETTINGS_ID = 'app';
+/** Settings rows: the synced part (also where pre-settings-page versions kept everything)… */
+const SYNCED_ID = 'app';
+/** …the keys that never leave this device… */
+const DEVICE_ID = 'device';
+/** …and app state that isn't a setting. */
+const LOCAL_STATE_ID = 'state';
 
-type SettingsRow = Partial<Settings> & { id: typeof SETTINGS_ID };
+type SettingsRow = { id: string } & Record<string, unknown>;
+
+/** Per-device app state kept next to the settings. */
+export type LocalState = {
+  /** The first-run introduction was shown (or skipped). */
+  onboardingDone?: boolean;
+};
 
 export class PocketCareerDB extends Dexie {
   jobs!: Table<JobRecord, string>;
@@ -50,6 +65,8 @@ export type ImportResult = {
   imported: number;
   /** Records in the file that were malformed and ignored. */
   skipped: number;
+  /** The file's settings were newer than the local ones and replaced them. */
+  settingsApplied: boolean;
 };
 
 /** Fields a patch may never overwrite, even if a caller passes them at runtime. */
@@ -76,27 +93,46 @@ export function createJobRepository(db: PocketCareerDB, now: () => number = Date
     return all.filter(isLiveJob);
   }
 
-  /** Stored goals over the defaults; ignores bad values and reads the old weekly-only shape. */
-  function readGoals(stored: unknown): Goals {
-    const raw = (stored ?? {}) as Partial<Goals> & { applicationsPerWeek?: unknown };
-    const pick = (value: unknown, fallback: number) =>
-      typeof value === 'number' && Number.isFinite(value) && value >= 0
-        ? Math.floor(value)
-        : fallback;
-    return {
-      daily: pick(raw.daily, DEFAULT_SETTINGS.goals.daily),
-      weekly: pick(raw.weekly ?? raw.applicationsPerWeek, DEFAULT_SETTINGS.goals.weekly),
-      monthly: pick(raw.monthly, DEFAULT_SETTINGS.goals.monthly),
-    };
+  async function readSettingsRows() {
+    const [synced, device] = await db.settings.bulkGet([SYNCED_ID, DEVICE_ID]);
+    return { synced, device };
   }
 
+  /** Synced part plus device part, validated; defaults for anything missing. */
   async function getSettings(): Promise<Settings> {
-    const row = await db.settings.get(SETTINGS_ID);
-    return {
-      goals: readGoals(row?.goals),
-      ghostedAfterDays: row?.ghostedAfterDays ?? DEFAULT_SETTINGS.ghostedAfterDays,
-      theme: row?.theme ?? DEFAULT_SETTINGS.theme,
-    };
+    const { synced, device } = await readSettingsRows();
+    return combineSettings(synced, device);
+  }
+
+  async function writeSettings(settings: Settings): Promise<void> {
+    const { synced, device } = splitSettings(settings);
+    await db.settings.bulkPut([
+      { ...synced, id: SYNCED_ID },
+      { ...device, id: DEVICE_ID },
+    ]);
+  }
+
+  /**
+   * Applies a patch (invalid values are ignored, see `sanitizeSettings`). `updatedAt` moves
+   * forward only when a synced key changed, so device-only changes never win a merge elsewhere.
+   */
+  async function updateSettings(patch: SettingsPatch): Promise<Settings> {
+    return db.transaction('rw', db.settings, async () => {
+      const current = await getSettings();
+      const next = applySettingsPatch(current, patch);
+      const before = splitSettings(current).synced;
+      if (!sameSyncedValues(before, splitSettings(next).synced)) {
+        next.updatedAt = Math.max(now(), current.updatedAt + 1);
+      }
+      await writeSettings(next);
+      return next;
+    });
+  }
+
+  /** Normalizes a URL for storage, unless the user turned URL cleaning off. */
+  async function storedUrl(url: string): Promise<string> {
+    const { automation } = await getSettings();
+    return automation.cleanUrls ? normalizeUrl(url) : url.trim();
   }
 
   return {
@@ -120,10 +156,20 @@ export function createJobRepository(db: PocketCareerDB, now: () => number = Date
       return record && isLiveJob(record) ? record : undefined;
     },
 
-    /** Finds a saved job by URL, ignoring tracking parameters, the hash and param order. */
+    /**
+     * Finds a saved job by URL, ignoring tracking parameters, the hash and param order. Jobs saved
+     * with URL cleaning off keep their URL as given; those need a scan, done only then.
+     */
     async getJobByUrl(url: string): Promise<Job | undefined> {
-      const matches = await db.jobs.where('url').equals(normalizeUrl(url)).toArray();
-      return matches.filter(isLiveJob).sort((a, b) => b.updatedAt - a.updatedAt)[0];
+      const normalized = normalizeUrl(url);
+      const newest = (jobs: JobRecord[]) =>
+        jobs.filter(isLiveJob).sort((a, b) => b.updatedAt - a.updatedAt)[0];
+      const keys = [...new Set([normalized, url.trim()])];
+      const found = newest(await db.jobs.where('url').anyOf(keys).toArray());
+      if (found || (await getSettings()).automation.cleanUrls) return found;
+      return newest(
+        await db.jobs.filter((r) => isLiveJob(r) && normalizeUrl(r.url) === normalized).toArray(),
+      );
     },
 
     /** Other live jobs at the same company (case-insensitive), most recent first. */
@@ -141,7 +187,7 @@ export function createJobRepository(db: PocketCareerDB, now: () => number = Date
       const status = input.status ?? 'saved';
       const job: Job = {
         ...input,
-        url: normalizeUrl(input.url),
+        url: await storedUrl(input.url),
         company: input.company.trim(),
         id: crypto.randomUUID(),
         status,
@@ -158,12 +204,12 @@ export function createJobRepository(db: PocketCareerDB, now: () => number = Date
      * Throws if the job does not exist or was deleted.
      */
     async updateJob(id: string, patch: JobPatch): Promise<Job> {
-      return db.transaction('rw', db.jobs, async () => {
+      return db.transaction('rw', db.jobs, db.settings, async () => {
         const current = await db.jobs.get(id);
         if (!current || !isLiveJob(current)) throw new Error(`Job not found: ${id}`);
         const changes: JobPatch = { ...patch };
         for (const key of PROTECTED_FIELDS) delete (changes as Record<string, unknown>)[key];
-        if (changes.url !== undefined) changes.url = normalizeUrl(changes.url);
+        if (changes.url !== undefined) changes.url = await storedUrl(changes.url);
         if (changes.company !== undefined) changes.company = changes.company.trim();
 
         // Never let the clock run backwards for this record, or a merge could drop the edit.
@@ -232,6 +278,7 @@ export function createJobRepository(db: PocketCareerDB, now: () => number = Date
         schemaVersion: SCHEMA_VERSION,
         updatedAt: now(),
         records: await getAllRecords(),
+        settings: await getSyncedSettings(),
       };
       return JSON.stringify(snapshot, null, 2);
     },
@@ -259,24 +306,112 @@ export function createJobRepository(db: PocketCareerDB, now: () => number = Date
       }
       const { records, skipped } = sanitizeRecords(snapshot.records);
       await mergeIntoLocal(records);
-      return { imported: records.length, skipped };
+      let settingsApplied = false;
+      if (snapshot.settings !== undefined) {
+        settingsApplied = (await mergeSettingsIntoLocal(snapshot.settings)).changed;
+      }
+      return { imported: records.length, skipped, settingsApplied };
     },
 
     getSettings,
+    updateSettings,
 
-    async updateSettings(patch: SettingsPatch): Promise<Settings> {
-      return db.transaction('rw', db.settings, async () => {
-        const current = await getSettings();
-        const next: Settings = {
-          ...current,
-          ...patch,
-          goals: readGoals({ ...current.goals, ...patch.goals }),
-        };
-        await db.settings.put({ id: SETTINGS_ID, ...next });
-        return next;
+    /** Calls `listener` with the settings now and after every change; returns an unsubscribe. */
+    watchSettings(listener: (settings: Settings) => void, onError?: (e: unknown) => void) {
+      const subscription = liveQuery(getSettings).subscribe({
+        next: listener,
+        error: (error: unknown) => onError?.(error),
+      });
+      return () => subscription.unsubscribe();
+    },
+
+    /** Puts one section back to its defaults (device keys included). */
+    resetSettingsSection(section: SettingsSection): Promise<Settings> {
+      return updateSettings({ [section]: structuredClone(DEFAULT_SETTINGS[section]) });
+    },
+
+    /** The part of the settings that syncs through Drive. */
+    getSyncedSettings,
+
+    /** Merges settings from elsewhere (Drive, an import): last write wins on `updatedAt`. */
+    mergeSettingsIntoLocal,
+
+    /**
+     * Renames a tag on every job that has it (case-insensitive) and in the tag list; merges into
+     * an existing tag of the new name. Returns how many jobs changed.
+     */
+    async renameTag(from: string, to: string): Promise<number> {
+      const name = to.trim();
+      const old = from.toLowerCase();
+      if (!name) throw new Error('A tag needs a name.');
+      return db.transaction('rw', db.jobs, db.settings, async () => {
+        let changed = 0;
+        const at = now();
+        const jobs = (await db.jobs.toArray()).filter(isLiveJob);
+        for (const job of jobs) {
+          if (!job.tags?.some((t) => t.toLowerCase() === old)) continue;
+          const renamed = job.tags.map((t) => (t.toLowerCase() === old ? name : t));
+          const tags = renamed.filter(
+            (t, i) => renamed.findIndex((u) => u.toLowerCase() === t.toLowerCase()) === i,
+          );
+          await db.jobs.put({ ...job, tags, updatedAt: Math.max(at, job.updatedAt + 1) });
+          changed++;
+        }
+        const { labels } = await getSettings();
+        const existing = labels.tags.find((t) => t.name.toLowerCase() === old);
+        const others = labels.tags.filter((t) => t.name.toLowerCase() !== old);
+        const target = others.find((t) => t.name.toLowerCase() === name.toLowerCase());
+        if (existing && !target) others.push({ ...existing, name });
+        await updateSettings({ labels: { tags: others } });
+        return changed;
+      });
+    },
+
+    getLocalState,
+
+    async setLocalState(patch: LocalState): Promise<void> {
+      await db.transaction('rw', db.settings, async () => {
+        await db.settings.put({ ...(await getLocalState()), ...patch, id: LOCAL_STATE_ID });
+      });
+    },
+
+    /** Empties this device's copy: jobs, settings and app state. Drive is not touched. */
+    async clearLocalData(): Promise<void> {
+      await db.transaction('rw', db.jobs, db.settings, async () => {
+        await db.jobs.clear();
+        await db.settings.clear();
       });
     },
   };
+
+  async function getLocalState(): Promise<LocalState> {
+    const row = await db.settings.get(LOCAL_STATE_ID);
+    return { onboardingDone: row?.onboardingDone === true };
+  }
+
+  async function getSyncedSettings(): Promise<SyncedSettings> {
+    return splitSettings(await getSettings()).synced;
+  }
+
+  /**
+   * Merges a synced settings object from Drive or a file into the local one. Returns the winner
+   * and whether the local settings changed. Settings from a newer app version are ignored.
+   */
+  async function mergeSettingsIntoLocal(
+    incoming: unknown,
+  ): Promise<{ settings: SyncedSettings; changed: boolean }> {
+    return db.transaction('rw', db.settings, async () => {
+      const local = await getSyncedSettings();
+      if (incoming === undefined || isNewerSettings(incoming)) {
+        return { settings: local, changed: false };
+      }
+      const winner = mergeSyncedSettings(local, sanitizeSyncedSettings(incoming));
+      if (winner === local) return { settings: local, changed: false };
+      const { device } = await readSettingsRows();
+      await writeSettings(combineSettings(winner, device));
+      return { settings: winner, changed: !sameSyncedValues(winner, local) };
+    });
+  }
 }
 
 export type JobRepository = ReturnType<typeof createJobRepository>;

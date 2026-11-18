@@ -1,4 +1,4 @@
-import type { Job, NewJob, SalaryPeriod, WorkType } from '@pocket-career/core';
+import type { Job, NewJob, SalaryPeriod, Settings, WorkType } from '@pocket-career/core';
 
 /** The popup form's editable state (strings, so inputs can be empty). */
 export type Draft = {
@@ -17,7 +17,8 @@ export type Draft = {
   descriptionSnapshot?: string;
 };
 
-export function draftFrom(job: Partial<Job>, url: string): Draft {
+/** `defaults` (the regional settings) fill the currency and period the page didn't give. */
+export function draftFrom(job: Partial<Job>, url: string, defaults?: Settings['regional']): Draft {
   return {
     url: job.url ?? url,
     title: job.title ?? '',
@@ -26,8 +27,8 @@ export function draftFrom(job: Partial<Job>, url: string): Draft {
     workType: job.workType ?? '',
     salaryMin: job.salary?.min?.toString() ?? '',
     salaryMax: job.salary?.max?.toString() ?? '',
-    currency: job.salary?.currency ?? '',
-    period: job.salary?.period ?? '',
+    currency: job.salary?.currency ?? defaults?.currency ?? '',
+    period: job.salary?.period ?? defaults?.salaryPeriod ?? '',
     notes: '',
     source: job.source,
     descriptionSnapshot: job.descriptionSnapshot,
@@ -43,8 +44,11 @@ const toNumber = (value: string) => {
   return value.trim() && Number.isFinite(n) && n >= 0 ? n : undefined;
 };
 
-/** Converts the form into the repository's input; empty optional fields are left out. */
-export function toNewJob(draft: Draft): NewJob {
+/**
+ * Converts the form into the repository's input; empty optional fields are left out, and so is
+ * the description when `keepDescription` is off (the setting).
+ */
+export function toNewJob(draft: Draft, keepDescription = true): NewJob {
   const job: NewJob = {
     url: draft.url,
     title: draft.title.trim(),
@@ -58,7 +62,8 @@ export function toNewJob(draft: Draft): NewJob {
   if (draft.workType) job.workType = draft.workType;
   if (notes) job.notes = notes;
   if (draft.source) job.source = draft.source;
-  if (draft.descriptionSnapshot) job.descriptionSnapshot = draft.descriptionSnapshot;
+  if (keepDescription && draft.descriptionSnapshot)
+    job.descriptionSnapshot = draft.descriptionSnapshot;
   if (min !== undefined || max !== undefined) {
     job.salary = { min: min ?? max, max: max ?? min };
     const currency = draft.currency.trim().toUpperCase();

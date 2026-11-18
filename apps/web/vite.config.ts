@@ -1,12 +1,20 @@
 import tailwindcss from '@tailwindcss/vite';
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
+import { readFileSync } from 'node:fs';
 import { defineConfig } from 'vite';
+
+const { version } = JSON.parse(
+  readFileSync(new URL('./package.json', import.meta.url), 'utf8'),
+) as {
+  version: string;
+};
 
 /** Google Identity Services (sign-in on /app) is the only remote origin the site talks to. */
 const GIS = 'https://accounts.google.com/gsi/';
 
 export default defineConfig({
+  define: { __APP_VERSION__: JSON.stringify(version) },
   plugins: [
     tailwindcss(),
     sveltekit({

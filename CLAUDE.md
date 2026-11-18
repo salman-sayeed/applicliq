@@ -25,23 +25,30 @@ nothing else in the user's Drive).
 ```
 apps/
   extension/            WXT extension
-    src/entrypoints/    popup/, dashboard/ (extension page), background.ts, extract.content.ts,
+    src/entrypoints/    popup/, dashboard/ (extension page), options/ (settings page, also the
+                        extension's options page), background.ts, extract.content.ts,
                         job-badge.content.ts (saved-job page badge, injected by background)
-    src/lib/background.ts  auto-ghosting, reminder notifications, goal badge, page badge
+    src/lib/background.ts  auto-ghosting, reminders (quiet hours, goal nudge), goal badge, page badge
     src/lib/google-auth.ts launchWebAuthFlow (Web client); getAuthToken on Chrome if only a Chrome client
     src/lib/sync.ts     background sync runner + status in extension storage
 docs/google-setup.md    creating the OAuth client IDs (env vars in apps/extension/.env, apps/web/.env)
     wxt.config.ts       manifest + Vite plugins (Tailwind)
   web/                  SvelteKit static site (Cloudflare Pages: docs/deploy-web.md)
     src/routes/         +layout.ts sets `prerender = true`; (site)/ landing + privacy (site.css),
-                        app/ the dashboard (client-only, app.css with the dashboard @source)
+                        app/ the dashboard and app/settings (client-only, app.css with the
+                        dashboard and settings @source)
+    src/lib/session.svelte.ts  sign-in / sign-out shared by /app and /app/settings
     src/lib/google-auth.ts  Google Identity Services token client (loaded only on /app)
     src/lib/sync.svelte.ts  IndexedDB repo, dashboard adapter, sync runner + triggers
     static/_headers     Cloudflare headers; the CSP is a meta tag from vite.config.ts
 packages/
   core/                 domain logic, NO UI code
     src/types.ts        Job model, statuses, tombstones
-    src/storage.ts      Dexie DB (jobs, settings) + repository: CRUD, URL/company lookup, import/export
+    src/settings.ts     Settings schema + defaults + validation (SETTINGS_SCHEMA), synced vs device
+                        keys (DEVICE_KEYS), settings merge
+    src/storage.ts      Dexie DB (jobs, settings) + repository: CRUD, URL/company lookup, settings,
+                        import/export
+    src/csv.ts          jobsToCsv (spreadsheet export)
     src/reminders.ts    auto-ghost selection, due reminders, job summary, goal badge text
     src/merge.ts        mergeJobs: last-write-wins merge, tombstone purge
     src/url.ts          normalizeUrl (strips hash + tracking params) for duplicate detection
@@ -52,10 +59,14 @@ packages/
   ui/                   shared Svelte components + Tailwind theme
     src/theme.css       @theme tokens; import after `tailwindcss` in each app
     src/components/     Button, StatusBadge, ...
-    src/dashboard/      shared Dashboard (list, kanban, detail panel) and SyncMenu. Talks to storage only
-                        through a DashboardAdapter prop, never extension/platform APIs, so the
-                        extension page and the web app can both mount it. Pages that render it
-                        add `@source` for this folder in their CSS.
+    src/dashboard/      shared Dashboard (list, kanban, detail panel, onboarding) and SyncMenu. Talks to
+                        storage only through a DashboardAdapter prop, never extension/platform APIs,
+                        so the extension page and the web app can both mount it. Pages that render
+                        it add `@source` for this folder in their CSS.
+    src/settings/       shared SettingsPage (section nav, auto-save). Platform bits come in through a
+                        SettingsPlatform prop; extension-only sections are disabled on the web.
+    src/prefs.svelte.ts Prefs context: status names, hidden statuses, tag colours, date format
+    src/appearance.ts   applyAppearance: theme / accent / density / reduce-motion on <html>
 ```
 
 Workspace packages export their TypeScript/Svelte **source** directly (no build step); each app's
@@ -142,17 +153,30 @@ type Job = {
 - Tombstones exist so a deletion on one device propagates through Drive sync instead of the job
   being resurrected by another device.
 
+### Settings
+
+`Settings` (`packages/core/src/settings.ts`) is one typed object with a `version` and an
+`updatedAt`, grouped in sections (goals, automation, notifications, jobPages, appearance, regional,
+labels, sync). It is stored in the `settings` table as two rows: `app` (synced keys) and `device`
+(`DEVICE_KEYS`: notification settings and the page badge's on/position/sites, which never leave the
+browser). Everything read from storage, Drive or a file goes through `sanitizeSettings`, which also
+reads the old shape (top-level `theme`/`ghostedAfterDays`, 0 = off). `updatedAt` only moves when a
+synced key changes. Status keys never change; `labels.statusLabels` only renames them for display.
+
 ### Sync / merge
 
-The Drive file `pocket-career.json` in `appDataFolder` holds `{ schemaVersion: 1, updatedAt, records }`
+The Drive file `pocket-career.json` in `appDataFolder` holds
+`{ schemaVersion: 1, updatedAt, records, settings }` (`settings` = the synced part; files from
+older versions lack it and it is added on the next upload)
 (older files and exports used `version: 1`, still read). Sync = download, sanitize,
 `mergeJobs(local, remote)` (per id, last write wins by `updatedAt` / `deletedAt`; a tombstone
 wins a tie; equal-timestamp live versions are ordered by content so every device converges),
-write locally in one transaction (`mergeIntoLocal`), upload only if the merged set differs from
-Drive, conditional on the downloaded ETag (`If-Match`; a 412 restarts the round). A file with a
+write locally in one transaction (`mergeIntoLocal`); settings merge the same way as a whole
+(last write wins on `settings.updatedAt`, settings with a newer `version` are passed through
+untouched); upload only if the merged set or settings differ from Drive, conditional on the downloaded ETag (`If-Match`; a 412 restarts the round). A file with a
 newer `schemaVersion` is never overwritten. In the extension only the background syncs: on popup
-open, 3 s after a change (`jobs-changed` message), every 15 min and on start-up. The web app syncs
-on load, 3 s after a change, every 15 min, on `online` and when a tab returns to the foreground,
+open, 3 s after a change (`jobs-changed` message), every `sync.syncIntervalMinutes` (default 15)
+and on start-up. The web app syncs on load, 3 s after a change, every `syncIntervalMinutes`, on `online` and when a tab returns to the foreground,
 under a Web Lock so tabs don't race; its token (GIS, 1 h) needs a click to renew, and sign-out
 clears the browser's local copy.
 `exportJSON()` writes the same format; `importJSON()` merges it the same way.

@@ -3,6 +3,10 @@ import {
   REMINDER_MAX_AGE_MS,
   dailyGoalBadge,
   dueReminders,
+  inQuietHours,
+  nextTimeOfDay,
+  quietHoursEnd,
+  toolbarBadgeText,
   jobSummary,
   jobsToGhost,
   nextReminderAt,
@@ -122,5 +126,52 @@ describe('dailyGoalBadge', () => {
     expect(dailyGoalBadge(1, 3)).toBe('1/3');
     expect(dailyGoalBadge(12, 15)).toBe('12');
     expect(dailyGoalBadge(2, 0)).toBe('');
+  });
+});
+
+describe('reminder options', () => {
+  it('turns follow-ups off and moves interview reminders earlier by the offset', () => {
+    const j = job([['applied', 0]], { followUpAt: NOW - 1000, interviewAt: NOW + 30 * 60_000 });
+    const due = dueReminders([j], new Set(), NOW, undefined, {
+      followUps: false,
+      interviewOffsetMinutes: 60,
+    });
+    expect(due.map((r) => [r.kind, r.at])).toEqual([['interview', NOW - 30 * 60_000]]);
+    expect(
+      dueReminders([j], new Set(), NOW, undefined, { interviewOffsetMinutes: null }).map(
+        (r) => r.kind,
+      ),
+    ).toEqual(['followUp']);
+    expect(nextReminderAt([j], NOW, { interviewOffsetMinutes: 0 })).toBe(NOW + 30 * 60_000);
+  });
+});
+
+describe('toolbarBadgeText', () => {
+  it('shows the goal, the count, or nothing', () => {
+    expect(toolbarBadgeText('goal', 1, 3)).toBe('1/3');
+    expect(toolbarBadgeText('goal', 2, 0)).toBe('2');
+    expect(toolbarBadgeText('today', 2, 3)).toBe('2');
+    expect(toolbarBadgeText('today', 0, 3)).toBe('');
+    expect(toolbarBadgeText('off', 2, 3)).toBe('');
+  });
+});
+
+describe('times of day', () => {
+  const at = (h: number, m = 0) => new Date(2026, 10, 19, h, m).getTime();
+
+  it('finds the next time the clock reads HH:MM', () => {
+    expect(nextTimeOfDay(at(9), '18:30')).toBe(at(18, 30));
+    expect(nextTimeOfDay(at(19), '18:30')).toBe(new Date(2026, 10, 20, 18, 30).getTime());
+  });
+
+  it('handles quiet hours that cross midnight', () => {
+    const quiet = { start: '22:00', end: '07:00' };
+    expect(inQuietHours(at(23), quiet)).toBe(true);
+    expect(inQuietHours(at(6, 59), quiet)).toBe(true);
+    expect(inQuietHours(at(7), quiet)).toBe(false);
+    expect(inQuietHours(at(12), { start: '12:00', end: '13:00' })).toBe(true);
+    expect(inQuietHours(at(12), null)).toBe(false);
+    expect(quietHoursEnd(at(23), quiet)).toBe(new Date(2026, 10, 20, 7).getTime());
+    expect(quietHoursEnd(at(12), quiet)).toBe(at(12));
   });
 });

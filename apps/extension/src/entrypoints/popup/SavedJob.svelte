@@ -1,12 +1,6 @@
 <script lang="ts">
-  import {
-    JOB_STATUSES,
-    type Job,
-    type JobStatus,
-    daysAgoLabel,
-    daysSince,
-  } from '@pocket-career/core';
-  import { Button, STATUS_LABELS, StatusBadge } from '@pocket-career/ui';
+  import { type Job, type JobStatus, daysAgoLabel, daysSince } from '@pocket-career/core';
+  import { Button, StatusBadge, getPrefs } from '@pocket-career/ui';
   import { fade } from 'svelte/transition';
 
   let {
@@ -21,6 +15,8 @@
     /** Opens the job in the dashboard to edit everything else. */
     onopen: () => void;
   } = $props();
+
+  const prefs = getPrefs();
 
   let updating = $state(false);
   let updated = $state(false);
@@ -77,15 +73,15 @@
       disabled={updating}
       onchange={(e) => change(e.currentTarget.value as JobStatus)}
     >
-      {#each JOB_STATUSES as status (status)}
-        <option value={status}>{STATUS_LABELS[status]}</option>
+      {#each prefs.statuses(job.status) as status (status)}
+        <option value={status}>{prefs.status(status)}</option>
       {/each}
     </select>
   </div>
 
   {#if job.status === 'saved'}
     <Button variant="primary" disabled={updating} onclick={() => change('applied')}>
-      Mark applied
+      Mark {prefs.status('applied').toLowerCase()}
     </Button>
   {/if}
 

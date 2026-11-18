@@ -2,8 +2,9 @@
   import { JOB_STATUSES, type Job, type JobStatus } from '@pocket-career/core';
   import { flip } from 'svelte/animate';
   import { crossfade } from 'svelte/transition';
-  import { STATUS_DOT, STATUS_LABELS } from '../status';
-  import { formatDateTime, formatSalary } from './format';
+  import { getPrefs } from '../prefs.svelte';
+  import { STATUS_DOT } from '../status';
+  import { formatSalary } from './format';
 
   let {
     jobs,
@@ -20,8 +21,15 @@
   // Cards glide from one column to the other when their status changes.
   const [send, receive] = crossfade({ duration: 150 });
 
+  const prefs = getPrefs();
+
+  /** Hidden statuses get no column, unless some job is still in one. */
   const columns = $derived(
-    JOB_STATUSES.map((status) => ({ status, jobs: jobs.filter((j) => j.status === status) })),
+    JOB_STATUSES.filter(
+      (status) =>
+        !prefs.settings.labels.hiddenStatuses.includes(status) ||
+        jobs.some((j) => j.status === status),
+    ).map((status) => ({ status, jobs: jobs.filter((j) => j.status === status) })),
   );
 
   let draggingId = $state<string>();
@@ -40,8 +48,9 @@
   function onkeydown(event: KeyboardEvent, job: Job) {
     if (!event.altKey || (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight')) return;
     event.preventDefault();
-    const index = JOB_STATUSES.indexOf(job.status) + (event.key === 'ArrowRight' ? 1 : -1);
-    const next = JOB_STATUSES[index];
+    const order = columns.map((c) => c.status);
+    const index = order.indexOf(job.status) + (event.key === 'ArrowRight' ? 1 : -1);
+    const next = order[index];
     if (next) onmove(job.id, next);
   }
 </script>
@@ -49,7 +58,7 @@
 <div class="-mx-4 flex min-h-0 flex-1 gap-3 overflow-x-auto px-4 pb-2">
   {#each columns as column (column.status)}
     <section
-      aria-label={STATUS_LABELS[column.status]}
+      aria-label={prefs.status(column.status)}
       ondragover={(e) => {
         e.preventDefault();
         if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
@@ -66,7 +75,7 @@
     >
       <header class="flex items-center gap-2 px-3 pt-2.5 pb-2">
         <span class="size-2 rounded-full {STATUS_DOT[column.status]}" aria-hidden="true"></span>
-        <h2 class="text-sm font-semibold">{STATUS_LABELS[column.status]}</h2>
+        <h2 class="text-sm font-semibold">{prefs.status(column.status)}</h2>
         <span class="text-ink-muted ml-auto text-xs tabular-nums">{column.jobs.length}</span>
       </header>
       <ul class="flex min-h-16 flex-1 flex-col gap-2 overflow-x-hidden overflow-y-auto px-2 pb-2">
@@ -92,7 +101,7 @@
               onkeydown={(e) => onkeydown(e, job)}
               aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight"
               title="Drag to another column, or Alt+← / Alt+→"
-              class="bg-surface border-line hover:border-ink-muted/40 focus-visible:ring-accent block w-full cursor-grab rounded-md border p-2.5 text-left shadow-sm transition focus-visible:ring-2 focus-visible:outline-none active:cursor-grabbing {draggingId ===
+              class="bg-surface border-line hover:border-ink-muted/40 focus-visible:ring-accent compact:p-1.5 block w-full cursor-grab rounded-md border p-2.5 text-left shadow-sm transition focus-visible:ring-2 focus-visible:outline-none active:cursor-grabbing {draggingId ===
               job.id
                 ? 'opacity-40'
                 : ''} {selectedId === job.id ? 'ring-accent ring-2' : ''}"
@@ -105,7 +114,7 @@
                     <span
                       class="bg-status-interview/15 text-status-interview rounded px-1.5 py-0.5 font-medium"
                     >
-                      {formatDateTime(job.interviewAt)}
+                      {prefs.dateTime(job.interviewAt)}
                     </span>
                   {/if}
                   {#if formatSalary(job.salary)}
@@ -114,7 +123,7 @@
                     </span>
                   {/if}
                   {#each (job.tags ?? []).slice(0, 3) as tag (tag)}
-                    <span class="text-ink-muted rounded px-1 py-0.5">#{tag}</span>
+                    <span class="rounded px-1.5 py-0.5 {prefs.tagClass(tag)}">#{tag}</span>
                   {/each}
                 </span>
               {/if}

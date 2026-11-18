@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { getPrefs } from '../prefs.svelte';
+
   let {
     id,
     tags,
@@ -11,6 +13,7 @@
     onchange: (tags: string[]) => void;
   } = $props();
 
+  const prefs = getPrefs();
   let text = $state('');
   const listId = `tag-suggestions-${Math.random().toString(36).slice(2)}`;
   const available = $derived(
@@ -43,7 +46,9 @@
 >
   {#each tags as tag (tag)}
     <span
-      class="bg-surface-muted inline-flex items-center gap-1 rounded py-0.5 pr-1 pl-2 text-xs font-medium"
+      class="inline-flex items-center gap-1 rounded py-0.5 pr-1 pl-2 text-xs font-medium {prefs.tagClass(
+        tag,
+      )}"
     >
       #{tag}
       <button

@@ -7,7 +7,9 @@ import {
   ALARM_GHOST_CHECK,
   ALARM_SYNC,
   ensureAlarms,
+  handleGoalNotificationClick,
   jobIdFromNotification,
+  reconcilePageBadge,
   refresh,
   syncAndRefresh,
   syncSoon,
@@ -54,6 +56,7 @@ export default defineBackground(() => {
   // closed) and then every 6 hours; reminders and the goal badge follow every change. Drive
   // sync runs on start-up, every 15 minutes, 3 s after a change and when the popup opens.
   const onStart = () => {
+    void reconcilePageBadge();
     void refresh({ ghost: true });
     void syncAndRefresh();
   };
@@ -79,11 +82,16 @@ export default defineBackground(() => {
   });
 
   browser.notifications.onClicked.addListener((notificationId) => {
+    if (handleGoalNotificationClick(notificationId)) return;
     const jobId = jobIdFromNotification(notificationId);
     if (!jobId) return;
     void openDashboard(jobId);
     void browser.notifications.clear(notificationId);
   });
+
+  // The page badge setting follows the all-sites permission, which the browser can also change.
+  browser.permissions.onAdded.addListener(() => void reconcilePageBadge());
+  browser.permissions.onRemoved.addListener(() => void reconcilePageBadge());
 
   // Tab URLs are only visible with the optional all-sites permission (the page badge setting),
   // so without it this returns at once. SPA navigations report a new `url` without a reload.
@@ -112,7 +120,10 @@ async function saveFromShortcut(tabId?: number) {
     if (!(await openPopup())) await flashBadge('!', '#d97706', 'Open Pocket Career to save');
     return;
   }
-  await repo.addJob({ ...job, url: job.url, title: job.title, company: job.company });
+  const { automation } = await repo.getSettings();
+  const saved = { ...job, url: job.url, title: job.title, company: job.company };
+  if (!automation.saveDescriptionSnapshot) delete saved.descriptionSnapshot;
+  await repo.addJob({ ...saved, status: automation.defaultSaveStatus });
   void refresh();
   syncSoon();
   await flashBadge('✓', '#16a34a', 'Saved to Pocket Career');

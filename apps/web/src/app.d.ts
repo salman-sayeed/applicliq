@@ -9,6 +9,9 @@ declare global {
     // interface Platform {}
   }
 
+  /** The app's version from package.json (vite.config.ts `define`). */
+  const __APP_VERSION__: string;
+
   interface ImportMetaEnv {
     /** "Web application" OAuth client ID for Drive sync (see docs/google-setup.md). */
     readonly VITE_GOOGLE_CLIENT_ID?: string;

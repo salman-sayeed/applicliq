@@ -1,21 +1,47 @@
-import { type Job, dailyGoalBadge, goalProgress } from '@pocket-career/core';
+import {
+  type Job,
+  type Settings,
+  WEEK_START_INDEX,
+  goalProgress,
+  toolbarBadgeText,
+} from '@pocket-career/core';
 import { repo } from './db';
 import { actionApi } from './tabs';
 
 const DEFAULT_COLOR = '#4f46e5';
 const MET_COLOR = '#16a34a';
 
+/** Today's applications against the daily goal, as the goal settings count them. */
+export function todayProgress(jobs: readonly Job[], settings: Settings) {
+  const { goals } = settings;
+  return goalProgress(
+    jobs,
+    goals,
+    Date.now(),
+    WEEK_START_INDEX[goals.weekStartsOn],
+    goals.countStatuses,
+  ).daily;
+}
+
 /**
- * The toolbar badge's resting state: today's applications against the daily goal ("1/3"),
- * green once the goal is met. Empty when the daily goal is off.
+ * The toolbar badge's resting state, per the `toolbarBadge` setting: today's applications
+ * against the daily goal ("1/3", green once met), just today's count, or nothing.
  */
-export async function showGoalBadge(jobs?: readonly Job[]): Promise<void> {
-  const [all, settings] = await Promise.all([jobs ?? repo.getJobs(), repo.getSettings()]);
-  const { count, goal, met } = goalProgress(all, settings.goals).daily;
-  await actionApi.setBadgeBackgroundColor({ color: met ? MET_COLOR : DEFAULT_COLOR });
-  await actionApi.setBadgeText({ text: dailyGoalBadge(count, goal) });
+export async function showGoalBadge(jobs?: readonly Job[], settings?: Settings): Promise<void> {
+  const [all, prefs] = await Promise.all([jobs ?? repo.getJobs(), settings ?? repo.getSettings()]);
+  const { count, goal, met } = todayProgress(all, prefs);
+  const mode = prefs.jobPages.toolbarBadge;
+  await actionApi.setBadgeBackgroundColor({
+    color: met && mode === 'goal' ? MET_COLOR : DEFAULT_COLOR,
+  });
+  await actionApi.setBadgeText({ text: toolbarBadgeText(mode, count, goal) });
   await actionApi.setTitle({
-    title: goal > 0 ? `Pocket Career: ${count} of ${goal} applications today` : 'Pocket Career',
+    title:
+      mode === 'off'
+        ? 'Pocket Career'
+        : goal > 0
+          ? `Pocket Career: ${count} of ${goal} applications today`
+          : `Pocket Career: ${count} applications today`,
   });
 }
 

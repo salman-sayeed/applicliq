@@ -1,9 +1,10 @@
 import 'fake-indexeddb/auto';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { DEFAULT_SETTINGS, splitSettings } from '../settings';
 import { PocketCareerDB, createJobRepository } from '../storage';
 import type { JobRecord } from '../types';
 import { type DriveClient, DriveError, type SyncSnapshot } from './drive';
-import { SyncError, parseSnapshot, syncWithDrive, toSyncError } from './sync';
+import { SyncError, deleteDriveData, parseSnapshot, syncWithDrive, toSyncError } from './sync';
 
 let db: PocketCareerDB;
 const clock = () => 10_000;
@@ -44,6 +45,7 @@ function fakeDrive(initial: unknown[] = []) {
       calls.removes++;
       files.delete(id);
     },
+    accountEmail: async () => 'me@example.test',
   };
   return {
     drive,
@@ -60,7 +62,16 @@ function fakeDrive(initial: unknown[] = []) {
   };
 }
 
-const snapshot = (records: unknown[]) => ({ schemaVersion: 1, updatedAt: 1, records });
+/** A Drive file as a current device writes it, with untouched (default) settings. */
+const snapshot = (
+  records: unknown[],
+  settings: unknown = splitSettings(DEFAULT_SETTINGS).synced,
+) => ({
+  schemaVersion: 1,
+  updatedAt: 1,
+  records,
+  settings,
+});
 
 beforeEach(() => {
   db = new PocketCareerDB(`test-${crypto.randomUUID()}`);
@@ -77,6 +88,7 @@ describe('syncWithDrive', () => {
     expect(await syncWithDrive(repo, empty.drive, { now: clock })).toEqual({
       records: 0,
       uploaded: false,
+      settingsChanged: false,
     });
     expect(empty.calls.creates).toBe(0);
 
@@ -84,6 +96,7 @@ describe('syncWithDrive', () => {
     expect(await syncWithDrive(repo, empty.drive, { now: clock })).toEqual({
       records: 1,
       uploaded: true,
+      settingsChanged: false,
     });
     expect(empty.files.size).toBe(1);
     expect(empty.records()).toEqual([job]);
@@ -190,11 +203,81 @@ describe('syncWithDrive', () => {
   });
 });
 
+describe('syncWithDrive settings', () => {
+  const remoteSettings = (updatedAt: number, daily: number) => ({
+    ...splitSettings(DEFAULT_SETTINGS).synced,
+    updatedAt,
+    goals: { ...splitSettings(DEFAULT_SETTINGS).synced.goals, daily },
+  });
+
+  it('pulls newer settings from Drive without uploading', async () => {
+    const repo = createJobRepository(db, clock);
+    const remote = fakeDrive([snapshot([], remoteSettings(5_000, 6))]);
+    expect(await syncWithDrive(repo, remote.drive, { now: clock })).toMatchObject({
+      uploaded: false,
+      settingsChanged: true,
+    });
+    expect((await repo.getSettings()).goals.daily).toBe(6);
+  });
+
+  it('uploads newer local settings, without device keys', async () => {
+    const repo = createJobRepository(db, clock);
+    await repo.updateSettings({ goals: { daily: 4 }, jobPages: { showBadge: true } });
+    const remote = fakeDrive([snapshot([], remoteSettings(5_000, 6))]);
+    expect(await syncWithDrive(repo, remote.drive, { now: clock })).toMatchObject({
+      uploaded: true,
+      settingsChanged: false,
+    });
+    const file = remote.files.get('f0')!.data as SyncSnapshot;
+    expect(file.settings?.goals?.daily).toBe(4);
+    expect(file.settings?.jobPages).toEqual({ duplicateWarning: true, toolbarBadge: 'goal' });
+  });
+
+  it('adds settings to a file written by an older version', async () => {
+    const repo = createJobRepository(db, clock);
+    const remote = fakeDrive([{ schemaVersion: 1, updatedAt: 1, records: [] }]);
+    expect(await syncWithDrive(repo, remote.drive, { now: clock })).toMatchObject({
+      uploaded: true,
+    });
+    expect((remote.files.get('f0')!.data as SyncSnapshot).settings?.version).toBe(1);
+  });
+
+  it('passes settings from a newer app version through untouched', async () => {
+    const repo = createJobRepository(db, clock);
+    await repo.addJob({ url: 'https://a.test', title: 't', company: 'c' });
+    const future = { version: 99, updatedAt: 1, something: 'new' };
+    const remote = fakeDrive([snapshot([], future)]);
+    await syncWithDrive(repo, remote.drive, { now: clock });
+    const file = remote.files.get('f0')!.data as SyncSnapshot;
+    expect(file.records).toHaveLength(1);
+    expect(file.settings).toEqual(future);
+    expect((await repo.getSettings()).updatedAt).toBe(0);
+  });
+
+  it('creates a file for changed settings even with no jobs', async () => {
+    const repo = createJobRepository(db, clock);
+    await repo.updateSettings({ appearance: { theme: 'dark' } });
+    const empty = fakeDrive();
+    expect(await syncWithDrive(repo, empty.drive, { now: clock })).toMatchObject({
+      uploaded: true,
+    });
+  });
+});
+
+describe('deleteDriveData', () => {
+  it('removes every sync file', async () => {
+    const remote = fakeDrive([snapshot([]), snapshot([])]);
+    expect(await deleteDriveData(remote.drive)).toBe(2);
+    expect(remote.files.size).toBe(0);
+  });
+});
+
 describe('parseSnapshot', () => {
   it('reads the legacy `version: 1` format', () => {
     expect(parseSnapshot({ version: 1, updatedAt: 1, records: [] })).toEqual({
       records: [],
       skipped: 0,
+      settings: undefined,
     });
   });
 });

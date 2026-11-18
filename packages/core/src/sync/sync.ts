@@ -1,4 +1,10 @@
 import { canonical, mergeJobs } from '../merge';
+import {
+  type SyncedSettings,
+  isNewerSettings,
+  mergeSyncedSettings,
+  sanitizeSyncedSettings,
+} from '../settings';
 import type { JobRepository } from '../storage';
 import type { JobRecord } from '../types';
 import { sanitizeRecords } from '../validate';
@@ -32,6 +38,8 @@ export class SyncError extends Error {
 export type SyncResult = {
   /** Records in the merged set (jobs and tombstones). */
   records: number;
+  /** Whether Drive brought newer settings. */
+  settingsChanged: boolean;
   /** Whether the Drive file was created or overwritten. */
   uploaded: boolean;
 };
@@ -47,8 +55,18 @@ export type SyncOptions = {
  * newer schema or not ours, so the caller never overwrites data it doesn't understand.
  * Files from before `schemaVersion` used `version: 1`, which is the same format.
  */
-export function parseSnapshot(data: unknown): { records: JobRecord[]; skipped: number } {
-  const file = data as { schemaVersion?: unknown; version?: unknown; records?: unknown } | null;
+export function parseSnapshot(data: unknown): {
+  records: JobRecord[];
+  skipped: number;
+  /** As found in the file (unchecked); undefined when it has none. */
+  settings: unknown;
+} {
+  const file = data as {
+    schemaVersion?: unknown;
+    version?: unknown;
+    records?: unknown;
+    settings?: unknown;
+  } | null;
   if (!file || typeof file !== 'object' || !Array.isArray(file.records)) {
     throw new SyncError('invalid-remote', 'The Drive file is not a Pocket Career file.');
   }
@@ -63,7 +81,7 @@ export function parseSnapshot(data: unknown): { records: JobRecord[]; skipped: n
     throw new SyncError('invalid-remote', 'The Drive file is not a Pocket Career file.');
   }
   // Drive content is untrusted input: drop malformed records instead of storing them.
-  return sanitizeRecords(file.records);
+  return { ...sanitizeRecords(file.records), settings: file.settings };
 }
 
 /** Whether two record sets hold exactly the same records (any order). */
@@ -91,10 +109,11 @@ export async function syncWithDrive(
   drive: DriveClient,
   { now = Date.now, maxAttempts = 3 }: SyncOptions = {},
 ): Promise<SyncResult> {
-  const snapshot = (records: JobRecord[]): SyncSnapshot => ({
+  const snapshot = (records: JobRecord[], settings: unknown): SyncSnapshot => ({
     schemaVersion: SCHEMA_VERSION,
     updatedAt: now(),
     records,
+    settings: settings as SyncedSettings,
   });
 
   for (let attempt = 1; ; attempt++) {
@@ -102,32 +121,45 @@ export async function syncWithDrive(
 
     if (primaryId === undefined) {
       const merged = await repo.mergeIntoLocal([]);
-      if (merged.length === 0) return { records: 0, uploaded: false };
-      await drive.create(snapshot(merged));
-      return { records: merged.length, uploaded: true };
+      const settings = await repo.getSyncedSettings();
+      // Nothing to keep yet: don't create a file for an untouched install.
+      if (merged.length === 0 && settings.updatedAt === 0) {
+        return { records: 0, uploaded: false, settingsChanged: false };
+      }
+      await drive.create(snapshot(merged, settings));
+      return { records: merged.length, uploaded: true, settingsChanged: false };
     }
 
     const primary = await drive.download(primaryId);
-    const { records: remote, skipped } = parseSnapshot(primary.data);
+    const { records: remote, skipped, settings: remoteSettings } = parseSnapshot(primary.data);
     // Duplicates come from two devices creating the file at once: fold them in, then delete.
     let incoming = remote;
+    let incomingSettings = remoteSettings;
     for (const id of extraIds) {
       try {
-        const extra = parseSnapshot((await drive.download(id)).data).records;
-        incoming = mergeJobs(incoming, extra, now());
+        const extra = parseSnapshot((await drive.download(id)).data);
+        incoming = mergeJobs(incoming, extra.records, now());
+        incomingSettings = foldSettings(incomingSettings, extra.settings);
       } catch {
         // An unreadable duplicate is skipped; the primary file stays the source of truth.
       }
     }
 
     const merged = await repo.mergeIntoLocal(incoming);
+    const settingsMerge = await repo.mergeSettingsIntoLocal(incomingSettings);
+    // Settings from a newer app version are passed through untouched, never overwritten.
+    const outSettings = isNewerSettings(incomingSettings)
+      ? incomingSettings
+      : settingsMerge.settings;
+    const settingsInSync = canonical(outSettings) === canonical(remoteSettings);
+    const result = { records: merged.length, settingsChanged: settingsMerge.changed };
     // Malformed records in Drive (skipped) are cleaned out by uploading the merged set.
-    if (extraIds.length === 0 && skipped === 0 && sameRecords(merged, remote)) {
-      return { records: merged.length, uploaded: false };
+    if (extraIds.length === 0 && skipped === 0 && settingsInSync && sameRecords(merged, remote)) {
+      return { ...result, uploaded: false };
     }
 
     try {
-      await drive.update(primaryId, snapshot(merged), primary.etag);
+      await drive.update(primaryId, snapshot(merged, outSettings), primary.etag);
     } catch (error) {
       if (error instanceof DriveError && error.status === 412) {
         if (attempt < maxAttempts) continue;
@@ -136,8 +168,25 @@ export async function syncWithDrive(
       throw error;
     }
     for (const id of extraIds) await drive.remove(id).catch(() => {});
-    return { records: merged.length, uploaded: true };
+    return { ...result, uploaded: true };
   }
+}
+
+/** Merges the settings of a duplicate file into the primary's (both unchecked). */
+function foldSettings(a: unknown, b: unknown): unknown {
+  if (b === undefined || isNewerSettings(a)) return a;
+  if (a === undefined || isNewerSettings(b)) return b;
+  return mergeSyncedSettings(sanitizeSyncedSettings(a), sanitizeSyncedSettings(b));
+}
+
+/**
+ * Removes every Pocket Career file from the user's Drive (the app folder only). Local data is not
+ * touched; a device that syncs again uploads its copy, so callers sign out afterwards.
+ */
+export async function deleteDriveData(drive: DriveClient): Promise<number> {
+  const ids = await drive.list();
+  for (const id of ids) await drive.remove(id);
+  return ids.length;
 }
 
 /** Sorts any sync failure into a kind the UI can explain. */

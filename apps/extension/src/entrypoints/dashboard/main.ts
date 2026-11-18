@@ -1,8 +1,17 @@
+import { applyCachedAppearance } from '@pocket-career/ui';
 import { mount } from 'svelte';
 import App from './App.svelte';
 import './app.css';
 
-// `dashboard.html#job=<id>` opens that job's details.
-const initialJobId = new URLSearchParams(location.hash.slice(1)).get('job') ?? undefined;
+applyCachedAppearance();
 
-export default mount(App, { target: document.getElementById('app')!, props: { initialJobId } });
+// `dashboard.html#job=<id>` opens that job's details; `#onboarding` replays the introduction.
+const hash = new URLSearchParams(location.hash.slice(1));
+const initialJobId = hash.get('job') ?? undefined;
+const onboarding = hash.has('onboarding');
+if (onboarding) history.replaceState(null, '', location.pathname);
+
+export default mount(App, {
+  target: document.getElementById('app')!,
+  props: { initialJobId, onboarding },
+});

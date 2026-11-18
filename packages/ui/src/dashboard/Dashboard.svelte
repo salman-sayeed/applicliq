@@ -2,6 +2,7 @@
   import {
     type Goals,
     type Job,
+    type Settings,
     type JobFilter,
     type JobPatch,
     type JobSortKey,
@@ -12,9 +13,11 @@
     sortJobs,
   } from '@pocket-career/core';
   import type { Snippet } from 'svelte';
-  import { STATUS_LABELS } from '../status';
+  import { applyAppearance } from '../appearance';
+  import { Prefs, setPrefs } from '../prefs.svelte';
   import type { DashboardAdapter } from './adapter';
   import JobDetail from './JobDetail.svelte';
+  import Onboarding from './Onboarding.svelte';
   import JobTable from './JobTable.svelte';
   import KanbanBoard from './KanbanBoard.svelte';
   import Toast from './Toast.svelte';
@@ -27,6 +30,7 @@
     initialJobId,
     header,
     emptyHint,
+    onboarding = false,
   }: {
     adapter: DashboardAdapter;
     /** Opens this job's detail panel on load (e.g. from a `#job=` link). */
@@ -35,27 +39,25 @@
     header?: Snippet;
     /** Shown when there are no jobs at all (how to save the first one). */
     emptyHint?: Snippet;
+    /** Show the introduction even if it was seen before ("Replay onboarding"). */
+    onboarding?: boolean;
   } = $props();
 
-  const VIEW_KEY = 'pocket-career:dashboard-view';
   const TOAST_MS = 6000;
 
-  function readView(): DashboardView {
-    try {
-      const saved = localStorage.getItem(VIEW_KEY);
-      return saved === 'board' || saved === 'stats' ? saved : 'list';
-    } catch {
-      return 'list';
-    }
-  }
+  const prefs = setPrefs(new Prefs());
 
   // Plain objects, not deep proxies: they are replaced wholesale on every change and are handed
   // back to the adapter (IndexedDB cannot store proxies).
   let jobs = $state.raw<Job[]>([]);
   let loaded = $state(false);
   let loadError = $state<string>();
-  let view = $state<DashboardView>(readView());
-  let goals = $state<Goals>();
+  let settings = $state.raw<Settings>();
+  let view = $state<DashboardView>('list');
+  /** The view follows the "default view" setting until the user picks one here. */
+  let viewPicked = false;
+  // svelte-ignore state_referenced_locally
+  let showIntro = $state(onboarding);
   let filter = $state<JobFilter>({});
   let sortKey = $state<JobSortKey>('updatedAt');
   let sortDir = $state<SortDirection>('desc');
@@ -77,30 +79,48 @@
     ),
   );
 
+  $effect(() =>
+    adapter.watchSettings(
+      (next) => {
+        settings = next;
+        prefs.settings = next;
+        applyAppearance(next.appearance);
+        if (!viewPicked) view = next.appearance.defaultDashboardView;
+      },
+      (error) => reportError('load your settings', error),
+    ),
+  );
+
+  // First run: introduce the app once, while there's nothing saved yet.
   $effect(() => {
-    adapter.getSettings().then(
-      (settings) => (goals = settings.goals),
-      (error) => reportError('load your goals', error),
+    if (!loaded || jobs.length > 0) return;
+    adapter.getLocalState().then(
+      (state) => {
+        if (!state.onboardingDone) showIntro = true;
+      },
+      () => {},
     );
   });
 
+  function closeIntro() {
+    showIntro = false;
+    adapter.setLocalState({ onboardingDone: true }).catch(() => {});
+  }
+
+  function pickView(next: DashboardView) {
+    viewPicked = true;
+    view = next;
+  }
+
   async function saveGoals(next: Goals) {
     try {
-      goals = (await adapter.updateSettings({ goals: next })).goals;
+      await adapter.updateSettings({ goals: next });
       showToast({ message: 'Goals saved' });
     } catch (error) {
       reportError('save your goals', error);
       throw error;
     }
   }
-
-  $effect(() => {
-    try {
-      localStorage.setItem(VIEW_KEY, view);
-    } catch {
-      // Storage unavailable (private mode): the view just isn't remembered.
-    }
-  });
 
   const facets = $derived(jobFacets(jobs));
   const visible = $derived(sortJobs(filterJobs(jobs, filter), sortKey, sortDir));
@@ -130,7 +150,7 @@
   function move(id: string, status: JobStatus) {
     const job = jobs.find((j) => j.id === id);
     update(id, { status }).then(
-      () => job && showToast({ message: `Moved “${job.title}” to ${STATUS_LABELS[status]}` }),
+      () => job && showToast({ message: `Moved “${job.title}” to ${prefs.status(status)}` }),
       () => {},
     );
   }
@@ -176,7 +196,8 @@
     </div>
     <Toolbar
       bind:filter
-      bind:view
+      {view}
+      onview={pickView}
       bind:searchInput
       {facets}
       shown={visible.length}
@@ -194,7 +215,7 @@
     {:else if loadError}
       <p role="alert" class="text-status-rejected text-sm">{loadError}</p>
     {:else if view === 'stats'}
-      <StatsView {jobs} {goals} onsavegoals={saveGoals} />
+      <StatsView {jobs} {settings} onsavegoals={saveGoals} />
     {:else if jobs.length === 0}
       <div class="text-ink-muted mx-auto mt-16 max-w-sm text-center text-sm">
         <p class="text-ink mb-1 text-base font-semibold">No jobs yet</p>
@@ -238,3 +259,7 @@
 {/if}
 
 <Toast {toast} ondismiss={() => (toast = undefined)} />
+
+{#if showIntro}
+  <Onboarding onclose={closeIntro} />
+{/if}

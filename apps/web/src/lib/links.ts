@@ -1,5 +1,6 @@
 /** Outbound links used across the site. Swap the store links in once the listings are live. */
 export const GITHUB_URL = 'https://github.com/salman-sayeed/careerpocket';
+export const ISSUES_URL = `${GITHUB_URL}/issues/new`;
 
 export const INSTALL_LINKS = [
   { browser: 'Chrome', href: `${GITHUB_URL}#install` },

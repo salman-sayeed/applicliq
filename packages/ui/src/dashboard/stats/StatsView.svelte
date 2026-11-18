@@ -2,6 +2,8 @@
   import {
     type Goals,
     type Job,
+    type Settings,
+    WEEK_START_INDEX,
     applicationFunnel,
     applicationHeatmap,
     applicationStreak,
@@ -19,20 +21,26 @@
 
   let {
     jobs,
-    goals,
+    settings,
     onsavegoals,
   }: {
     jobs: Job[];
     /** Undefined until settings have loaded. */
-    goals?: Goals;
+    settings?: Settings;
     onsavegoals: (goals: Goals) => Promise<void>;
   } = $props();
 
   // Recomputed whenever the jobs change; `now` refreshes with them.
   const now = $derived((void jobs, Date.now()));
-  const progress = $derived(goals && goalProgress(jobs, goals, now));
-  const streak = $derived(goals && applicationStreak(jobs, goals.daily, now));
-  const heatmap = $derived(applicationHeatmap(jobs, now));
+  const goals = $derived(settings?.goals);
+  const weekStartsOn = $derived(WEEK_START_INDEX[goals?.weekStartsOn ?? 'mon']);
+  const progress = $derived(
+    goals && goalProgress(jobs, goals, now, weekStartsOn, goals.countStatuses),
+  );
+  const streak = $derived(goals && applicationStreak(jobs, goals.daily, now, goals.countStatuses));
+  const heatmap = $derived(
+    applicationHeatmap(jobs, now, { weekStartsOn, countStatuses: goals?.countStatuses }),
+  );
   const funnel = $derived(applicationFunnel(jobs));
   const bySource = $derived(breakdownBy(jobs, 'source'));
   const byWorkType = $derived(breakdownBy(jobs, 'workType'));
@@ -81,7 +89,7 @@
         <div
           class="border-line w-full border-t pt-4 sm:w-auto sm:border-t-0 sm:border-l sm:pt-0 sm:pl-6"
         >
-          <StreakCard {streak} dailyGoal={goals.daily} todayCount={progress.daily.count} />
+          <StreakCard {streak} dailyGoal={goals.daily ?? 0} todayCount={progress.daily.count} />
         </div>
       </div>
     {:else}

@@ -1,4 +1,5 @@
-import type { Goals, Job, JobStatus, WorkType } from './types';
+import type { Goals } from './settings';
+import type { Job, JobStatus, WorkType } from './types';
 
 /**
  * Statuses that mean the application was sent. A job that went straight from `saved` to
@@ -13,9 +14,15 @@ export const APPLIED_STATUSES: readonly JobStatus[] = [
   'ghosted',
 ];
 
-/** When the application was sent: the first history entry past `saved`. */
-export function firstAppliedAt(job: Job): number | undefined {
-  return job.history.find((h) => APPLIED_STATUSES.includes(h.status))?.at;
+/**
+ * When the application was sent: the first history entry past `saved`. `statuses` overrides
+ * which statuses count (the goals' `countStatuses` setting).
+ */
+export function firstAppliedAt(
+  job: Job,
+  statuses: readonly JobStatus[] = APPLIED_STATUSES,
+): number | undefined {
+  return job.history.find((h) => statuses.includes(h.status))?.at;
 }
 
 function reached(job: Job, statuses: readonly JobStatus[]): boolean {
@@ -58,10 +65,13 @@ export function dayKey(ms: number): string {
 }
 
 /** Applications sent per local day, keyed by `dayKey`. */
-export function applicationsByDay(jobs: readonly Job[]): Map<string, number> {
+export function applicationsByDay(
+  jobs: readonly Job[],
+  statuses: readonly JobStatus[] = APPLIED_STATUSES,
+): Map<string, number> {
   const counts = new Map<string, number>();
   for (const job of jobs) {
-    const at = firstAppliedAt(job);
+    const at = firstAppliedAt(job, statuses);
     if (at === undefined) continue;
     const key = dayKey(at);
     counts.set(key, (counts.get(key) ?? 0) + 1);
@@ -76,6 +86,7 @@ export type GoalPeriod = keyof Goals;
 
 export type GoalProgress = {
   period: GoalPeriod;
+  /** 0 when the goal is off. */
   goal: number;
   count: number;
   /** count / goal, may exceed 1; 0 when the goal is off. */
@@ -85,22 +96,25 @@ export type GoalProgress = {
   start: number;
 };
 
-/** Applications sent so far today, this week and this month, against the goals. */
+/** Applications sent so far today, this week and this month, against the goals (null = off). */
 export function goalProgress(
   jobs: readonly Job[],
   goals: Goals,
   now: number = Date.now(),
   weekStartsOn: WeekStart = 1,
+  countStatuses: readonly JobStatus[] = APPLIED_STATUSES,
 ): Record<GoalPeriod, GoalProgress> {
   const starts: Record<GoalPeriod, number> = {
     daily: startOfDay(now),
     weekly: startOfWeek(now, weekStartsOn),
     monthly: startOfMonth(now),
   };
-  const applied = jobs.map(firstAppliedAt).filter((at): at is number => at !== undefined);
+  const applied = jobs
+    .map((job) => firstAppliedAt(job, countStatuses))
+    .filter((at): at is number => at !== undefined);
   const progress = (period: GoalPeriod): GoalProgress => {
     const start = starts[period];
-    const goal = goals[period];
+    const goal = goals[period] ?? 0;
     const count = applied.filter((at) => at >= start && at <= now).length;
     return {
       period,
@@ -127,11 +141,12 @@ export type Streak = {
  */
 export function applicationStreak(
   jobs: readonly Job[],
-  dailyGoal: number,
+  dailyGoal: number | null,
   now: number = Date.now(),
+  countStatuses: readonly JobStatus[] = APPLIED_STATUSES,
 ): Streak {
-  if (dailyGoal <= 0) return { current: 0, best: 0, todayMet: false };
-  const counts = applicationsByDay(jobs);
+  if (dailyGoal === null || dailyGoal <= 0) return { current: 0, best: 0, todayMet: false };
+  const counts = applicationsByDay(jobs, countStatuses);
   const met = (day: number) => (counts.get(dayKey(day)) ?? 0) >= dailyGoal;
 
   const today = startOfDay(now);
@@ -177,9 +192,13 @@ export type Heatmap = {
 export function applicationHeatmap(
   jobs: readonly Job[],
   now: number = Date.now(),
-  { weeks = 53, weekStartsOn = 1 as WeekStart } = {},
+  {
+    weeks = 53,
+    weekStartsOn = 1 as WeekStart,
+    countStatuses = APPLIED_STATUSES,
+  }: { weeks?: number; weekStartsOn?: WeekStart; countStatuses?: readonly JobStatus[] } = {},
 ): Heatmap {
-  const counts = applicationsByDay(jobs);
+  const counts = applicationsByDay(jobs, countStatuses);
   const today = startOfDay(now);
   const first = addDays(startOfWeek(today, weekStartsOn), -7 * (weeks - 1));
 

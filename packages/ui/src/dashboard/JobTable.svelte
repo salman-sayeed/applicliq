@@ -1,8 +1,9 @@
 <script lang="ts">
   import type { Job, JobSortKey, SortDirection } from '@pocket-career/core';
   import StatusBadge from '../components/StatusBadge.svelte';
+  import { getPrefs } from '../prefs.svelte';
   import { WORK_TYPE_LABELS } from '../status';
-  import { formatAgo, formatDateTime, formatSalary } from './format';
+  import { formatAgo, formatSalary } from './format';
 
   let {
     jobs,
@@ -17,6 +18,8 @@
     selectedId?: string;
     onselect: (id: string) => void;
   } = $props();
+
+  const prefs = getPrefs();
 
   const columns: { key: JobSortKey; label: string; class?: string }[] = [
     { key: 'title', label: 'Job' },
@@ -81,7 +84,7 @@
             ? 'bg-accent/5'
             : ''}"
         >
-          <td class="max-w-0 px-3 py-2.5 sm:w-2/5">
+          <td class="compact:py-1 max-w-0 px-3 py-2.5 sm:w-2/5">
             <button
               type="button"
               onclick={(e) => {
@@ -93,32 +96,36 @@
               {job.title}
             </button>
             <span class="text-ink-muted block truncate text-xs">
-              {job.company}{#if job.tags?.length}
-                <span class="ml-1">· {job.tags.map((t) => `#${t}`).join(' ')}</span>
-              {/if}
+              {job.company}{#each job.tags ?? [] as tag (tag)}
+                <span class="ml-1 rounded px-1 {prefs.tagClass(tag)}">#{tag}</span>
+              {/each}
             </span>
           </td>
-          <td class="px-3 py-2.5"><StatusBadge status={job.status} /></td>
-          <td class="text-ink-muted hidden max-w-48 truncate px-3 py-2.5 md:table-cell">
+          <td class="compact:py-1 px-3 py-2.5"><StatusBadge status={job.status} /></td>
+          <td
+            class="text-ink-muted compact:py-1 hidden max-w-48 truncate px-3 py-2.5 md:table-cell"
+          >
             {placeLabel(job)}
           </td>
           <td
-            class="text-ink-muted hidden px-3 py-2.5 whitespace-nowrap tabular-nums lg:table-cell"
+            class="text-ink-muted compact:py-1 hidden px-3 py-2.5 whitespace-nowrap tabular-nums lg:table-cell"
           >
             {formatSalary(job.salary)}
           </td>
-          <td class="hidden px-3 py-2.5 whitespace-nowrap lg:table-cell">
+          <td class="compact:py-1 hidden px-3 py-2.5 whitespace-nowrap lg:table-cell">
             {#if job.interviewAt}
               <span
                 class={job.interviewAt > Date.now()
                   ? 'text-status-interview font-medium'
                   : 'text-ink-muted'}
               >
-                {formatDateTime(job.interviewAt)}
+                {prefs.dateTime(job.interviewAt)}
               </span>
             {/if}
           </td>
-          <td class="text-ink-muted px-3 py-2.5 text-right whitespace-nowrap tabular-nums">
+          <td
+            class="text-ink-muted compact:py-1 px-3 py-2.5 text-right whitespace-nowrap tabular-nums"
+          >
             {formatAgo(job.updatedAt)}
           </td>
         </tr>

@@ -1,4 +1,4 @@
-import { type Salary, daysSince } from '@pocket-career/core';
+import { type DateFormat, type Salary, daysSince } from '@pocket-career/core';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -29,9 +29,24 @@ const dateTimeFormat = new Intl.DateTimeFormat(undefined, {
   dateStyle: 'medium',
   timeStyle: 'short',
 });
+const timeFormat = new Intl.DateTimeFormat(undefined, { timeStyle: 'short' });
 
-export const formatDate = (ms: number) => dateFormat.format(ms);
-export const formatDateTime = (ms: number) => dateTimeFormat.format(ms);
+/** A date in the user's chosen format; 'system' follows the browser's locale. */
+export function formatDate(ms: number, format: DateFormat = 'system'): string {
+  if (format === 'system') return dateFormat.format(ms);
+  const d = new Date(ms);
+  const [y, m, day] = [d.getFullYear(), pad(d.getMonth() + 1), pad(d.getDate())];
+  return format === 'ymd'
+    ? `${y}-${m}-${day}`
+    : format === 'dmy'
+      ? `${day}/${m}/${y}`
+      : `${m}/${day}/${y}`;
+}
+
+export function formatDateTime(ms: number, format: DateFormat = 'system'): string {
+  if (format === 'system') return dateTimeFormat.format(ms);
+  return `${formatDate(ms, format)} ${timeFormat.format(ms)}`;
+}
 
 /** "today", "yesterday", "5d ago". */
 export function formatAgo(ms: number, now: number = Date.now()): string {
