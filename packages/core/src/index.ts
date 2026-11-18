@@ -1,4 +1,5 @@
 export * from './types';
+export * from './history';
 export * from './merge';
 export * from './storage';
 export * from './url';
