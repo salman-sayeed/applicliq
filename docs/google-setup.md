@@ -5,12 +5,17 @@ of the user's own Google Drive. It asks for one scope,
 `https://www.googleapis.com/auth/drive.appdata`, which can only see files the app itself
 created there. It can't see anything else in the user's Drive.
 
-To build with sync you need a Google Cloud project with two OAuth client IDs:
+To build with sync you need a Google Cloud project with a **Web application** OAuth client. It
+serves every browser (`identity.launchWebAuthFlow`) and the web dashboard.
 
-| Client type          | Used by                                                  | Sign-in API                        |
-| -------------------- | -------------------------------------------------------- | ---------------------------------- |
-| **Chrome extension** | the extension in Chrome                                  | `chrome.identity.getAuthToken`     |
-| **Web application**  | the extension in Firefox and Edge, and the web dashboard | `identity.launchWebAuthFlow` / web |
+| Client type          | Used by                                                      | Sign-in API                    |
+| -------------------- | ------------------------------------------------------------ | ------------------------------ |
+| **Web application**  | the extension in Chrome, Firefox and Edge; the web dashboard | `identity.launchWebAuthFlow`   |
+| **Chrome extension** | optional: Chrome only, and only when no Web client is set    | `chrome.identity.getAuthToken` |
+
+New Chrome extension clients often fail with `Error 400: invalid_request` "Custom URI scheme is not
+supported on Chrome apps" (Google no longer offers the setting that fixes it). When
+`WXT_GOOGLE_CLIENT_ID_WEB` is set, Chrome uses the Web client instead, so you can skip section 3.
 
 Neither flow uses a client secret. Client IDs are not secret (they ship inside the extension),
 but never create or commit a client secret for these clients.
@@ -36,9 +41,10 @@ In **Google Auth Platform** (formerly _APIs & Services → OAuth consent screen_
 4. Before release, move the app from Testing to **In production**. The console shows whether
    Google needs to verify the app for the scopes you added.
 
-## 3. Chrome extension client
+## 3. Pin the extension ID; Chrome extension client (optional)
 
-The client is tied to the extension's **ID**, so first make that ID stable.
+The Chrome redirect URI (section 4) and the Chrome extension client both depend on the
+extension's **ID**, so first make that ID stable.
 
 ### Pin the extension ID in development (recommended)
 
@@ -76,7 +82,7 @@ extension client with that ID for release builds, or upload the store's public k
 
 ## 4. Web application client
 
-This one client serves Firefox, Edge and the web dashboard.
+This one client serves Chrome, Firefox, Edge and the web dashboard.
 
 1. **Create credentials → OAuth client ID**, application type **Web application**.
 2. **Authorized JavaScript origins** (for the web dashboard):
@@ -86,10 +92,12 @@ This one client serves Firefox, Edge and the web dashboard.
    derives one from the extension ID:
    - **Firefox**: `https://<hash>.extensions.allizom.org/`. The add-on ID is fixed to
      `pocket-career@pocket-career` in `wxt.config.ts`, so this URL is stable.
+   - **Chrome**: `https://<extension-id>.chromiumapp.org/`, with the pinned ID from section 3.
    - **Edge**: `https://<edge-extension-id>.chromiumapp.org/`.
 
    To get the exact value, open the extension's background console (Firefox:
-   `about:debugging` → This Firefox → Inspect; Edge: `edge://extensions` → service worker)
+   `about:debugging` → This Firefox → Inspect; Chrome or Edge: the extensions page → service
+   worker)
    and run:
 
    ```js
@@ -131,15 +139,16 @@ instead of using a file.
   that Drive differs and uploads it again.
 - The file carries a `schemaVersion`. A file from a newer app version is never overwritten:
   sync stops with "update to keep syncing".
-- Firefox and Edge get one-hour tokens and renew them silently while you're signed in to Google
+- With the Web client, tokens last an hour and renew them silently while you're signed in to Google
   in that browser. When that fails, the menu asks you to **Sign in again**.
 
 ## Troubleshooting
 
-| Symptom                                 | Fix                                                                                                 |
-| --------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `redirect_uri_mismatch` (Firefox, Edge) | Add the exact `getRedirectURL()` value, with trailing slash, to the Web client's redirect URIs.     |
-| `bad client id` / `OAuth2 not granted`  | The Chrome client's Item ID doesn't match the extension ID. Pin it with `WXT_CHROME_EXTENSION_KEY`. |
-| `access_denied` / "app not verified"    | In Testing mode, add the account under **Test users**.                                              |
-| 403 from Drive                          | The Google Drive API isn't enabled for the project, or the `drive.appdata` scope wasn't granted.    |
-| Sync menu says "isn't set up"           | The build had no client ID for this browser: check `apps/extension/.env` and rebuild.               |
+| Symptom                                | Fix                                                                                                 |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `redirect_uri_mismatch`                | Add the exact `getRedirectURL()` value, with trailing slash, to the Web client's redirect URIs.     |
+| `bad client id` / `OAuth2 not granted` | The Chrome client's Item ID doesn't match the extension ID. Pin it with `WXT_CHROME_EXTENSION_KEY`. |
+| `access_denied` / "app not verified"   | In Testing mode, add the account under **Test users**.                                              |
+| 403 from Drive                         | The Google Drive API isn't enabled for the project, or the `drive.appdata` scope wasn't granted.    |
+| `Custom URI scheme is not supported`   | Use a Web client: set `WXT_GOOGLE_CLIENT_ID_WEB` and add the Chrome `chromiumapp.org` redirect URI. |
+| Sync menu says "isn't set up"          | The build had no client ID for this browser: check `apps/extension/.env` and rebuild.               |

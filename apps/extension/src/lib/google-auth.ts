@@ -3,11 +3,12 @@ import { DRIVE_SCOPE } from '@pocket-career/core';
 /**
  * Google sign-in for Drive sync, scope `drive.appdata` only.
  *
- * - Chrome: `identity.getAuthToken`, with the "Chrome extension" OAuth client from the
- *   manifest's `oauth2` key. Chrome caches and renews the token itself.
- * - Firefox and Edge (no `getAuthToken`): `identity.launchWebAuthFlow` with the "Web
- *   application" OAuth client (implicit flow). Tokens last an hour; renewing is tried silently
- *   (`prompt=none`), which works while the user is signed in to Google in the browser.
+ * - Web flow (Firefox, Edge, and Chrome when a Web client ID is set): `identity.launchWebAuthFlow`
+ *   with the "Web application" OAuth client (implicit flow).
+ * - Chrome with only a Chrome client: `identity.getAuthToken`, with the "Chrome extension" OAuth
+ *   client from the manifest's `oauth2` key. Chrome caches and renews the token itself.
+ * Web-flow tokens last an hour; renewing is tried silently (`prompt=none`), which works while
+ * the user is signed in to Google in the browser.
  *
  * See docs/google-setup.md for creating the client IDs.
  */
@@ -18,8 +19,13 @@ const SIGNED_IN_KEY = 'syncSignedIn';
 const TOKEN_KEY = 'syncToken';
 type CachedToken = { token: string; expiresAt: number };
 
-const useChromeIdentity = import.meta.env.BROWSER === 'chrome';
 const WEB_CLIENT_ID: string = import.meta.env.WXT_GOOGLE_CLIENT_ID_WEB ?? '';
+/**
+ * Chrome uses `getAuthToken` only when no Web client is configured: Chrome extension clients
+ * created since Google dropped custom URI schemes fail with "Custom URI scheme is not supported
+ * on Chrome apps", while `launchWebAuthFlow` works everywhere.
+ */
+const useChromeIdentity = import.meta.env.BROWSER === 'chrome' && WEB_CLIENT_ID === '';
 
 export class NotSignedInError extends Error {
   constructor(message = 'Not signed in to Google Drive.') {
