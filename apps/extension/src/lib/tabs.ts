@@ -39,19 +39,6 @@ export async function openPopup(): Promise<boolean> {
   }
 }
 
-/** Shows a short badge on the toolbar icon, cleared after `ms` (or kept when `ms` is 0). */
-export async function flashBadge(text: string, color: string, title?: string, ms = 2500) {
-  await actionApi.setBadgeBackgroundColor({ color });
-  await actionApi.setBadgeText({ text });
-  if (title) await actionApi.setTitle({ title });
-  if (ms) setTimeout(() => void clearBadge(), ms);
-}
-
-export async function clearBadge() {
-  await actionApi.setBadgeText({ text: '' });
-  await actionApi.setTitle({ title: 'Pocket Career' });
-}
-
 /** Text of the link with this href in the tab (Chrome's context menu doesn't provide it). */
 export async function readLinkText(tabId: number, href: string): Promise<string> {
   try {

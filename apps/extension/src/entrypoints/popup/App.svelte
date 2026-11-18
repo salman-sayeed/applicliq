@@ -6,7 +6,9 @@
   import { repo } from '@/lib/db';
   import { type Draft, draftFrom, isDraftValid, toNewJob } from '@/lib/draft';
   import { takePendingLink } from '@/lib/pending-link';
-  import { clearBadge, extractFromTab, getActiveTab, isSavableUrl } from '@/lib/tabs';
+  import { showGoalBadge } from '@/lib/badge';
+  import { notifyJobsChanged } from '@/lib/messages';
+  import { extractFromTab, getActiveTab, isSavableUrl } from '@/lib/tabs';
   import JobForm from './JobForm.svelte';
   import RecentJobs from './RecentJobs.svelte';
   import SavedJob from './SavedJob.svelte';
@@ -34,7 +36,7 @@
   }
 
   async function load() {
-    void clearBadge();
+    void showGoalBadge();
     const link = await takePendingLink();
     let url: string;
     let fallbackTitle: string;
@@ -79,6 +81,7 @@
     error = undefined;
     try {
       const job = await repo.addJob({ ...toNewJob(draft), status });
+      notifyJobsChanged();
       view = { kind: 'saved', job, justSaved: true };
       await loadRecent();
     } catch (e) {
@@ -91,6 +94,7 @@
   async function setStatus(status: JobStatus) {
     if (view.kind !== 'saved') return;
     const job = await repo.updateJob(view.job.id, { status });
+    notifyJobsChanged();
     view = { ...view, job };
     await loadRecent();
   }

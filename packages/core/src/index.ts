@@ -3,6 +3,7 @@ export * from './history';
 export * from './ics';
 export * from './merge';
 export * from './query';
+export * from './reminders';
 export * from './stats';
 export * from './storage';
 export * from './url';
