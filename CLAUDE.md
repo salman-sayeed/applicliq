@@ -30,10 +30,14 @@ apps/
     src/lib/background.ts  auto-ghosting, reminder notifications, goal badge, page badge
     src/lib/google-auth.ts launchWebAuthFlow (Web client); getAuthToken on Chrome if only a Chrome client
     src/lib/sync.ts     background sync runner + status in extension storage
-docs/google-setup.md    creating the OAuth client IDs (env vars in apps/extension/.env)
+docs/google-setup.md    creating the OAuth client IDs (env vars in apps/extension/.env, apps/web/.env)
     wxt.config.ts       manifest + Vite plugins (Tailwind)
-  web/                  SvelteKit static dashboard
-    src/routes/         pages; +layout.ts sets `prerender = true`
+  web/                  SvelteKit static site (Cloudflare Pages: docs/deploy-web.md)
+    src/routes/         +layout.ts sets `prerender = true`; (site)/ landing + privacy (site.css),
+                        app/ the dashboard (client-only, app.css with the dashboard @source)
+    src/lib/google-auth.ts  Google Identity Services token client (loaded only on /app)
+    src/lib/sync.svelte.ts  IndexedDB repo, dashboard adapter, sync runner + triggers
+    static/_headers     Cloudflare headers; the CSP is a meta tag from vite.config.ts
 packages/
   core/                 domain logic, NO UI code
     src/types.ts        Job model, statuses, tombstones
@@ -48,7 +52,7 @@ packages/
   ui/                   shared Svelte components + Tailwind theme
     src/theme.css       @theme tokens; import after `tailwindcss` in each app
     src/components/     Button, StatusBadge, ...
-    src/dashboard/      shared Dashboard (list, kanban, detail panel). Talks to storage only
+    src/dashboard/      shared Dashboard (list, kanban, detail panel) and SyncMenu. Talks to storage only
                         through a DashboardAdapter prop, never extension/platform APIs, so the
                         extension page and the web app can both mount it. Pages that render it
                         add `@source` for this folder in their CSS.
@@ -66,6 +70,7 @@ pnpm dev:ext        # extension dev mode (opens a browser with it loaded, HMR)
 pnpm dev:web        # web dashboard on http://localhost:5173
 pnpm build          # build both apps (extension: Chrome; web: apps/web/build)
 pnpm build:ext      # extension for Chrome, Edge and Firefox (.output/*)
+pnpm deploy:web     # build the web app and upload it to Cloudflare Pages (Wrangler)
 pnpm test           # Vitest (packages/core)
 pnpm typecheck      # tsc -b (core) + svelte-check (ui, extension, web)
 pnpm lint           # ESLint
@@ -85,7 +90,8 @@ pnpm format         # Prettier
    network; sync is a background reconciliation that may fail without losing data.
 5. **Privacy: never send user data anywhere except the user's own Google Drive.** No telemetry, no
    analytics, no third-party APIs, no remote logging, no remote fonts/scripts. Scrapers read the
-   current page only and never make network requests.
+   current page only and never make network requests. The one remote script is Google Identity
+   Services, loaded on the web app's /app page only, for sign-in.
 6. `packages/core` contains no UI code and no framework imports (no Svelte, no DOM rendering).
    Platform-specific bits (e.g. getting an OAuth token) are injected by the apps.
 7. Request the minimum extension permissions; add one only when a feature needs it.
@@ -145,7 +151,10 @@ wins a tie; equal-timestamp live versions are ordered by content so every device
 write locally in one transaction (`mergeIntoLocal`), upload only if the merged set differs from
 Drive, conditional on the downloaded ETag (`If-Match`; a 412 restarts the round). A file with a
 newer `schemaVersion` is never overwritten. In the extension only the background syncs: on popup
-open, 3 s after a change (`jobs-changed` message), every 15 min and on start-up.
+open, 3 s after a change (`jobs-changed` message), every 15 min and on start-up. The web app syncs
+on load, 3 s after a change, every 15 min, on `online` and when a tab returns to the foreground,
+under a Web Lock so tabs don't race; its token (GIS, 1 h) needs a click to renew, and sign-out
+clears the browser's local copy.
 `exportJSON()` writes the same format; `importJSON()` merges it the same way.
 
 Job URLs are stored normalized (`normalizeUrl`), so `getJobByUrl` is an indexed lookup.

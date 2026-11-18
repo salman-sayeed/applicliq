@@ -11,6 +11,11 @@ A free, open-source, lightweight job application tracker.
 
 > Status: early development. The extension popup and dashboard are placeholders.
 
+## Install
+
+The extension isn't in the browser stores yet. Until it is, build it from source (see
+[Getting started](#getting-started)) and load it unpacked. The web dashboard needs no install.
+
 ## How it fits together
 
 One codebase, two things you ship:
@@ -74,10 +79,10 @@ Other browsers: `pnpm build:ext` builds Chrome, Edge (`.output/edge-mv3`) and Fi
 pnpm dev:web
 ```
 
-Open http://localhost:5173. `pnpm build` writes the static site to `apps/web/build`.
+Open http://localhost:5173. `pnpm build` writes the static site to `apps/web/build`. For Drive
+sync, put the Web OAuth client ID in `apps/web/.env` (see [docs/google-setup.md](docs/google-setup.md)).
 
-**Cloudflare Pages settings:** build command `pnpm install && pnpm --filter @pocket-career/web build`,
-output directory `apps/web/build`.
+Deploying to Cloudflare Pages: see [docs/deploy-web.md](docs/deploy-web.md).
 
 ## Scripts
 
