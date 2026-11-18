@@ -26,13 +26,15 @@ export default defineContentScript({
       host = undefined;
     }
 
-    function show(jobId: string, text: string) {
+    function show(jobId: string, text: string, position: string) {
       remove();
       if (dismissed.has(jobId)) return;
 
+      // e.g. 'bottom-right' → bottom:16px;right:16px (the setting is validated by the sender).
+      const [vertical, horizontal] = position.split('-');
+      const place = `${vertical === 'top' ? 'top' : 'bottom'}:16px;${horizontal === 'left' ? 'left' : 'right'}:16px`;
       host = document.createElement('pocket-career-badge');
-      host.style.cssText =
-        'all:initial;position:fixed;right:16px;bottom:16px;z-index:2147483647;display:block';
+      host.style.cssText = `all:initial;position:fixed;${place};z-index:2147483647;display:block`;
       const root = host.attachShadow({ mode: 'closed' });
 
       const style = document.createElement('style');
@@ -72,7 +74,7 @@ export default defineContentScript({
     browser.runtime.onMessage.addListener((message: unknown) => {
       const m = message as PageBadgeMessage | undefined;
       if (m?.type !== 'pocket-career:page-badge') return;
-      if (m.badge) show(m.badge.jobId, m.badge.text);
+      if (m.badge) show(m.badge.jobId, m.badge.text, m.badge.position);
       else remove();
     });
   },

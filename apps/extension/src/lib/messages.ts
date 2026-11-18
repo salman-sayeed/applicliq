@@ -12,7 +12,11 @@ export type OpenJobMessage = { type: 'pocket-career:open-job'; jobId: string };
 /** Background → page badge: show this job's summary, or remove the badge (`badge: null`). */
 export type PageBadgeMessage = {
   type: 'pocket-career:page-badge';
-  badge: { jobId: string; text: string } | null;
+  badge: {
+    jobId: string;
+    text: string;
+    position: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+  } | null;
 };
 
 /** Sync with Drive now (popup opened, "Sync now", just signed in). */

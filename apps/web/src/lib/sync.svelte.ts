@@ -1,8 +1,10 @@
 import {
+  DEFAULT_SETTINGS,
   PocketCareerDB,
   type SyncErrorKind,
   createDriveClient,
   createJobRepository,
+  deleteDriveData,
   syncWithDrive,
   toSyncError,
 } from '@pocket-career/core';
@@ -11,32 +13,42 @@ import { NotSignedInError, dropToken, getToken, isSignedIn } from './google-auth
 
 /**
  * The web dashboard's data: IndexedDB is the source of truth for the UI (works offline), and
- * Drive sync reconciles it in the background: on load, 3 s after a change, every 15 minutes, when
- * the tab comes back to the foreground and when the connection returns. A Web Lock keeps two tabs
- * from syncing at once.
+ * Drive sync reconciles it in the background: on load, 3 s after a change, every
+ * `syncIntervalMinutes` (settings), when the tab comes back to the foreground and when the
+ * connection returns. A Web Lock keeps two tabs from syncing at once.
  */
 
 export const db = new PocketCareerDB();
 export const repo = createJobRepository(db);
 
 const LAST_SYNCED_KEY = 'pocket-career:last-synced';
+const ACCOUNT_KEY = 'pocket-career:account';
 const DEBOUNCE_MS = 3000;
-const PERIOD_MS = 15 * 60_000;
 /** A tab coming back to the foreground syncs if the last sync is older than this. */
 const STALE_MS = 60_000;
 
-function readLastSynced(): number | undefined {
+function readStored(key: string): string | undefined {
   try {
-    return Number(localStorage.getItem(LAST_SYNCED_KEY)) || undefined;
+    return localStorage.getItem(key) ?? undefined;
   } catch {
     return undefined;
   }
 }
 
-export const sync = $state<SyncMenuStatus & { signedIn: boolean }>({
+function writeStored(key: string, value: string | undefined): void {
+  try {
+    if (value === undefined) localStorage.removeItem(key);
+    else localStorage.setItem(key, value);
+  } catch {
+    // Not remembered across reloads; harmless.
+  }
+}
+
+export const sync = $state<SyncMenuStatus & { signedIn: boolean; account?: string }>({
   syncing: false,
   signedIn: isSignedIn(),
-  lastSyncedAt: readLastSynced(),
+  lastSyncedAt: Number(readStored(LAST_SYNCED_KEY)) || undefined,
+  account: readStored(ACCOUNT_KEY),
 });
 
 function setError(kind: SyncErrorKind, message: string) {
@@ -84,10 +96,10 @@ async function syncOnce(): Promise<void> {
     await withSyncLock(() => syncWithDrive(repo, drive).then(() => {}));
     sync.lastSyncedAt = Date.now();
     sync.error = undefined;
-    try {
-      localStorage.setItem(LAST_SYNCED_KEY, String(sync.lastSyncedAt));
-    } catch {
-      // Not remembered across reloads; harmless.
+    writeStored(LAST_SYNCED_KEY, String(sync.lastSyncedAt));
+    if (!sync.account) {
+      sync.account = await drive.accountEmail().catch(() => undefined);
+      writeStored(ACCOUNT_KEY, sync.account);
     }
   } catch (cause) {
     const error =
@@ -111,7 +123,15 @@ export function scheduleSync(): void {
 /** Starts the background triggers; returns a stop function. Call once the dashboard shows. */
 export function startAutoSync(): () => void {
   void runSync();
-  const timer = setInterval(() => void runSync(), PERIOD_MS);
+  // The period follows the sync interval setting, which may change on another device.
+  let minutes = DEFAULT_SETTINGS.sync.syncIntervalMinutes;
+  let timer = setInterval(() => void runSync(), minutes * 60_000);
+  const stopWatching = repo.watchSettings((settings) => {
+    if (settings.sync.syncIntervalMinutes === minutes) return;
+    minutes = settings.sync.syncIntervalMinutes;
+    clearInterval(timer);
+    timer = setInterval(() => void runSync(), minutes * 60_000);
+  });
   const onOnline = () => void runSync();
   const onVisible = () => {
     if (document.visibilityState !== 'visible') return;
@@ -120,6 +140,7 @@ export function startAutoSync(): () => void {
   window.addEventListener('online', onOnline);
   document.addEventListener('visibilitychange', onVisible);
   return () => {
+    stopWatching();
     clearInterval(timer);
     clearTimeout(debounce);
     window.removeEventListener('online', onOnline);
@@ -129,17 +150,17 @@ export function startAutoSync(): () => void {
 
 /** Clears this browser's copy (on sign-out): the site may be on a shared computer. */
 export async function clearLocalData(): Promise<void> {
-  await db.transaction('rw', db.jobs, db.settings, async () => {
-    await db.jobs.clear();
-    await db.settings.clear();
-  });
+  await repo.clearLocalData();
   sync.lastSyncedAt = undefined;
   sync.error = undefined;
-  try {
-    localStorage.removeItem(LAST_SYNCED_KEY);
-  } catch {
-    // Nothing to clear.
-  }
+  sync.account = undefined;
+  writeStored(LAST_SYNCED_KEY, undefined);
+  writeStored(ACCOUNT_KEY, undefined);
+}
+
+/** Deletes the Pocket Career file from Drive (settings page). The caller then signs out. */
+export async function deleteRemoteData(): Promise<void> {
+  await deleteDriveData(drive);
 }
 
 /** Runs a write, then schedules a sync. */
@@ -151,12 +172,16 @@ function syncing<A extends unknown[], R>(write: (...args: A) => Promise<R>) {
   };
 }
 
-/** The shared dashboard reads and writes IndexedDB through the repository. */
+/** The shared dashboard and settings page read and write IndexedDB through the repository. */
 export const dashboardAdapter: DashboardAdapter = {
   watchJobs: repo.watchJobs,
   updateJob: syncing(repo.updateJob),
   deleteJob: syncing(repo.deleteJob),
   restoreJob: syncing(repo.restoreJob),
-  getSettings: repo.getSettings,
-  updateSettings: repo.updateSettings,
+  watchSettings: repo.watchSettings,
+  updateSettings: syncing(repo.updateSettings),
+  resetSettingsSection: syncing(repo.resetSettingsSection),
+  renameTag: syncing(repo.renameTag),
+  getLocalState: repo.getLocalState,
+  setLocalState: repo.setLocalState,
 };

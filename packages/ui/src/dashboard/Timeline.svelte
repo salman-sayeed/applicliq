@@ -1,9 +1,12 @@
 <script lang="ts">
   import type { StatusChange } from '@pocket-career/core';
-  import { STATUS_DOT, STATUS_LABELS } from '../status';
-  import { formatAgo, formatDateTime } from './format';
+  import { getPrefs } from '../prefs.svelte';
+  import { STATUS_DOT } from '../status';
+  import { formatAgo } from './format';
 
   let { history }: { history: StatusChange[] } = $props();
+
+  const prefs = getPrefs();
 </script>
 
 {#if history.length}
@@ -20,9 +23,9 @@
           aria-hidden="true"
         ></span>
         <div class="min-w-0 text-sm">
-          <span class="font-medium">{STATUS_LABELS[entry.status]}</span>
+          <span class="font-medium">{prefs.status(entry.status)}</span>
           <span class="text-ink-muted block text-xs">
-            <time datetime={new Date(entry.at).toISOString()}>{formatDateTime(entry.at)}</time>
+            <time datetime={new Date(entry.at).toISOString()}>{prefs.dateTime(entry.at)}</time>
             · {formatAgo(entry.at)}
           </span>
         </div>

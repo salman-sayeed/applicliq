@@ -1,11 +1,13 @@
 <script lang="ts">
-  import { JOB_STATUSES, type JobFilter } from '@pocket-career/core';
-  import { STATUS_LABELS, WORK_TYPE_LABELS } from '../status';
+  import type { JobFilter } from '@pocket-career/core';
+  import { getPrefs } from '../prefs.svelte';
+  import { WORK_TYPE_LABELS } from '../status';
   import type { DashboardView } from './types';
 
   let {
     filter = $bindable(),
-    view = $bindable(),
+    view,
+    onview,
     facets,
     shown,
     total,
@@ -13,11 +15,14 @@
   }: {
     filter: JobFilter;
     view: DashboardView;
+    onview: (view: DashboardView) => void;
     facets: { tags: string[]; sources: string[] };
     shown: number;
     total: number;
     searchInput?: HTMLInputElement;
   } = $props();
+
+  const prefs = getPrefs();
 
   const active = $derived(
     !!(filter.query?.trim() || filter.status || filter.tag || filter.source || filter.workType),
@@ -59,8 +64,8 @@
 
     <select bind:value={filter.status} class={selectClass} aria-label="Filter by status">
       <option value={undefined}>All statuses</option>
-      {#each JOB_STATUSES as status (status)}
-        <option value={status}>{STATUS_LABELS[status]}</option>
+      {#each prefs.statuses(filter.status) as status (status)}
+        <option value={status}>{prefs.status(status)}</option>
       {/each}
     </select>
 
@@ -113,7 +118,7 @@
       <button
         type="button"
         aria-pressed={view === value}
-        onclick={() => (view = value)}
+        onclick={() => onview(value)}
         class="focus-visible:ring-accent rounded px-2.5 py-1 text-sm font-medium transition focus-visible:ring-2 focus-visible:outline-none {view ===
         value
           ? 'bg-surface-muted text-ink'

@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @import '@pocket-career/ui/theme.css';
 
-/* The shared dashboard's classes; only /app renders it. */
+/* The shared dashboard's and settings page's classes; only /app renders them. */
 @source '../../../../../packages/ui/src/dashboard';
+@source '../../../../../packages/ui/src/settings';

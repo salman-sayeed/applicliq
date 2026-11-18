@@ -7,8 +7,13 @@
     oncancel,
   }: { goals: Goals; onsave: (goals: Goals) => void; oncancel: () => void } = $props();
 
+  /** Inputs as text: empty means the goal is off. */
   // svelte-ignore state_referenced_locally
-  let draft = $state({ ...goals });
+  let draft = $state({
+    daily: goals.daily?.toString() ?? '',
+    weekly: goals.weekly?.toString() ?? '',
+    monthly: goals.monthly?.toString() ?? '',
+  });
 
   const fields: { key: keyof Goals; label: string }[] = [
     { key: 'daily', label: 'Per day' },
@@ -16,7 +21,10 @@
     { key: 'monthly', label: 'Per month' },
   ];
 
-  const clean = (n: number) => (Number.isFinite(n) && n > 0 ? Math.floor(n) : 0);
+  const clean = (value: string | number | null) => {
+    const n = Math.floor(Number(value));
+    return value !== '' && value !== null && Number.isFinite(n) && n > 0 ? n : null;
+  };
 
   function submit(event: SubmitEvent) {
     event.preventDefault();
@@ -34,8 +42,9 @@
       {field.label}
       <input
         type="number"
-        min="0"
+        min="1"
         step="1"
+        placeholder="Off"
         inputmode="numeric"
         bind:value={draft[field.key]}
         class="border-line bg-surface text-ink focus:border-accent focus:ring-accent/25 w-24 rounded-md border px-2.5 py-1.5 text-sm tabular-nums transition focus:ring-2 focus:outline-none"
@@ -57,5 +66,5 @@
       Cancel
     </button>
   </div>
-  <p class="text-ink-muted w-full text-xs">Use 0 to turn a goal off.</p>
+  <p class="text-ink-muted w-full text-xs">Leave a goal empty to turn it off.</p>
 </form>

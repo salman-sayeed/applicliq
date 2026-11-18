@@ -327,3 +327,26 @@ describe('breakdownBy', () => {
     ]);
   });
 });
+
+describe('goal settings', () => {
+  it('treats null goals as off and counts only the chosen statuses', () => {
+    const now = new Date(2026, 10, 18, 12).getTime();
+    const interviewed = {
+      ...applied(now - 1000),
+      history: [
+        { status: 'saved' as const, at: now - 5000 },
+        { status: 'interview' as const, at: now - 1000 },
+      ],
+    };
+    const p = goalProgress(
+      [applied(now - 2000), interviewed],
+      { daily: null, weekly: 1, monthly: 1 },
+      now,
+      1,
+      ['interview'],
+    );
+    expect(p.daily).toMatchObject({ goal: 0, count: 1, met: false });
+    expect(p.weekly).toMatchObject({ count: 1, met: true });
+    expect(applicationStreak([], null, now)).toEqual({ current: 0, best: 0, todayMet: false });
+  });
+});

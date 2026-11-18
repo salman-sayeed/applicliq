@@ -1,3 +1,4 @@
+import type { SyncedSettings } from '../settings';
 import type { JobRecord } from '../types';
 
 /**
@@ -21,6 +22,11 @@ export type SyncSnapshot = {
   schemaVersion: typeof SCHEMA_VERSION;
   updatedAt: number;
   records: JobRecord[];
+  /**
+   * Synced settings (device-only keys left out). Optional: files from older versions have none,
+   * and older versions drop it when they upload; the next sync from a newer device adds it back.
+   */
+  settings?: SyncedSettings;
 };
 
 export type DriveClientOptions = {
@@ -123,6 +129,13 @@ export function createDriveClient({
         body: form,
       });
       return ((await res.json()) as { id: string }).id;
+    },
+
+    /** The signed-in account's email address, shown in settings. */
+    async accountEmail(): Promise<string | undefined> {
+      const res = await request(`${API}/about?fields=user(emailAddress)`);
+      const body = (await res.json()) as { user?: { emailAddress?: string } };
+      return body.user?.emailAddress;
     },
 
     async remove(id: string): Promise<void> {

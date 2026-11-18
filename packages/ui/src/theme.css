@@ -9,6 +9,22 @@
 @source './components';
 @source './status.ts';
 
+/*
+ * Theme, accent and motion follow attributes on <html> set from the settings
+ * (`applyAppearance`): data-theme="light|dark" overrides the system, data-accent picks a preset,
+ * data-reduce-motion turns animations off even when the system doesn't ask for it.
+ */
+@custom-variant dark {
+  &:where([data-theme='dark'], [data-theme='dark'] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:not([data-theme='light'], [data-theme='light'] *)) {
+      @slot;
+    }
+  }
+}
+
 @theme {
   --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 
@@ -18,8 +34,8 @@
   --color-ink: #18181b;
   --color-ink-muted: #71717a;
   --color-line: #e4e4e7;
-  --color-accent: #4f46e5;
-  --color-accent-ink: #ffffff;
+  --color-accent: var(--pc-accent);
+  --color-accent-ink: var(--pc-accent-ink);
 
   /* Job status colours */
   --color-status-saved: #64748b;
@@ -36,16 +52,58 @@
   --default-transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
 }
 
+/* Accent presets: a shade for light mode (white text on it) and one for dark (dark text). */
+:root,
+:root[data-accent='indigo'] {
+  --pc-accent-light: #4f46e5;
+  --pc-accent-dark: #818cf8;
+}
+:root[data-accent='blue'] {
+  --pc-accent-light: #2563eb;
+  --pc-accent-dark: #60a5fa;
+}
+:root[data-accent='teal'] {
+  --pc-accent-light: #0f766e;
+  --pc-accent-dark: #2dd4bf;
+}
+:root[data-accent='green'] {
+  --pc-accent-light: #15803d;
+  --pc-accent-dark: #4ade80;
+}
+:root[data-accent='amber'] {
+  --pc-accent-light: #b45309;
+  --pc-accent-dark: #fbbf24;
+}
+:root[data-accent='rose'] {
+  --pc-accent-light: #e11d48;
+  --pc-accent-dark: #fb7185;
+}
+
+:root {
+  --pc-accent: var(--pc-accent-light);
+  --pc-accent-ink: #ffffff;
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     --color-surface: #18181b;
     --color-surface-muted: #27272a;
     --color-ink: #f4f4f5;
     --color-ink-muted: #a1a1aa;
     --color-line: #3f3f46;
-    --color-accent: #818cf8;
-    --color-accent-ink: #18181b;
+    --pc-accent: var(--pc-accent-dark);
+    --pc-accent-ink: #18181b;
   }
+}
+
+:root[data-theme='dark'] {
+  --color-surface: #18181b;
+  --color-surface-muted: #27272a;
+  --color-ink: #f4f4f5;
+  --color-ink-muted: #a1a1aa;
+  --color-line: #3f3f46;
+  --pc-accent: var(--pc-accent-dark);
+  --pc-accent-ink: #18181b;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -57,9 +115,25 @@
   }
 }
 
+:root[data-reduce-motion] *,
+:root[data-reduce-motion] *::before,
+:root[data-reduce-motion] *::after {
+  transition-duration: 0ms !important;
+  animation-duration: 0ms !important;
+}
+
+/* `compact:` styles apply with the compact density setting. */
+@custom-variant compact (&:where([data-density='compact'], [data-density='compact'] *));
+
 @layer base {
   :root {
     color-scheme: light dark;
+  }
+  :root[data-theme='light'] {
+    color-scheme: light;
+  }
+  :root[data-theme='dark'] {
+    color-scheme: dark;
   }
   body {
     @apply bg-surface text-ink font-sans antialiased;

@@ -1,6 +1,5 @@
 <script lang="ts">
   import {
-    JOB_STATUSES,
     type Job,
     type JobPatch,
     type JobStatus,
@@ -12,10 +11,10 @@
   } from '@pocket-career/core';
   import { onMount, untrack } from 'svelte';
   import { fade, fly } from 'svelte/transition';
-  import { PERIOD_LABELS, STATUS_LABELS, WORK_TYPE_LABELS } from '../status';
+  import { getPrefs } from '../prefs.svelte';
+  import { PERIOD_LABELS, WORK_TYPE_LABELS } from '../status';
   import {
     downloadFile,
-    formatDateTime,
     fromDateInput,
     fromDateTimeInput,
     toDateInput,
@@ -84,6 +83,17 @@
 
   const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
+  const prefs = getPrefs();
+  const regional = $derived(prefs.settings.regional);
+  /** Saved resume versions first, then any others used on jobs. */
+  const resumeVersions = $derived([
+    ...new Set([...prefs.settings.labels.resumeVersions, ...facets.resumeVersions]),
+  ]);
+  /** Tags from settings (they have colours) and from jobs. */
+  const tagSuggestions = $derived([
+    ...new Set([...prefs.settings.labels.tags.map((t) => t.name), ...facets.tags]),
+  ]);
+
   // svelte-ignore state_referenced_locally
   let draft = $state(toDraft(job));
   // svelte-ignore state_referenced_locally
@@ -144,9 +154,12 @@
     let salary: Salary | undefined;
     if (min !== undefined || max !== undefined) {
       salary = { min: min ?? max, max: max ?? min };
-      const currency = draft.currency.trim().toUpperCase();
-      if (currency) salary.currency = currency;
-      if (draft.period) salary.period = draft.period;
+      // New salaries take the default currency and period from the regional settings.
+      const isNew = job.salary === undefined;
+      const currency = draft.currency.trim().toUpperCase() || (isNew ? regional.currency : '');
+      const period = draft.period || (isNew ? regional.salaryPeriod : '');
+      if (currency) salary.currency = draft.currency = currency;
+      if (period) salary.period = draft.period = period;
     }
     if (!same(salary, job.salary)) void commit({ salary });
   }
@@ -233,8 +246,8 @@
         bind:value={draft.status}
         onchange={() => commit({ status: draft.status })}
       >
-        {#each JOB_STATUSES as status (status)}
-          <option value={status}>{STATUS_LABELS[status]}</option>
+        {#each prefs.statuses(job.status) as status (status)}
+          <option value={status}>{prefs.status(status)}</option>
         {/each}
       </select>
     </section>
@@ -330,7 +343,7 @@
           bind:value={draft.currency}
           onchange={commitSalary}
           maxlength="3"
-          placeholder="USD"
+          placeholder={regional.currency || 'USD'}
           aria-label="Currency"
         />
       </div>
@@ -354,7 +367,7 @@
         <TagInput
           id="d-tags"
           tags={draft.tags}
-          suggestions={facets.tags}
+          suggestions={tagSuggestions}
           onchange={(tags) => {
             draft.tags = tags;
             void commit({ tags: tags.length ? tags : undefined });
@@ -372,7 +385,7 @@
           placeholder="e.g. frontend-v3"
         />
         <datalist id="d-resume-versions">
-          {#each facets.resumeVersions as version (version)}
+          {#each resumeVersions as version (version)}
             <option value={version}></option>
           {/each}
         </datalist>
@@ -473,7 +486,7 @@
 
   <footer class="border-line flex items-center justify-between gap-3 border-t px-5 py-3">
     <p class="text-ink-muted text-xs">
-      Added {formatDateTime(job.createdAt)}<br />Updated {formatDateTime(job.updatedAt)}
+      Added {prefs.dateTime(job.createdAt)}<br />Updated {prefs.dateTime(job.updatedAt)}
     </p>
     <button
       type="button"

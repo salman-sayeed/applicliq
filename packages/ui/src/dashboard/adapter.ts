@@ -1,9 +1,16 @@
-import type { Job, JobPatch, Settings, SettingsPatch } from '@pocket-career/core';
+import type {
+  Job,
+  JobPatch,
+  LocalState,
+  Settings,
+  SettingsPatch,
+  SettingsSection,
+} from '@pocket-career/core';
 
 /**
- * Everything the dashboard needs from storage. The dashboard never touches extension or
- * platform APIs: the extension page and the web app each pass their own implementation
- * (both can simply wrap `createJobRepository` from `@pocket-career/core`).
+ * Everything the dashboard and the settings page need from storage. They never touch extension
+ * or platform APIs: the extension page and the web app each pass their own implementation (both
+ * wrap `createJobRepository` from `@pocket-career/core`).
  */
 export type DashboardAdapter = {
   /** Calls `listener` with all live jobs now and after every change; returns an unsubscribe. */
@@ -12,7 +19,12 @@ export type DashboardAdapter = {
   deleteJob(id: string): Promise<boolean>;
   /** Undo for `deleteJob`. */
   restoreJob(job: Job): Promise<Job>;
-  /** Preferences, including the application goals shown in the Stats view. */
-  getSettings(): Promise<Settings>;
+  /** Calls `listener` with the settings now and after every change; returns an unsubscribe. */
+  watchSettings(listener: (settings: Settings) => void, onError?: (e: unknown) => void): () => void;
   updateSettings(patch: SettingsPatch): Promise<Settings>;
+  resetSettingsSection(section: SettingsSection): Promise<Settings>;
+  /** Renames a tag on every job; returns how many changed. */
+  renameTag(from: string, to: string): Promise<number>;
+  getLocalState(): Promise<LocalState>;
+  setLocalState(patch: LocalState): Promise<void>;
 };

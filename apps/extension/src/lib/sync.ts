@@ -1,11 +1,12 @@
 import {
   type SyncErrorKind,
   createDriveClient,
+  deleteDriveData,
   syncWithDrive,
   toSyncError,
 } from '@pocket-career/core';
 import { repo } from './db';
-import { NotSignedInError, dropToken, getToken, isSignedIn } from './google-auth';
+import { NotSignedInError, dropToken, getToken, isSignedIn, signOut } from './google-auth';
 
 /**
  * Drive sync as run by the background (the one place that syncs, so two pages can't race).
@@ -18,6 +19,8 @@ export const SYNC_DEBOUNCE_MS = 3000;
 export type SyncStatus = {
   syncing: boolean;
   lastSyncedAt?: number;
+  /** The Google account's email, fetched once after sign-in for the settings page. */
+  account?: string;
   error?: { kind: SyncErrorKind; message: string; at: number };
 };
 
@@ -85,7 +88,13 @@ async function syncOnce(): Promise<boolean> {
   await writeSyncStatus({ syncing: true });
   try {
     await syncWithDrive(repo, drive);
-    await writeSyncStatus({ syncing: false, lastSyncedAt: Date.now(), error: undefined });
+    const { account } = await readSyncStatus();
+    await writeSyncStatus({
+      syncing: false,
+      lastSyncedAt: Date.now(),
+      error: undefined,
+      account: account ?? (await drive.accountEmail().catch(() => undefined)),
+    });
     return true;
   } catch (cause) {
     const error =
@@ -98,6 +107,16 @@ async function syncOnce(): Promise<boolean> {
     });
     return false;
   }
+}
+
+/**
+ * Deletes the Pocket Career file from Drive, then signs this device out so the next sync
+ * doesn't upload it again. Local jobs are kept.
+ */
+export async function deleteDriveDataAndSignOut(): Promise<void> {
+  await deleteDriveData(drive);
+  await signOut();
+  await resetSyncStatus();
 }
 
 let debounce: ReturnType<typeof setTimeout> | undefined;

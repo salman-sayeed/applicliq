@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { JobStatus } from '@pocket-career/core';
-  import { Button } from '@pocket-career/ui';
+  import { Button, getPrefs } from '@pocket-career/ui';
   import { onMount } from 'svelte';
   import { type Draft, isDraftValid } from '@/lib/draft';
   import DuplicateWarning from './DuplicateWarning.svelte';
@@ -8,12 +8,20 @@
   let {
     draft = $bindable(),
     saving,
+    defaultStatus = 'saved',
+    duplicateWarning = true,
     onsave,
   }: {
     draft: Draft;
     saving: boolean;
+    /** What "Save" sets (the default status setting). */
+    defaultStatus?: JobStatus;
+    /** Mention other jobs at the same company (setting). */
+    duplicateWarning?: boolean;
     onsave: (status: JobStatus) => void;
   } = $props();
+
+  const prefs = getPrefs();
 
   const valid = $derived(isDraftValid(draft));
   const host = $derived.by(() => {
@@ -35,7 +43,7 @@
 
   function submit(event: SubmitEvent) {
     event.preventDefault();
-    if (valid && !saving) onsave('saved');
+    if (valid && !saving) onsave(defaultStatus);
   }
 </script>
 
@@ -64,7 +72,7 @@
       required
       placeholder="e.g. Acme"
     />
-    <DuplicateWarning company={draft.company} />
+    {#if duplicateWarning}<DuplicateWarning company={draft.company} />{/if}
   </div>
 
   <div class="grid grid-cols-[1fr_7.5rem] gap-2">
@@ -121,10 +129,18 @@
     <textarea id="notes" class="field resize-none" rows="2" bind:value={draft.notes}></textarea>
   </div>
 
-  <div class="grid grid-cols-2 gap-2 pt-1">
-    <Button type="submit" variant="secondary" disabled={!valid || saving}>Save</Button>
-    <Button variant="primary" disabled={!valid || saving} onclick={() => onsave('applied')}>
-      Mark applied
+  <div class="grid grid-cols-2 gap-2 pt-1 {defaultStatus === 'applied' ? 'grid-cols-1' : ''}">
+    <Button
+      type="submit"
+      variant={defaultStatus === 'applied' ? 'primary' : 'secondary'}
+      disabled={!valid || saving}
+    >
+      {defaultStatus === 'saved' ? 'Save' : `Save as ${prefs.status(defaultStatus)}`}
     </Button>
+    {#if defaultStatus !== 'applied'}
+      <Button variant="primary" disabled={!valid || saving} onclick={() => onsave('applied')}>
+        Mark {prefs.status('applied').toLowerCase()}
+      </Button>
+    {/if}
   </div>
 </form>
