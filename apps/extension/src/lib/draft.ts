@@ -67,10 +67,3 @@ export function toNewJob(draft: Draft): NewJob {
   }
   return job;
 }
-
-/** "today", "yesterday", "3 days ago". */
-export function daysAgoLabel(days: number): string {
-  if (days <= 0) return 'today';
-  if (days === 1) return 'yesterday';
-  return `${days} days ago`;
-}

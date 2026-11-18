@@ -84,7 +84,7 @@ export type Goals = {
 /** Local-only app preferences (one row in the `settings` table). */
 export type Settings = {
   goals: Goals;
-  /** An `applied` job with no update for this many days is suggested as ghosted. */
+  /** An `applied` job still `applied` after this many days is marked ghosted; 0 turns it off. */
   ghostedAfterDays: number;
   theme: Theme;
 };
@@ -93,6 +93,6 @@ export type SettingsPatch = Partial<Omit<Settings, 'goals'>> & { goals?: Partial
 
 export const DEFAULT_SETTINGS: Settings = {
   goals: { daily: 2, weekly: 10, monthly: 40 },
-  ghostedAfterDays: 30,
+  ghostedAfterDays: 21,
   theme: 'system',
 };

@@ -25,7 +25,9 @@ nothing else in the user's Drive).
 ```
 apps/
   extension/            WXT extension
-    src/entrypoints/    popup/, dashboard/ (extension page), background.ts, extract.content.ts
+    src/entrypoints/    popup/, dashboard/ (extension page), background.ts, extract.content.ts,
+                        job-badge.content.ts (saved-job page badge, injected by background)
+    src/lib/background.ts  auto-ghosting, reminder notifications, goal badge, page badge
     wxt.config.ts       manifest + Vite plugins (Tailwind)
   web/                  SvelteKit static dashboard
     src/routes/         pages; +layout.ts sets `prerender = true`
@@ -33,6 +35,7 @@ packages/
   core/                 domain logic, NO UI code
     src/types.ts        Job model, statuses, tombstones
     src/storage.ts      Dexie DB (jobs, settings) + repository: CRUD, URL/company lookup, import/export
+    src/reminders.ts    auto-ghost selection, due reminders, job summary, goal badge text
     src/merge.ts        mergeJobs: last-write-wins merge, tombstone purge
     src/url.ts          normalizeUrl (strips hash + tracking params) for duplicate detection
     src/validate.ts     sanitizeRecord(s) for untrusted data (Drive file, imports)

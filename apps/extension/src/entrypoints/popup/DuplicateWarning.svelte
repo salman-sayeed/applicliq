@@ -1,8 +1,12 @@
 <script lang="ts">
-  import { type Job, type RecentApplication, mostRecentApplication } from '@pocket-career/core';
+  import {
+    type Job,
+    type RecentApplication,
+    daysAgoLabel,
+    mostRecentApplication,
+  } from '@pocket-career/core';
   import { slide } from 'svelte/transition';
   import { repo } from '@/lib/db';
-  import { daysAgoLabel } from '@/lib/draft';
 
   let { company }: { company: string } = $props();
 

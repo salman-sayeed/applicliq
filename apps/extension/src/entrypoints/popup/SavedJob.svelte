@@ -1,8 +1,13 @@
 <script lang="ts">
-  import { JOB_STATUSES, type Job, type JobStatus, daysSince } from '@pocket-career/core';
+  import {
+    JOB_STATUSES,
+    type Job,
+    type JobStatus,
+    daysAgoLabel,
+    daysSince,
+  } from '@pocket-career/core';
   import { Button, STATUS_LABELS, StatusBadge } from '@pocket-career/ui';
   import { fade } from 'svelte/transition';
-  import { daysAgoLabel } from '@/lib/draft';
 
   let {
     job,

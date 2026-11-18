@@ -1,14 +1,16 @@
-import { SAVE_SHORTCUT_COMMAND } from '@/lib/config';
+import { flashBadge } from '@/lib/badge';
+import { SAVE_SHORTCUT_COMMAND, openDashboard } from '@/lib/config';
 import { repo } from '@/lib/db';
+import type { BackgroundMessage } from '@/lib/messages';
 import { setPendingLink } from '@/lib/pending-link';
 import {
-  extractFromTab,
-  flashBadge,
-  getActiveTab,
-  isSavableUrl,
-  openPopup,
-  readLinkText,
-} from '@/lib/tabs';
+  ALARM_GHOST_CHECK,
+  ensureAlarms,
+  jobIdFromNotification,
+  refresh,
+  updatePageBadge,
+} from '@/lib/background';
+import { extractFromTab, getActiveTab, isSavableUrl, openPopup, readLinkText } from '@/lib/tabs';
 
 const MENU_SAVE_LINK = 'save-link';
 
@@ -43,6 +45,41 @@ export default defineBackground(() => {
   browser.commands.onCommand.addListener((command, commandTab) => {
     if (command === SAVE_SHORTCUT_COMMAND) void saveFromShortcut(commandTab?.id);
   });
+
+  // Listeners are registered synchronously on every start so events wake the background.
+  // Ghosting runs on start-up (the 6-hour alarm may have been missed while the browser was
+  // closed) and then every 6 hours; reminders and the goal badge follow every change.
+  browser.runtime.onInstalled.addListener(() => void refresh({ ghost: true }));
+  browser.runtime.onStartup.addListener(() => void refresh({ ghost: true }));
+  void ensureAlarms();
+
+  browser.alarms.onAlarm.addListener((alarm) => {
+    void refresh({ ghost: alarm.name === ALARM_GHOST_CHECK });
+  });
+
+  browser.runtime.onMessage.addListener((message: unknown, sender) => {
+    if (sender.id !== browser.runtime.id) return;
+    const m = message as BackgroundMessage;
+    if (m?.type === 'pocket-career:jobs-changed') void refresh();
+    else if (m?.type === 'pocket-career:open-job' && typeof m.jobId === 'string') {
+      void openDashboard(m.jobId);
+    }
+  });
+
+  browser.notifications.onClicked.addListener((notificationId) => {
+    const jobId = jobIdFromNotification(notificationId);
+    if (!jobId) return;
+    void openDashboard(jobId);
+    void browser.notifications.clear(notificationId);
+  });
+
+  // Tab URLs are only visible with the optional all-sites permission (the page badge setting),
+  // so without it this returns at once. SPA navigations report a new `url` without a reload.
+  browser.tabs.onUpdated.addListener((tabId, change, tab) => {
+    if (change.url !== undefined || change.status === 'complete') {
+      void updatePageBadge(tabId, tab.url);
+    }
+  });
 });
 
 /** If the popup couldn't open, a badge asks the user to click it to finish. */
@@ -64,5 +101,6 @@ async function saveFromShortcut(tabId?: number) {
     return;
   }
   await repo.addJob({ ...job, url: job.url, title: job.title, company: job.company });
+  void refresh();
   await flashBadge('✓', '#16a34a', 'Saved to Pocket Career');
 }
