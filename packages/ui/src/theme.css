@@ -1,0 +1,66 @@
+/*
+ * Pocket Career theme for Tailwind v4.
+ * Usage in an app stylesheet:
+ *   @import 'tailwindcss';
+ *   @import '@pocket-career/ui/theme.css';
+ */
+
+/* Let Tailwind see the classes used by shared components. */
+@source './components';
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* Semantic colours; values swap in dark mode below. */
+  --color-surface: #ffffff;
+  --color-surface-muted: #f4f4f5;
+  --color-ink: #18181b;
+  --color-ink-muted: #71717a;
+  --color-line: #e4e4e7;
+  --color-accent: #4f46e5;
+  --color-accent-ink: #ffffff;
+
+  /* Job status colours */
+  --color-status-saved: #64748b;
+  --color-status-applied: #2563eb;
+  --color-status-assessment: #7c3aed;
+  --color-status-interview: #d97706;
+  --color-status-offer: #16a34a;
+  --color-status-rejected: #dc2626;
+  --color-status-ghosted: #78716c;
+  --color-status-withdrawn: #a1a1aa;
+
+  /* Rule: every animation stays under 200ms. */
+  --default-transition-duration: 150ms;
+  --default-transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-surface: #18181b;
+    --color-surface-muted: #27272a;
+    --color-ink: #f4f4f5;
+    --color-ink-muted: #a1a1aa;
+    --color-line: #3f3f46;
+    --color-accent: #818cf8;
+    --color-accent-ink: #18181b;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
+}
+
+@layer base {
+  :root {
+    color-scheme: light dark;
+  }
+  body {
+    @apply bg-surface text-ink font-sans antialiased;
+  }
+}

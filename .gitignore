@@ -1,0 +1,54 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Extension (WXT)
+apps/extension/.output/
+apps/extension/.wxt/
+web-ext.config.ts
+web-ext-artifacts/
+stats.html
+stats-*.json
+*.zip
+*.crx
+*.pem
+
+# Web (SvelteKit)
+.svelte-kit/
+apps/web/build/
+.wrangler/
+.vercel/
+.netlify/
+vite.config.*.timestamp-*
+
+# Tests / coverage
+coverage/
+.vitest/
+
+# Env and secrets (OAuth client secrets, API keys)
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Claude Code local settings (launch.json is shared on purpose)
+.claude/settings.local.json
+
+# Editors
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

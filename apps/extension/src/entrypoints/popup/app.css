@@ -1,0 +1,7 @@
+@import 'tailwindcss';
+@import '@pocket-career/ui/theme.css';
+
+body {
+  width: 360px;
+  min-height: 200px;
+}

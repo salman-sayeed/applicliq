@@ -1,0 +1,26 @@
+{
+  "name": "@pocket-career/core",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Pocket Career domain logic: types, local storage, merge, Drive sync, scrapers. No UI.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "dexie": "^4.4.7"
+  },
+  "devDependencies": {
+    "fake-indexeddb": "^6.2.8",
+    "vitest": "^5.1.1"
+  }
+}

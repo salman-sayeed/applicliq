@@ -1,0 +1,36 @@
+{
+  "name": "@pocket-career/extension",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Track job applications from any job posting. Local-first, synced to your own Google Drive.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "wxt",
+    "dev:firefox": "wxt -b firefox",
+    "dev:edge": "wxt -b edge",
+    "build": "wxt build",
+    "build:firefox": "wxt build -b firefox",
+    "build:edge": "wxt build -b edge",
+    "build:all": "wxt build && wxt build -b edge && wxt build -b firefox",
+    "zip": "wxt zip",
+    "zip:firefox": "wxt zip -b firefox",
+    "zip:edge": "wxt zip -b edge",
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "postinstall": "wxt prepare"
+  },
+  "dependencies": {
+    "@pocket-career/core": "workspace:*",
+    "@pocket-career/ui": "workspace:*"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.5",
+    "@wxt-dev/module-svelte": "^2.0.5",
+    "svelte": "^5.58.0",
+    "svelte-check": "^4.7.8",
+    "tailwindcss": "^4.3.5",
+    "vite": "^8.3.8",
+    "web-ext": "^10.5.0",
+    "wxt": "^0.21.5"
+  }
+}

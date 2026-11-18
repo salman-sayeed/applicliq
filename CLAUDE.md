@@ -1,0 +1,130 @@
+# Pocket Career
+
+## Goal
+
+A free, open-source, lightweight job application tracker: a browser extension that saves job
+postings from any site, plus a static web dashboard to manage them.
+
+There is **no backend and no database server**. Data lives locally in IndexedDB and syncs to the
+user's own Google Drive, in the hidden `appDataFolder` (scope `drive.appdata`: the app can see
+nothing else in the user's Drive).
+
+## Stack
+
+- **pnpm workspaces** monorepo, Node >= 22, TypeScript 6 (strict, project references)
+- **Extension**: [WXT](https://wxt.dev) + Svelte 5 (runes) + Tailwind CSS v4. Builds for Chrome,
+  Edge (MV3) and Firefox.
+- **Web**: SvelteKit 3 with `@sveltejs/adapter-static`, fully prerendered, deployed to Cloudflare
+  Pages. SvelteKit config lives in `apps/web/vite.config.ts` (there is no `svelte.config.js`).
+- **Storage**: Dexie (IndexedDB). **Sync**: Google Drive REST v3 via `fetch` (no Google SDK).
+- **Tooling**: Vitest (in `packages/core`), ESLint 10 flat config + typescript-eslint +
+  eslint-plugin-svelte, Prettier (+ svelte and tailwind plugins).
+
+## Folder structure
+
+```
+apps/
+  extension/            WXT extension
+    src/entrypoints/    popup/, background.ts (WXT file-based entrypoints)
+    wxt.config.ts       manifest + Vite plugins (Tailwind)
+  web/                  SvelteKit static dashboard
+    src/routes/         pages; +layout.ts sets `prerender = true`
+packages/
+  core/                 domain logic, NO UI code
+    src/types.ts        Job model, statuses, tombstones
+    src/storage.ts      Dexie DB + job repository
+    src/merge.ts        last-write-wins merge, tombstone purge
+    src/sync/           Drive appDataFolder client + sync orchestration
+    src/scrapers/       job-posting scrapers (generic JSON-LD fallback)
+  ui/                   shared Svelte components + Tailwind theme
+    src/theme.css       @theme tokens; import after `tailwindcss` in each app
+    src/components/     Button, StatusBadge, ...
+```
+
+Workspace packages export their TypeScript/Svelte **source** directly (no build step); each app's
+bundler compiles them. `packages/ui/src/theme.css` declares `@source './components'` so apps pick
+up classes used in shared components.
+
+## Commands
+
+```bash
+pnpm install
+pnpm dev:ext        # extension dev mode (opens a browser with it loaded, HMR)
+pnpm dev:web        # web dashboard on http://localhost:5173
+pnpm build          # build both apps (extension: Chrome; web: apps/web/build)
+pnpm build:ext      # extension for Chrome, Edge and Firefox (.output/*)
+pnpm test           # Vitest (packages/core)
+pnpm typecheck      # tsc -b (core) + svelte-check (ui, extension, web)
+pnpm lint           # ESLint
+pnpm format         # Prettier
+```
+
+## Rules
+
+1. **Keep the bundle small.** Check the build size output when adding code. Prefer platform APIs
+   over libraries; import narrowly so tree-shaking works (`packages/*` are `sideEffects: false`
+   except CSS).
+2. **No heavy dependencies.** No UI kits, date libraries, lodash, Google SDKs, state libraries, or
+   analytics. A new runtime dependency needs a strong reason; dev-only tooling is fine.
+3. **Animations under 200ms.** The theme sets the default transition to 150ms. Respect
+   `prefers-reduced-motion` (handled globally in the theme).
+4. **Offline-first.** IndexedDB is the source of truth for the UI. Every feature must work with no
+   network; sync is a background reconciliation that may fail without losing data.
+5. **Privacy: never send user data anywhere except the user's own Google Drive.** No telemetry, no
+   analytics, no third-party APIs, no remote logging, no remote fonts/scripts. Scrapers read the
+   current page only and never make network requests.
+6. `packages/core` contains no UI code and no framework imports (no Svelte, no DOM rendering).
+   Platform-specific bits (e.g. getting an OAuth token) are injected by the apps.
+7. Request the minimum extension permissions; add one only when a feature needs it.
+
+## Job data model
+
+Defined in `packages/core/src/types.ts`:
+
+```ts
+type JobStatus =
+  'saved' | 'applied' | 'assessment' | 'interview' | 'offer' | 'rejected' | 'ghosted' | 'withdrawn';
+
+type Job = {
+  id: string;
+  url: string;
+  title: string;
+  company: string;
+  location?: string;
+  workType?: 'remote' | 'hybrid' | 'onsite';
+  salary?: { min?: number; max?: number; currency?: string; period?: 'hour' | 'month' | 'year' };
+  source?: string;
+  status: JobStatus;
+  history: { status: JobStatus; at: number }[];
+  notes?: string;
+  tags?: string[];
+  resumeVersion?: string;
+  contact?: { name?: string; email?: string };
+  interviewAt?: number;
+  followUpAt?: number;
+  descriptionSnapshot?: string;
+  createdAt: number;
+  updatedAt: number;
+  deletedAt?: number;
+};
+```
+
+- All timestamps are epoch milliseconds.
+- `history` gets a new entry whenever `status` changes (the repository does this).
+- `updatedAt` is bumped on every write; it decides merges.
+
+### Deletion rule (tombstones)
+
+- Deleting a job **replaces it with a tombstone: `{ id, deletedAt }` only**. All other fields are
+  dropped.
+- The UI **hides tombstones** (`repo.list()` / `repo.get()` never return them).
+- Tombstones are **purged after 30 days** (`TOMBSTONE_TTL_MS`), both locally
+  (`purgeExpiredTombstones`) and during merges.
+- Tombstones exist so a deletion on one device propagates through Drive sync instead of the job
+  being resurrected by another device.
+
+### Sync / merge
+
+The Drive file `pocket-career.json` in `appDataFolder` holds `{ version: 1, updatedAt, records }`.
+Sync = pull, `mergeRecords(local, remote)` (per id, last write wins by `updatedAt` /
+`deletedAt`; a tombstone wins a tie), write locally, push.

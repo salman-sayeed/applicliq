@@ -1,0 +1,33 @@
+{
+  "name": "@pocket-career/ui",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared Svelte 5 components and the Tailwind v4 theme for Pocket Career.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "svelte": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "svelte": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./theme.css": "./src/theme.css"
+  },
+  "scripts": {
+    "check": "svelte-check --tsconfig ./tsconfig.json"
+  },
+  "peerDependencies": {
+    "svelte": "^5.0.0"
+  },
+  "dependencies": {
+    "@pocket-career/core": "workspace:*"
+  },
+  "devDependencies": {
+    "svelte": "^5.58.0",
+    "svelte-check": "^4.7.8"
+  }
+}
