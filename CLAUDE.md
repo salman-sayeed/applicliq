@@ -25,7 +25,7 @@ nothing else in the user's Drive).
 ```
 apps/
   extension/            WXT extension
-    src/entrypoints/    popup/, background.ts (WXT file-based entrypoints)
+    src/entrypoints/    popup/, dashboard/ (extension page), background.ts, extract.content.ts
     wxt.config.ts       manifest + Vite plugins (Tailwind)
   web/                  SvelteKit static dashboard
     src/routes/         pages; +layout.ts sets `prerender = true`
@@ -42,6 +42,10 @@ packages/
   ui/                   shared Svelte components + Tailwind theme
     src/theme.css       @theme tokens; import after `tailwindcss` in each app
     src/components/     Button, StatusBadge, ...
+    src/dashboard/      shared Dashboard (list, kanban, detail panel). Talks to storage only
+                        through a DashboardAdapter prop, never extension/platform APIs, so the
+                        extension page and the web app can both mount it. Pages that render it
+                        add `@source` for this folder in their CSS.
 ```
 
 Workspace packages export their TypeScript/Svelte **source** directly (no build step); each app's

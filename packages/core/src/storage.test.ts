@@ -298,3 +298,42 @@ describe('exportJSON / importJSON', () => {
     expect(await repo().getJobs()).toEqual([a]);
   });
 });
+
+describe('restoreJob', () => {
+  it('undoes a delete, dated after the tombstone so it also wins a sync', async () => {
+    const job = await repo().addJob(input({ tags: ['x'] }));
+    clock = 5_000;
+    await repo().deleteJob(job.id);
+    clock = 4_000; // even if the clock went backwards
+    const restored = await repo().restoreJob(job);
+    expect(restored).toEqual({ ...job, updatedAt: 5_001 });
+    expect(await repo().getJobs()).toEqual([restored]);
+  });
+
+  it('leaves a live job alone', async () => {
+    const job = await repo().addJob(input());
+    clock = 2_000;
+    const edited = await repo().updateJob(job.id, { notes: 'kept' });
+    expect(await repo().restoreJob(job)).toEqual(edited);
+  });
+});
+
+describe('watchJobs', () => {
+  it('emits the current jobs, then again after each change', async () => {
+    const seen: string[][] = [];
+    let notify = () => {};
+    const unsubscribe = repo().watchJobs((jobs) => {
+      seen.push(jobs.map((j) => j.title));
+      notify();
+    });
+    const next = () => new Promise<void>((resolve) => (notify = resolve));
+
+    await next();
+    await Promise.all([next(), repo().addJob(input({ title: 'First' }))]);
+    unsubscribe();
+    await repo().addJob(input({ title: 'Second' }));
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(seen).toEqual([[], ['First']]);
+  });
+});

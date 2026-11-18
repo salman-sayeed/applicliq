@@ -1,4 +1,4 @@
-import { Dexie, type Table } from 'dexie';
+import { Dexie, type Table, liveQuery } from 'dexie';
 import { mergeJobs } from './merge';
 import type { SyncSnapshot } from './sync/drive';
 import {
@@ -68,6 +68,12 @@ export function createJobRepository(db: PocketCareerDB, now: () => number = Date
     });
   }
 
+  /** All live jobs (tombstones hidden), most recently updated first. */
+  async function getJobs(): Promise<Job[]> {
+    const all = await db.jobs.orderBy('updatedAt').reverse().toArray();
+    return all.filter(isLiveJob);
+  }
+
   async function getSettings(): Promise<Settings> {
     const row = await db.settings.get(SETTINGS_ID);
     return {
@@ -78,10 +84,18 @@ export function createJobRepository(db: PocketCareerDB, now: () => number = Date
   }
 
   return {
-    /** All live jobs (tombstones hidden), most recently updated first. */
-    async getJobs(): Promise<Job[]> {
-      const all = await db.jobs.orderBy('updatedAt').reverse().toArray();
-      return all.filter(isLiveJob);
+    getJobs,
+
+    /**
+     * Calls `listener` with the live jobs now and after every change, including changes made
+     * in other pages of the same origin (e.g. the extension popup). Returns an unsubscribe.
+     */
+    watchJobs(listener: (jobs: Job[]) => void, onError?: (error: unknown) => void): () => void {
+      const subscription = liveQuery(getJobs).subscribe({
+        next: listener,
+        error: (error: unknown) => onError?.(error),
+      });
+      return () => subscription.unsubscribe();
     },
 
     /** A live job by id; tombstones are treated as missing. */
@@ -160,6 +174,22 @@ export function createJobRepository(db: PocketCareerDB, now: () => number = Date
         const deletedAt = Math.max(now(), current.updatedAt);
         await db.jobs.put({ id, deletedAt });
         return true;
+      });
+    },
+
+    /**
+     * Undoes `deleteJob`: brings the job back from its tombstone, dated after the deletion so
+     * the restore also wins when synced. Does nothing if the job is live already.
+     */
+    async restoreJob(job: Job): Promise<Job> {
+      return db.transaction('rw', db.jobs, async () => {
+        const current = await db.jobs.get(job.id);
+        if (current && isLiveJob(current)) return current;
+        const after = current ? current.deletedAt + 1 : 0;
+        const restored: Job = { ...job, updatedAt: Math.max(now(), after, job.updatedAt + 1) };
+        delete restored.deletedAt;
+        await db.jobs.put(restored);
+        return restored;
       });
     },
 
