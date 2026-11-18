@@ -5,3 +5,4 @@ node_modules
 .svelte-kit
 build
 dist
+packages/core/src/scrapers/__fixtures__

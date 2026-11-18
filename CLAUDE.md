@@ -37,7 +37,8 @@ packages/
     src/url.ts          normalizeUrl (strips hash + tracking params) for duplicate detection
     src/validate.ts     sanitizeRecord(s) for untrusted data (Drive file, imports)
     src/sync/           Drive appDataFolder client + sync orchestration
-    src/scrapers/       job-posting scrapers (generic JSON-LD fallback)
+    src/scrapers/       extractJob(doc, url): JSON-LD > site adapters (sites/) > meta tags;
+                        HTML fixtures in __fixtures__ (excluded from Prettier)
   ui/                   shared Svelte components + Tailwind theme
     src/theme.css       @theme tokens; import after `tailwindcss` in each app
     src/components/     Button, StatusBadge, ...
