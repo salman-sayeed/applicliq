@@ -1,5 +1,5 @@
-import { mergeRecords } from '../merge';
 import type { JobRepository } from '../storage';
+import { sanitizeRecords } from '../validate';
 import type { DriveClient } from './drive';
 
 export type SyncResult = { records: number; pulled: boolean };
@@ -14,9 +14,10 @@ export async function syncWithDrive(
   drive: DriveClient,
   now: () => number = Date.now,
 ): Promise<SyncResult> {
-  const [local, remote] = await Promise.all([repo.allRecords(), drive.read()]);
-  const merged = mergeRecords(local, remote?.records ?? [], now());
-  await repo.replaceAll(merged);
+  const remote = await drive.read();
+  // Drive content is untrusted input: drop malformed records instead of storing them.
+  const incoming = Array.isArray(remote?.records) ? sanitizeRecords(remote.records).records : [];
+  const merged = await repo.mergeIntoLocal(incoming);
   await drive.write({ version: 1, updatedAt: now(), records: merged });
   return { records: merged.length, pulled: remote !== undefined };
 }

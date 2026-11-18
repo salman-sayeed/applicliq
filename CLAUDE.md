@@ -32,8 +32,10 @@ apps/
 packages/
   core/                 domain logic, NO UI code
     src/types.ts        Job model, statuses, tombstones
-    src/storage.ts      Dexie DB + job repository
-    src/merge.ts        last-write-wins merge, tombstone purge
+    src/storage.ts      Dexie DB (jobs, settings) + repository: CRUD, URL/company lookup, import/export
+    src/merge.ts        mergeJobs: last-write-wins merge, tombstone purge
+    src/url.ts          normalizeUrl (strips hash + tracking params) for duplicate detection
+    src/validate.ts     sanitizeRecord(s) for untrusted data (Drive file, imports)
     src/sync/           Drive appDataFolder client + sync orchestration
     src/scrapers/       job-posting scrapers (generic JSON-LD fallback)
   ui/                   shared Svelte components + Tailwind theme
@@ -117,14 +119,18 @@ type Job = {
 
 - Deleting a job **replaces it with a tombstone: `{ id, deletedAt }` only**. All other fields are
   dropped.
-- The UI **hides tombstones** (`repo.list()` / `repo.get()` never return them).
+- The UI **hides tombstones** (`getJobs()` / `getJob()` / `getJobByUrl()` / `findSameCompany()` never return them).
 - Tombstones are **purged after 30 days** (`TOMBSTONE_TTL_MS`), both locally
-  (`purgeExpiredTombstones`) and during merges.
+  (`purgeOldTombstones`) and during merges.
 - Tombstones exist so a deletion on one device propagates through Drive sync instead of the job
   being resurrected by another device.
 
 ### Sync / merge
 
 The Drive file `pocket-career.json` in `appDataFolder` holds `{ version: 1, updatedAt, records }`.
-Sync = pull, `mergeRecords(local, remote)` (per id, last write wins by `updatedAt` /
-`deletedAt`; a tombstone wins a tie), write locally, push.
+Sync = pull, sanitize, `mergeJobs(local, remote)` (per id, last write wins by `updatedAt` /
+`deletedAt`; a tombstone wins a tie; equal-timestamp live versions are ordered by content so
+every device converges), write locally in one transaction (`mergeIntoLocal`), push.
+`exportJSON()` writes the same format; `importJSON()` merges it the same way.
+
+Job URLs are stored normalized (`normalizeUrl`), so `getJobByUrl` is an indexed lookup.

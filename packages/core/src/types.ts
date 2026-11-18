@@ -71,3 +71,24 @@ export function isLiveJob(record: JobRecord): record is Job {
 export function recordTimestamp(record: JobRecord): number {
   return isTombstone(record) ? record.deletedAt : record.updatedAt;
 }
+
+export type Theme = 'system' | 'light' | 'dark';
+
+export type Goals = {
+  /** Target number of applications sent per week. */
+  applicationsPerWeek: number;
+};
+
+/** Local-only app preferences (one row in the `settings` table). */
+export type Settings = {
+  goals: Goals;
+  /** An `applied` job with no update for this many days is suggested as ghosted. */
+  ghostedAfterDays: number;
+  theme: Theme;
+};
+
+export const DEFAULT_SETTINGS: Settings = {
+  goals: { applicationsPerWeek: 10 },
+  ghostedAfterDays: 30,
+  theme: 'system',
+};
