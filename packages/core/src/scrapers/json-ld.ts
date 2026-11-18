@@ -1,9 +1,10 @@
-import type { WorkType } from '../types';
-import type { ScrapedJob, Scraper } from './types';
+import type { Salary, SalaryPeriod } from '../types';
+import { cleanText, htmlToText } from './text';
+import type { ExtractedFields } from './types';
 
 type JsonObject = Record<string, unknown>;
 
-const MAX_DESCRIPTION = 20_000;
+const MAX_DEPTH = 6;
 
 function asObject(value: unknown): JsonObject | undefined {
   return value && typeof value === 'object' && !Array.isArray(value)
@@ -11,109 +12,174 @@ function asObject(value: unknown): JsonObject | undefined {
     : undefined;
 }
 
-function asString(value: unknown): string | undefined {
-  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+/** Schema.org allows most properties to be a single value or an array. */
+function asList(value: unknown): unknown[] {
+  if (value === undefined || value === null) return [];
+  return Array.isArray(value) ? value : [value];
 }
 
-function findJobPosting(node: unknown): JsonObject | undefined {
+function asString(value: unknown): string | undefined {
+  if (typeof value === 'number') return String(value);
+  return typeof value === 'string' ? cleanText(value) : undefined;
+}
+
+/** A Thing's name, whether given as a string or `{ name }`. */
+function nameOf(value: unknown): string | undefined {
+  for (const item of asList(value)) {
+    const name = asString(item) ?? asString(asObject(item)?.name);
+    if (name) return name;
+  }
+  return undefined;
+}
+
+function asNumber(value: unknown): number | undefined {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : undefined;
+  if (typeof value !== 'string') return undefined;
+  const digits = value.replace(/[^\d.]/g, '');
+  const n = Number(digits);
+  return digits && Number.isFinite(n) ? n : undefined;
+}
+
+function isJobPosting(obj: JsonObject): boolean {
+  return asList(obj['@type']).some((t) => typeof t === 'string' && /JobPosting$/.test(t));
+}
+
+/** Finds the first JobPosting anywhere in a JSON-LD tree (arrays, `@graph`, nested values). */
+function findJobPosting(node: unknown, depth = 0): JsonObject | undefined {
+  if (depth > MAX_DEPTH) return undefined;
   if (Array.isArray(node)) {
     for (const item of node) {
-      const found = findJobPosting(item);
+      const found = findJobPosting(item, depth + 1);
       if (found) return found;
     }
     return undefined;
   }
   const obj = asObject(node);
   if (!obj) return undefined;
-  const type = obj['@type'];
-  if (type === 'JobPosting' || (Array.isArray(type) && type.includes('JobPosting'))) return obj;
-  return findJobPosting(obj['@graph']);
-}
-
-function stripHtml(html: string): string {
-  return html
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function parseLocation(posting: JsonObject): string | undefined {
-  const locations = [posting.jobLocation].flat();
-  const parts = locations
-    .map((loc) => asObject(asObject(loc)?.address))
-    .filter((a): a is JsonObject => !!a)
-    .map((a) =>
-      [a.addressLocality, a.addressRegion, a.addressCountry]
-        .map((v) => asString(v) ?? asString(asObject(v)?.name))
-        .filter(Boolean)
-        .join(', '),
-    )
-    .filter(Boolean);
-  return parts.length ? parts.join(' / ') : undefined;
-}
-
-/**
- * Parses schema.org JobPosting JSON-LD blocks. Pure (takes the raw script
- * contents) so it is easy to test; `jsonLdScraper` wraps it for real pages.
- */
-export function parseJobPostingJsonLd(blocks: string[]): ScrapedJob | undefined {
-  for (const block of blocks) {
-    let data: unknown;
-    try {
-      data = JSON.parse(block);
-    } catch {
-      continue;
+  if (isJobPosting(obj)) return obj;
+  for (const value of Object.values(obj)) {
+    if (value && typeof value === 'object') {
+      const found = findJobPosting(value, depth + 1);
+      if (found) return found;
     }
-    const posting = findJobPosting(data);
-    if (!posting) continue;
-
-    const result: ScrapedJob = {
-      title: asString(posting.title),
-      company: asString(asObject(posting.hiringOrganization)?.name),
-      location: parseLocation(posting),
-    };
-
-    const locationType = asString(posting.jobLocationType);
-    if (locationType === 'TELECOMMUTE') result.workType = 'remote' satisfies WorkType;
-
-    const salary = asObject(posting.baseSalary);
-    const value = asObject(salary?.value);
-    if (salary && value) {
-      const unit = asString(value.unitText)?.toUpperCase();
-      const min = Number(value.minValue ?? value.value);
-      const max = Number(value.maxValue ?? value.value);
-      result.salary = {
-        currency: asString(salary.currency),
-        min: Number.isFinite(min) ? min : undefined,
-        max: Number.isFinite(max) ? max : undefined,
-        period:
-          unit === 'HOUR'
-            ? 'hour'
-            : unit === 'MONTH'
-              ? 'month'
-              : unit === 'YEAR'
-                ? 'year'
-                : undefined,
-      };
-    }
-
-    const description = asString(posting.description);
-    if (description) result.descriptionSnapshot = stripHtml(description).slice(0, MAX_DESCRIPTION);
-
-    return result;
   }
   return undefined;
 }
 
-/** Generic fallback scraper for any site that publishes schema.org JobPosting data. */
-export const jsonLdScraper: Scraper = {
-  id: 'json-ld',
-  matches: () => true,
-  scrape(doc, url) {
-    const blocks = [...doc.querySelectorAll('script[type="application/ld+json"]')].map(
-      (el) => el.textContent ?? '',
-    );
-    const scraped = parseJobPostingJsonLd(blocks);
-    return scraped && { ...scraped, url: url.href, source: url.hostname };
-  },
-};
+/** Parses a JSON-LD block, tolerating the HTML comments and raw newlines some sites emit. */
+function parseBlock(block: string): unknown {
+  try {
+    return JSON.parse(block);
+  } catch {
+    const cleaned = block
+      .replace(/^\s*(<!--|\/\/\s*<!\[CDATA\[)/, '')
+      .replace(/(-->|\/\/\s*\]\]>)\s*$/, '')
+      // eslint-disable-next-line no-control-regex
+      .replace(/[\u0000-\u001f]+/g, ' ');
+    try {
+      return JSON.parse(cleaned);
+    } catch {
+      return undefined;
+    }
+  }
+}
+
+function decode(value: string | undefined, doc: Document): string | undefined {
+  return value && /&(#\d+|#x[\da-f]+|[a-z]+);/i.test(value)
+    ? cleanText(htmlToText(value, doc))
+    : value;
+}
+
+function parseAddress(value: unknown): string | undefined {
+  const text = asString(value);
+  if (text) return text;
+  const a = asObject(value);
+  if (!a) return undefined;
+  const parts = [a.addressLocality, a.addressRegion, a.addressCountry].map(nameOf);
+  return [...new Set(parts.filter(Boolean))].join(', ') || undefined;
+}
+
+function parseLocation(posting: JsonObject): string | undefined {
+  const places = asList(posting.jobLocation)
+    .map((loc) => {
+      const place = asObject(loc);
+      return place ? (parseAddress(place.address) ?? asString(place.name)) : asString(loc);
+    })
+    .filter((p): p is string => !!p);
+  if (places.length) return [...new Set(places)].join(' / ');
+  // Remote postings often only say where applicants may live.
+  const regions = asList(posting.applicantLocationRequirements)
+    .map(nameOf)
+    .filter((r): r is string => !!r);
+  return regions.length ? regions.join(' / ') : undefined;
+}
+
+function parsePeriod(unit: string | undefined): SalaryPeriod | undefined {
+  switch (unit?.toUpperCase()) {
+    case 'HOUR':
+      return 'hour';
+    case 'MONTH':
+      return 'month';
+    case 'YEAR':
+      return 'year';
+    default:
+      return undefined;
+  }
+}
+
+/** `baseSalary` / `estimatedSalary`: MonetaryAmount with a number or QuantitativeValue. */
+function parseSalary(posting: JsonObject): Salary | undefined {
+  const amounts = [...asList(posting.baseSalary), ...asList(posting.estimatedSalary)];
+  for (const item of amounts) {
+    const amount = asObject(item);
+    if (!amount) continue;
+    const value = asObject(asList(amount.value)[0]);
+    const single = asNumber(value?.value ?? amount.value);
+    const min = asNumber(value?.minValue ?? amount.minValue) ?? single;
+    const max = asNumber(value?.maxValue ?? amount.maxValue) ?? single ?? min;
+    if (min === undefined && max === undefined) continue;
+    const salary: Salary = { min, max };
+    const currency = asString(amount.currency ?? value?.currency)?.toUpperCase();
+    const period = parsePeriod(asString(value?.unitText ?? amount.unitText));
+    if (currency) salary.currency = currency;
+    if (period) salary.period = period;
+    return salary;
+  }
+  return undefined;
+}
+
+/** Fields from the first schema.org JobPosting in the given JSON-LD blocks. */
+export function parseJobPostingJsonLd(
+  blocks: string[],
+  doc: Document,
+): ExtractedFields | undefined {
+  for (const block of blocks) {
+    const posting = findJobPosting(parseBlock(block));
+    if (!posting) continue;
+
+    // Raw, not cleaned: line breaks in a plain-text description are meaningful.
+    const description = typeof posting.description === 'string' ? posting.description : undefined;
+    const locationType = asList(posting.jobLocationType).map(asString).join(' ');
+    return {
+      title: decode(asString(posting.title) ?? asString(posting.name), doc),
+      company: decode(nameOf(posting.hiringOrganization), doc),
+      location: decode(parseLocation(posting), doc),
+      description: description?.trim() ? htmlToText(description, doc) : undefined,
+      salary: parseSalary(posting),
+      workType: /TELECOMMUTE|REMOTE/i.test(locationType)
+        ? 'remote'
+        : /HYBRID/i.test(locationType)
+          ? 'hybrid'
+          : undefined,
+    };
+  }
+  return undefined;
+}
+
+/** JobPosting fields from the page's `<script type="application/ld+json">` blocks. */
+export function extractJsonLd(doc: Document): ExtractedFields | undefined {
+  const blocks = [...doc.querySelectorAll('script[type="application/ld+json"]')].map(
+    (el) => el.textContent ?? '',
+  );
+  return parseJobPostingJsonLd(blocks, doc);
+}
