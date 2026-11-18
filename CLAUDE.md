@@ -28,7 +28,7 @@ apps/
     src/entrypoints/    popup/, dashboard/ (extension page), background.ts, extract.content.ts,
                         job-badge.content.ts (saved-job page badge, injected by background)
     src/lib/background.ts  auto-ghosting, reminder notifications, goal badge, page badge
-    src/lib/google-auth.ts getAuthToken (Chrome) / launchWebAuthFlow (Firefox, Edge)
+    src/lib/google-auth.ts launchWebAuthFlow (Web client); getAuthToken on Chrome if only a Chrome client
     src/lib/sync.ts     background sync runner + status in extension storage
 docs/google-setup.md    creating the OAuth client IDs (env vars in apps/extension/.env)
     wxt.config.ts       manifest + Vite plugins (Tailwind)
