@@ -1,0 +1,146 @@
+<!doctype html>
+<!--
+  Chrome Web Store small promo tile (440×280). Render it with:
+    "$CHROME" --headless=new --hide-scrollbars --force-device-scale-factor=1 \
+      --window-size=440,280 --screenshot=docs/screenshots/store/promo-tile-440x280.png \
+      docs/screenshots/promo/tile.html
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Career Pocket promo tile</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+      }
+      html,
+      body {
+        width: 440px;
+        height: 280px;
+        overflow: hidden;
+      }
+      body {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 0 34px;
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+        color: #fff;
+        background:
+          radial-gradient(120% 90% at 100% 0%, #6d63ff 0%, transparent 55%),
+          linear-gradient(135deg, #312e81 0%, #4338ca 55%, #4f46e5 100%);
+      }
+      /* A stack of job cards, bottom right: the product in one glance. */
+      .cards {
+        position: absolute;
+        right: 14px;
+        bottom: 6px;
+        width: 158px;
+        transform: rotate(-8deg);
+      }
+      .card {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 8px;
+        padding: 9px 10px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 8px 20px rgba(20, 16, 80, 0.35);
+      }
+      .card i {
+        flex: none;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      }
+      .card b {
+        display: block;
+        height: 6px;
+        border-radius: 3px;
+        background: #d4d4d8;
+      }
+      .card span {
+        flex: 1;
+        display: grid;
+        gap: 5px;
+      }
+      .card em {
+        flex: none;
+        padding: 2px 7px;
+        border-radius: 999px;
+        font:
+          600 9px/1.3 -apple-system,
+          sans-serif;
+        font-style: normal;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .logo {
+        display: grid;
+        place-items: center;
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
+        background: #fff;
+        box-shadow: 0 6px 16px rgba(20, 16, 80, 0.35);
+      }
+      .logo img {
+        width: 38px;
+        height: 38px;
+      }
+      h1 {
+        font-size: 30px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+      p {
+        max-width: 230px;
+        margin-top: 16px;
+        font-size: 17px;
+        line-height: 1.3;
+        font-weight: 600;
+      }
+      small {
+        display: block;
+        margin-top: 12px;
+        font-size: 12px;
+        font-weight: 500;
+        color: #c7d2fe;
+        letter-spacing: 0.01em;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="cards" aria-hidden="true">
+      <div class="card">
+        <i style="background: #2563eb"></i>
+        <span><b style="width: 80%"></b><b style="width: 50%"></b></span>
+        <em style="background: #dbeafe; color: #1d4ed8">Applied</em>
+      </div>
+      <div class="card">
+        <i style="background: #d97706"></i>
+        <span><b style="width: 70%"></b><b style="width: 45%"></b></span>
+        <em style="background: #fef3c7; color: #b45309">Interview</em>
+      </div>
+      <div class="card">
+        <i style="background: #16a34a"></i>
+        <span><b style="width: 75%"></b><b style="width: 55%"></b></span>
+        <em style="background: #dcfce7; color: #15803d">Offer</em>
+      </div>
+    </div>
+
+    <div class="brand">
+      <div class="logo"><img src="../../logo.png" alt="" /></div>
+      <h1>Career Pocket</h1>
+    </div>
+    <p>Save jobs from any site. Track every application.</p>
+    <small>Free · Private · Open source</small>
+  </body>
+</html>
