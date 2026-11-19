@@ -20,7 +20,7 @@
   <span class="text-sm tabular-nums">{platform.version}</span>
 </Field>
 
-<Field label="Source code" hint="Pocket Career is free and open source (MIT).">
+<Field label="Source code" hint="Career Pocket is free and open source (MIT).">
   <a href={platform.githubUrl} target="_blank" rel="noreferrer" class="{link} text-sm">
     GitHub ↗
   </a>

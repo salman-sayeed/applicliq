@@ -1,6 +1,6 @@
 # Google Drive sync setup
 
-Pocket Career syncs through a single file, `pocket-career.json`, in the hidden **appDataFolder**
+Career Pocket syncs through a single file, `career-pocket.json`, in the hidden **appDataFolder**
 of the user's own Google Drive. It asks for one scope,
 `https://www.googleapis.com/auth/drive.appdata`, which can only see files the app itself
 created there. It can't see anything else in the user's Drive.
@@ -26,7 +26,7 @@ sync isn't set up.
 ## 1. Create the project and enable the Drive API
 
 1. Open the [Google Cloud Console](https://console.cloud.google.com/) and create a project
-   (e.g. "Pocket Career").
+   (e.g. "Career Pocket").
 2. Go to **APIs & Services → Library**, search for **Google Drive API** and click **Enable**.
 
 ## 2. Configure the OAuth consent screen
@@ -52,19 +52,19 @@ An unpacked extension's ID comes from its folder unless the manifest has a `key`
 ID on every machine, generate a key once (outside the repo, or anywhere: `*.pem` is gitignored):
 
 ```bash
-openssl genrsa 2048 | openssl pkcs8 -topk8 -nocrypt -out pocket-career-dev.pem
+openssl genrsa 2048 | openssl pkcs8 -topk8 -nocrypt -out career-pocket-dev.pem
 ```
 
 The public key, for `WXT_CHROME_EXTENSION_KEY`:
 
 ```bash
-openssl rsa -in pocket-career-dev.pem -pubout -outform DER | openssl base64 -A
+openssl rsa -in career-pocket-dev.pem -pubout -outform DER | openssl base64 -A
 ```
 
 The extension ID it produces:
 
 ```bash
-openssl rsa -in pocket-career-dev.pem -pubout -outform DER | shasum -a 256 | head -c32 | tr 0-9a-f a-p
+openssl rsa -in career-pocket-dev.pem -pubout -outform DER | shasum -a 256 | head -c32 | tr 0-9a-f a-p
 ```
 
 You can also load the extension once and copy its ID from `chrome://extensions`.
@@ -87,12 +87,12 @@ This one client serves Chrome, Firefox, Edge and the web dashboard.
 1. **Create credentials → OAuth client ID**, application type **Web application**.
 2. **Authorized JavaScript origins** (for the web dashboard):
    - `http://localhost:5173` (`pnpm dev:web`) and `http://localhost:4173` (`vite preview`)
-   - your Cloudflare Pages URL, e.g. `https://pocket-career.pages.dev`, and any custom domain
+   - your Cloudflare Pages URL, e.g. `https://career-pocket.pages.dev`, and any custom domain
      (origins only: no path, no trailing slash)
 3. **Authorized redirect URIs** (for the extension's `launchWebAuthFlow`). Each browser
    derives one from the extension ID:
    - **Firefox**: `https://<hash>.extensions.allizom.org/`. The add-on ID is fixed to
-     `pocket-career@pocket-career` in `wxt.config.ts`, so this URL is stable.
+     `career-pocket@career-pocket` in `wxt.config.ts`, so this URL is stable.
    - **Chrome**: `https://<extension-id>.chromiumapp.org/`, with the pinned ID from section 3.
    - **Edge**: `https://<edge-extension-id>.chromiumapp.org/`.
 

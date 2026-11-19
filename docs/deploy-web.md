@@ -30,7 +30,7 @@ says you probably shouldn't.
    | Setting                | Value                                                                      |
    | ---------------------- | -------------------------------------------------------------------------- |
    | Framework preset       | None                                                                       |
-   | Build command          | `pnpm install --frozen-lockfile && pnpm --filter @pocket-career/web build` |
+   | Build command          | `pnpm install --frozen-lockfile && pnpm --filter @career-pocket/web build` |
    | Build output directory | `apps/web/build`                                                           |
    | Root directory         | `/` (the repository root, so the workspace packages are available)         |
 
@@ -48,12 +48,12 @@ VITE_GOOGLE_CLIENT_ID=1234-def.apps.googleusercontent.com pnpm deploy:web
 ```
 
 This builds the site and uploads `apps/web/build` with Wrangler (`pnpm dlx`, nothing installed in
-the repo). The first run asks you to log in to Cloudflare and creates the `pocket-career` project
+the repo). The first run asks you to log in to Cloudflare and creates the `career-pocket` project
 (`apps/web/wrangler.toml`). With `apps/web/.env` filled in, the variable is picked up from there.
 
 ## After the first deploy
 
-1. In Google Cloud, add the site's origin (e.g. `https://pocket-career.pages.dev`, plus any
+1. In Google Cloud, add the site's origin (e.g. `https://career-pocket.pages.dev`, plus any
    custom domain) to the Web client's **Authorized JavaScript origins**. Without it, sign-in on
    `/app` fails with `redirect_uri_mismatch` / "origin not allowed".
 2. On the OAuth consent screen (**Google Auth Platform → Branding**), set:
@@ -66,7 +66,7 @@ the repo). The first run asks you to log in to Cloudflare and creates the `pocke
 ## Preview locally
 
 ```bash
-pnpm --filter @pocket-career/web build && pnpm --filter @pocket-career/web preview
+pnpm --filter @career-pocket/web build && pnpm --filter @career-pocket/web preview
 ```
 
 The preview runs at http://localhost:4173; add that origin to the Web client to test sign-in

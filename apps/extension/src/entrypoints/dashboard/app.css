@@ -1,5 +1,5 @@
 @import 'tailwindcss';
-@import '@pocket-career/ui/theme.css';
+@import '@career-pocket/ui/theme.css';
 
 /* The dashboard components' classes; only pages that render the dashboard need them. */
 @source '../../../../../packages/ui/src/dashboard';

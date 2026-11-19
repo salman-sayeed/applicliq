@@ -70,11 +70,11 @@ export function interviewIcs(job: Job, options: InterviewIcsOptions = {}): strin
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Pocket Career//Job tracker//EN',
+    'PRODID:-//Career Pocket//Job tracker//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     'BEGIN:VEVENT',
-    `UID:${job.id}-interview@pocket-career`,
+    `UID:${job.id}-interview@career-pocket`,
     `DTSTAMP:${icsDate(now)}`,
     `DTSTART:${icsDate(job.interviewAt)}`,
     `DTEND:${icsDate(job.interviewAt + durationMinutes * 60_000)}`,

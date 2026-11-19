@@ -32,7 +32,7 @@ describe('interviewIcs', () => {
     expect(text).toContain('DTSTART:20261203T143000Z\r\n');
     expect(text).toContain('DTEND:20261203T153000Z\r\n');
     expect(text).toContain('DTSTAMP:20261118T090000Z\r\n');
-    expect(text).toContain('UID:job-1-interview@pocket-career\r\n');
+    expect(text).toContain('UID:job-1-interview@career-pocket\r\n');
   });
 
   it('escapes text values', () => {

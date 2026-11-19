@@ -1,7 +1,7 @@
 <script lang="ts">
   import { resolve } from '$app/paths';
   import './site.css';
-  import favicon from '#lib/assets/favicon.svg';
+  import logo from '#lib/assets/logo.png';
   import { GITHUB_URL } from '#lib/links.ts';
   import type { LayoutProps } from './$types';
 
@@ -15,8 +15,8 @@
   <header class="border-line border-b">
     <nav class="mx-auto flex max-w-5xl items-center gap-4 px-4 py-3 text-sm sm:gap-6">
       <a href={resolve('/(site)')} class="flex items-center gap-2 font-semibold {link}">
-        <img src={favicon} alt="" class="size-7" />
-        Pocket Career
+        <img src={logo} alt="" class="size-7" />
+        Career Pocket
       </a>
       <div class="text-ink-muted ml-auto flex items-center gap-4 sm:gap-6">
         <a href={resolve('/(site)/privacy')} class="hidden sm:inline {link}">Privacy</a>
@@ -37,7 +37,7 @@
 
   <footer class="border-line text-ink-muted border-t text-sm">
     <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-6">
-      <p>Pocket Career · free and open source (MIT)</p>
+      <p>Career Pocket · free and open source (MIT)</p>
       <div class="flex gap-6 sm:ml-auto">
         <a href={resolve('/(site)/privacy')} class={link}>Privacy policy</a>
         <a href={GITHUB_URL} rel="external" class={link}>Source code</a>

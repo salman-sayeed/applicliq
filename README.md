@@ -1,4 +1,6 @@
-# Pocket Career
+<p align="center"><img src="docs/logo.png" alt="" width="96" /></p>
+
+# Career Pocket
 
 A free, open-source, lightweight job application tracker.
 
@@ -63,14 +65,14 @@ This starts WXT in dev mode and opens Chrome with the extension loaded. To load 
 build manually instead:
 
 ```bash
-pnpm --filter @pocket-career/extension build
+pnpm --filter @career-pocket/extension build
 ```
 
 Then open `chrome://extensions`, enable **Developer mode**, click **Load unpacked** and select
 `apps/extension/.output/chrome-mv3`.
 
 Other browsers: `pnpm build:ext` builds Chrome, Edge (`.output/edge-mv3`) and Firefox
-(`.output/firefox-mv2`). Use `pnpm --filter @pocket-career/extension zip` (or `zip:firefox`,
+(`.output/firefox-mv2`). Use `pnpm --filter @career-pocket/extension zip` (or `zip:firefox`,
 `zip:edge`) for store uploads.
 
 ### Web dashboard

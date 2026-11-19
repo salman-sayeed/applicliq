@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { type Job, daysSince } from '@pocket-career/core';
-  import { StatusBadge } from '@pocket-career/ui';
+  import { type Job, daysSince } from '@career-pocket/core';
+  import { StatusBadge } from '@career-pocket/ui';
 
   let { jobs }: { jobs: Job[] } = $props();
 

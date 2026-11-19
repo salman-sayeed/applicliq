@@ -51,6 +51,6 @@ export default defineConfig({
   ],
   // Workspace packages ship TypeScript source, so Vite must transform them for SSR/prerender too.
   ssr: {
-    noExternal: [/^@pocket-career\//],
+    noExternal: [/^@career-pocket\//],
   },
 });

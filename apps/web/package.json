@@ -1,5 +1,5 @@
 {
-  "name": "@pocket-career/web",
+  "name": "@career-pocket/web",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -25,10 +25,10 @@
     "tailwindcss": "^4.3.5",
     "vite": "^8.3.8"
   },
-  "description": "Pocket Career dashboard: a fully static SvelteKit site.",
+  "description": "Career Pocket dashboard: a fully static SvelteKit site.",
   "license": "MIT",
   "dependencies": {
-    "@pocket-career/core": "workspace:*",
-    "@pocket-career/ui": "workspace:*"
+    "@career-pocket/core": "workspace:*",
+    "@career-pocket/ui": "workspace:*"
   }
 }

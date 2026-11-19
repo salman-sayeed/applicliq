@@ -1,4 +1,4 @@
-import type { AccentColor, JobStatus, SalaryPeriod, TagColor, WorkType } from '@pocket-career/core';
+import type { AccentColor, JobStatus, SalaryPeriod, TagColor, WorkType } from '@career-pocket/core';
 
 export const STATUS_LABELS: Record<JobStatus, string> = {
   saved: 'Saved',

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { type DateFormat, type SalaryPeriod, checkSetting } from '@pocket-career/core';
+  import { type DateFormat, type SalaryPeriod, checkSetting } from '@career-pocket/core';
   import { formatDate } from '../../dashboard/format';
   import { PERIOD_LABELS } from '../../status';
   import Field from '../Field.svelte';

@@ -1,4 +1,4 @@
-import type { ImportResult, Settings, SettingsPatch } from '@pocket-career/core';
+import type { ImportResult, Settings, SettingsPatch } from '@career-pocket/core';
 import type { SyncMenuStatus } from '../dashboard/types';
 
 /** What the settings page needs from the app it runs in (extension page or web app). */
@@ -12,7 +12,7 @@ export type SettingsPlatform = {
   importJSON(json: string): Promise<ImportResult>;
   /** Empties this browser's copy (jobs and settings). */
   clearLocalData(): Promise<void>;
-  /** Deletes the Pocket Career file from Drive and stops syncing on this device. */
+  /** Deletes the Career Pocket file from Drive and stops syncing on this device. */
   deleteDriveData(): Promise<void>;
   /** Shows the first-run introduction again. */
   replayOnboarding(): void;

@@ -43,14 +43,14 @@
   ];
 
   const steps = [
-    ['Install the extension', 'Add Pocket Career to Chrome, Firefox or Edge.'],
+    ['Install the extension', 'Add Career Pocket to Chrome, Firefox or Edge.'],
     ['Save while you browse', 'Click the icon on any job posting; the details fill themselves in.'],
     ['Track it anywhere', 'Update statuses in the extension or here on the web, after signing in.'],
   ];
 </script>
 
 <svelte:head>
-  <title>Pocket Career: a private, free job application tracker</title>
+  <title>Career Pocket: a private, free job application tracker</title>
   <meta
     name="description"
     content="Save job postings from any site and track every application from saved to offer. Free and open source. Your data stays in your browser and your own Google Drive."
@@ -160,8 +160,8 @@
     <div class="border-line rounded-2xl border p-8 sm:p-10">
       <h2 class="text-2xl font-semibold tracking-tight">Private by design</h2>
       <p class="text-ink-muted mt-3 max-w-2xl">
-        There is no Pocket Career server. Your jobs live in your browser's storage and sync through
-        a hidden app folder in your own Google Drive, which Pocket Career can't see outside of. No
+        There is no Career Pocket server. Your jobs live in your browser's storage and sync through
+        a hidden app folder in your own Google Drive, which Career Pocket can't see outside of. No
         analytics, no tracking, no third parties.
       </p>
       <a

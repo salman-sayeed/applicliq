@@ -21,7 +21,7 @@
     type SettingsPatch,
     type SettingsSection,
     jobFacets,
-  } from '@pocket-career/core';
+  } from '@career-pocket/core';
   import type { Snippet } from 'svelte';
   import { applyAppearance } from '../appearance';
   import type { DashboardAdapter } from '../dashboard/adapter';
@@ -192,7 +192,7 @@
 
       {#if unavailable}
         <p class="bg-surface-muted mb-2 rounded-md px-3 py-2 text-sm">
-          These settings belong to the Pocket Career browser extension, which shows reminders and
+          These settings belong to the Career Pocket browser extension, which shows reminders and
           badges in your browser. Change them in the extension's settings.
         </p>
       {/if}

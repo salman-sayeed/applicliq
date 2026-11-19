@@ -22,14 +22,34 @@ const json = (body: unknown, init: ResponseInit = {}) =>
 
 describe('createDriveClient', () => {
   it('lists the sync file in appDataFolder, oldest first, with the bearer token', async () => {
-    const { fetch, calls } = fakeFetch([json({ files: [{ id: 'a' }, { id: 'b' }] })]);
+    const { fetch, calls } = fakeFetch([
+      json({
+        files: [
+          { id: 'a', name: 'pocket-career.json' },
+          { id: 'b', name: 'career-pocket.json' },
+        ],
+      }),
+    ]);
     const drive = createDriveClient({ getToken: async () => 'tok', fetch });
-    expect(await drive.list()).toEqual(['a', 'b']);
+    expect(await drive.list()).toEqual([
+      { id: 'a', name: 'pocket-career.json' },
+      { id: 'b', name: 'career-pocket.json' },
+    ]);
     const url = new URL(calls[0]!.url);
     expect(url.searchParams.get('spaces')).toBe('appDataFolder');
     expect(url.searchParams.get('orderBy')).toBe('createdTime');
-    expect(url.searchParams.get('q')).toContain("name = 'pocket-career.json'");
+    expect(url.searchParams.get('q')).toBe(
+      "(name = 'career-pocket.json' or name = 'pocket-career.json') and trashed = false",
+    );
     expect(calls[0]!.headers.get('Authorization')).toBe('Bearer tok');
+  });
+
+  it('renames a legacy file to the current name', async () => {
+    const { fetch, calls } = fakeFetch([json({})]);
+    const drive = createDriveClient({ getToken: async () => 'tok', fetch });
+    await drive.rename('a');
+    expect(calls[0]!.method).toBe('PATCH');
+    expect(calls[0]!.url).toMatch(/\/files\/a$/);
   });
 
   it('returns the ETag with the download and sends it as If-Match on update', async () => {

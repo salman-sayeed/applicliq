@@ -19,7 +19,7 @@ export type SyncErrorKind =
   | 'conflict'
   /** The Drive file was written by a newer app version; it is left untouched. */
   | 'newer-schema'
-  /** The Drive file isn't a Pocket Career file; it is left untouched. */
+  /** The Drive file isn't a Career Pocket file; it is left untouched. */
   | 'invalid-remote'
   /** Drive is rate-limiting or failing. */
   | 'server'
@@ -68,17 +68,17 @@ export function parseSnapshot(data: unknown): {
     settings?: unknown;
   } | null;
   if (!file || typeof file !== 'object' || !Array.isArray(file.records)) {
-    throw new SyncError('invalid-remote', 'The Drive file is not a Pocket Career file.');
+    throw new SyncError('invalid-remote', 'The Drive file is not a Career Pocket file.');
   }
   const schema = file.schemaVersion ?? file.version;
   if (typeof schema === 'number' && schema > SCHEMA_VERSION) {
     throw new SyncError(
       'newer-schema',
-      'Your Drive data was saved by a newer version of Pocket Career. Update to keep syncing.',
+      'Your Drive data was saved by a newer version of Career Pocket. Update to keep syncing.',
     );
   }
   if (schema !== SCHEMA_VERSION) {
-    throw new SyncError('invalid-remote', 'The Drive file is not a Pocket Career file.');
+    throw new SyncError('invalid-remote', 'The Drive file is not a Career Pocket file.');
   }
   // Drive content is untrusted input: drop malformed records instead of storing them.
   return { ...sanitizeRecords(file.records), settings: file.settings };
@@ -117,7 +117,9 @@ export async function syncWithDrive(
   });
 
   for (let attempt = 1; ; attempt++) {
-    const [primaryId, ...extraIds] = await drive.list();
+    const [primaryFile, ...extraFiles] = await drive.list();
+    const primaryId = primaryFile?.id;
+    const extraIds = extraFiles.map((f) => f.id);
 
     if (primaryId === undefined) {
       const merged = await repo.mergeIntoLocal([]);
@@ -153,6 +155,8 @@ export async function syncWithDrive(
       : settingsMerge.settings;
     const settingsInSync = canonical(outSettings) === canonical(remoteSettings);
     const result = { records: merged.length, settingsChanged: settingsMerge.changed };
+    // A file from before the app's rename keeps its data and gets the current name.
+    if (primaryFile!.name !== drive.fileName) await drive.rename(primaryId).catch(() => {});
     // Malformed records in Drive (skipped) are cleaned out by uploading the merged set.
     if (extraIds.length === 0 && skipped === 0 && settingsInSync && sameRecords(merged, remote)) {
       return { ...result, uploaded: false };
@@ -180,13 +184,13 @@ function foldSettings(a: unknown, b: unknown): unknown {
 }
 
 /**
- * Removes every Pocket Career file from the user's Drive (the app folder only). Local data is not
+ * Removes every Career Pocket file from the user's Drive (the app folder only). Local data is not
  * touched; a device that syncs again uploads its copy, so callers sign out afterwards.
  */
 export async function deleteDriveData(drive: DriveClient): Promise<number> {
-  const ids = await drive.list();
-  for (const id of ids) await drive.remove(id);
-  return ids.length;
+  const files = await drive.list();
+  for (const { id } of files) await drive.remove(id);
+  return files.length;
 }
 
 /** Sorts any sync failure into a kind the UI can explain. */

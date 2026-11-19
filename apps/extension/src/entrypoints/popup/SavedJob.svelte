@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { type Job, type JobStatus, daysAgoLabel, daysSince } from '@pocket-career/core';
-  import { Button, StatusBadge, getPrefs } from '@pocket-career/ui';
+  import { type Job, type JobStatus, daysAgoLabel, daysSince } from '@career-pocket/core';
+  import { Button, StatusBadge, getPrefs } from '@career-pocket/ui';
   import { fade } from 'svelte/transition';
 
   let {
@@ -39,7 +39,7 @@
 <section class="flex flex-col gap-3">
   <p class="text-ink-muted flex items-center gap-1.5 text-xs">
     {#if justSaved}
-      <span class="text-status-offer" aria-hidden="true">✓</span> Saved to Pocket Career
+      <span class="text-status-offer" aria-hidden="true">✓</span> Saved to Career Pocket
     {:else}
       Already saved {daysAgoLabel(daysSince(job.createdAt))}
     {/if}

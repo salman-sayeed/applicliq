@@ -4,7 +4,7 @@
     type RecentApplication,
     daysAgoLabel,
     mostRecentApplication,
-  } from '@pocket-career/core';
+  } from '@career-pocket/core';
   import { slide } from 'svelte/transition';
   import { repo } from '@/lib/db';
 

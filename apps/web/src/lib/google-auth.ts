@@ -1,4 +1,5 @@
-import { DRIVE_SCOPE } from '@pocket-career/core';
+import './legacy-keys.ts';
+import { DRIVE_SCOPE } from '@career-pocket/core';
 
 /**
  * Google sign-in for the web dashboard with Google Identity Services (GIS), token model, scope
@@ -13,9 +14,9 @@ import { DRIVE_SCOPE } from '@pocket-career/core';
 const GIS_SRC = 'https://accounts.google.com/gsi/client';
 const CLIENT_ID: string = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '';
 /** Whether the user turned sync on in this browser (cleared by sign-out). */
-const SIGNED_IN_KEY = 'pocket-career:sync-signed-in';
+const SIGNED_IN_KEY = 'career-pocket:sync-signed-in';
 /** The access token: per tab, gone when the tab closes. */
-const TOKEN_KEY = 'pocket-career:sync-token';
+const TOKEN_KEY = 'career-pocket:sync-token';
 
 type CachedToken = { token: string; expiresAt: number };
 

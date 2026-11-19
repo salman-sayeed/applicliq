@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { type Heatmap, dayKey } from '@pocket-career/core';
+  import { type Heatmap, dayKey } from '@career-pocket/core';
 
   let { heatmap, now = Date.now() }: { heatmap: Heatmap; now?: number } = $props();
 

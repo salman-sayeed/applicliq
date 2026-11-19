@@ -17,7 +17,7 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": [
         "--filter",
-        "@pocket-career/web",
+        "@career-pocket/web",
         "preview",
         "--port",
         "4173",

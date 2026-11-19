@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { Job, JobStatus } from '@pocket-career/core';
-  import { Prefs, applyAppearance, setPrefs } from '@pocket-career/ui';
+  import type { Job, JobStatus } from '@career-pocket/core';
+  import { Prefs, applyAppearance, setPrefs } from '@career-pocket/ui';
   import { onMount } from 'svelte';
   import { fly, slide } from 'svelte/transition';
   import { getSaveShortcut, openDashboard, openSettings } from '@/lib/config';
@@ -131,7 +131,7 @@
   <header class="flex items-center justify-between">
     <h1 class="flex items-center gap-2 text-sm font-semibold">
       <img src="/icon/32.png" alt="" class="size-5" />
-      Pocket Career
+      Career Pocket
     </h1>
     <div class="flex items-center gap-1">
       <button
@@ -169,7 +169,7 @@
         </div>
       {:else if view.kind === 'unsupported'}
         <p class="text-ink-muted text-sm">
-          Open a job posting in this tab, then click Pocket Career to save it.
+          Open a job posting in this tab, then click Career Pocket to save it.
         </p>
       {:else if view.kind === 'form'}
         {#if view.notice}

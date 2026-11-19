@@ -1,5 +1,5 @@
 {
-  "name": "@pocket-career/extension",
+  "name": "@career-pocket/extension",
   "version": "0.0.1",
   "private": true,
   "description": "Track job applications from any job posting. Local-first, synced to your own Google Drive.",
@@ -20,8 +20,8 @@
     "postinstall": "wxt prepare"
   },
   "dependencies": {
-    "@pocket-career/core": "workspace:*",
-    "@pocket-career/ui": "workspace:*"
+    "@career-pocket/core": "workspace:*",
+    "@career-pocket/ui": "workspace:*"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.5",

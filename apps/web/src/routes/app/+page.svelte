@@ -3,8 +3,8 @@
   import { resolve } from '$app/paths';
   import { page } from '$app/state';
   import { onMount } from 'svelte';
-  import { Dashboard, SyncMenu } from '@pocket-career/ui';
-  import favicon from '#lib/assets/favicon.svg';
+  import { Dashboard, SyncMenu } from '@career-pocket/ui';
+  import logo from '#lib/assets/logo.png';
   import { isSyncConfigured, loadGis } from '#lib/google-auth.ts';
   import { GITHUB_URL } from '#lib/links.ts';
   import { session, startSignIn, startSignOut, syncNow } from '#lib/session.svelte.ts';
@@ -30,7 +30,7 @@
 </script>
 
 <svelte:head>
-  <title>Dashboard · Pocket Career</title>
+  <title>Dashboard · Career Pocket</title>
   <meta name="robots" content="noindex" />
 </svelte:head>
 
@@ -39,8 +39,8 @@
     href={resolve('/(site)')}
     class="focus-visible:ring-accent flex items-center gap-2 rounded focus-visible:ring-2 focus-visible:outline-none"
   >
-    <img src={favicon} alt="" class="size-6" />
-    <span class="text-base font-semibold">Pocket Career</span>
+    <img src={logo} alt="" class="size-6" />
+    <span class="text-base font-semibold">Career Pocket</span>
   </a>
 {/snippet}
 
@@ -83,7 +83,7 @@
         <p>
           Save jobs with the
           <a href={resolve('/(site)')} class="text-accent underline-offset-2 hover:underline">
-            Pocket Career extension
+            Career Pocket extension
           </a>, signed in with the same Google account, and they show up here.
         </p>
       {/if}
@@ -96,7 +96,7 @@
       <div>
         <h1 class="text-xl font-semibold tracking-tight">Your job search, from any browser</h1>
         <p class="text-ink-muted mt-2 text-sm">
-          Sign in with Google to load the jobs you saved with the extension. Pocket Career only gets
+          Sign in with Google to load the jobs you saved with the extension. Career Pocket only gets
           access to its own hidden folder in your Drive, never your other files.
         </p>
       </div>

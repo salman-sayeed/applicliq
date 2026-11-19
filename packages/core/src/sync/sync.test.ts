@@ -1,19 +1,19 @@
 import 'fake-indexeddb/auto';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { DEFAULT_SETTINGS, splitSettings } from '../settings';
-import { PocketCareerDB, createJobRepository } from '../storage';
+import { CareerPocketDB, createJobRepository } from '../storage';
 import type { JobRecord } from '../types';
 import { type DriveClient, DriveError, type SyncSnapshot } from './drive';
 import { SyncError, deleteDriveData, parseSnapshot, syncWithDrive, toSyncError } from './sync';
 
-let db: PocketCareerDB;
+let db: CareerPocketDB;
 const clock = () => 10_000;
 
 type File = { data: unknown; etag: number };
 
 /** In-memory Drive with ETags: `update` with a stale ETag fails with 412. */
 function fakeDrive(initial: unknown[] = []) {
-  const files = new Map<string, File>();
+  const files = new Map<string, File & { name?: string }>();
   let seq = 0;
   for (const data of initial) files.set(`f${seq++}`, { data, etag: 1 });
   const calls = { updates: 0, creates: 0, removes: 0 };
@@ -21,7 +21,11 @@ function fakeDrive(initial: unknown[] = []) {
   let beforeUpdate: (() => void) | undefined;
 
   const drive: DriveClient = {
-    list: async () => [...files.keys()],
+    fileName: 'career-pocket.json',
+    list: async () => [...files].map(([id, f]) => ({ id, name: f.name ?? 'career-pocket.json' })),
+    rename: async (id) => {
+      files.get(id)!.name = 'career-pocket.json';
+    },
     download: async (id) => {
       const file = files.get(id)!;
       return { data: structuredClone(file.data), etag: `"${file.etag}"` };
@@ -33,7 +37,7 @@ function fakeDrive(initial: unknown[] = []) {
       hook?.();
       const file = files.get(id)!;
       if (etag && etag !== `"${file.etag}"`) throw new DriveError('stale', 412);
-      files.set(id, { data: structuredClone(snapshot), etag: file.etag + 1 });
+      files.set(id, { ...file, data: structuredClone(snapshot), etag: file.etag + 1 });
     },
     create: async (snapshot) => {
       calls.creates++;
@@ -56,7 +60,11 @@ function fakeDrive(initial: unknown[] = []) {
       beforeUpdate = () => {
         const [id, file] = [...files][0]!;
         const data = file.data as SyncSnapshot;
-        files.set(id, { data: { ...data, records: write(data.records) }, etag: file.etag + 1 });
+        files.set(id, {
+          ...file,
+          data: { ...data, records: write(data.records) },
+          etag: file.etag + 1,
+        });
       };
     },
   };
@@ -74,7 +82,7 @@ const snapshot = (
 });
 
 beforeEach(() => {
-  db = new PocketCareerDB(`test-${crypto.randomUUID()}`);
+  db = new CareerPocketDB(`test-${crypto.randomUUID()}`);
 });
 
 afterEach(async () => {
@@ -127,7 +135,7 @@ describe('syncWithDrive', () => {
 
   it('pulls without uploading when Drive is ahead', async () => {
     const repo = createJobRepository(db, clock);
-    const other = createJobRepository(new PocketCareerDB(`test-${crypto.randomUUID()}`), clock);
+    const other = createJobRepository(new CareerPocketDB(`test-${crypto.randomUUID()}`), clock);
     const job = await other.addJob({ url: 'https://a.test', title: 't', company: 'c' });
     const remote = fakeDrive([snapshot([job])]);
     expect(await syncWithDrive(repo, remote.drive, { now: clock })).toMatchObject({
@@ -173,7 +181,7 @@ describe('syncWithDrive', () => {
 
   it('folds duplicate files into the oldest one and deletes them', async () => {
     const repo = createJobRepository(db, clock);
-    const other = createJobRepository(new PocketCareerDB(`test-${crypto.randomUUID()}`), clock);
+    const other = createJobRepository(new CareerPocketDB(`test-${crypto.randomUUID()}`), clock);
     const a = await other.addJob({ url: 'https://a.test', title: 'a', company: 'c' });
     const b = await other.addJob({ url: 'https://b.test', title: 'b', company: 'c' });
     const remote = fakeDrive([snapshot([a]), snapshot([b])]);
@@ -261,6 +269,19 @@ describe('syncWithDrive settings', () => {
     expect(await syncWithDrive(repo, empty.drive, { now: clock })).toMatchObject({
       uploaded: true,
     });
+  });
+});
+
+describe('legacy Drive file', () => {
+  it('syncs with a file from before the rename and gives it the current name', async () => {
+    const repo = createJobRepository(db, clock);
+    const other = createJobRepository(new CareerPocketDB(`test-${crypto.randomUUID()}`), clock);
+    const job = await other.addJob({ url: 'https://a.test', title: 't', company: 'c' });
+    const remote = fakeDrive([snapshot([job])]);
+    remote.files.get('f0')!.name = 'pocket-career.json';
+    await syncWithDrive(repo, remote.drive, { now: clock });
+    expect(await repo.getJobs()).toEqual([job]);
+    expect(remote.files.get('f0')!.name).toBe('career-pocket.json');
   });
 });
 

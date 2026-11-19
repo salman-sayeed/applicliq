@@ -47,10 +47,10 @@ importers:
 
   apps/extension:
     dependencies:
-      '@pocket-career/core':
+      '@career-pocket/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@pocket-career/ui':
+      '@career-pocket/ui':
         specifier: workspace:*
         version: link:../../packages/ui
     devDependencies:
@@ -81,10 +81,10 @@ importers:
 
   apps/web:
     dependencies:
-      '@pocket-career/core':
+      '@career-pocket/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@pocket-career/ui':
+      '@career-pocket/ui':
         specifier: workspace:*
         version: link:../../packages/ui
     devDependencies:
@@ -131,7 +131,7 @@ importers:
 
   packages/ui:
     dependencies:
-      '@pocket-career/core':
+      '@career-pocket/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:

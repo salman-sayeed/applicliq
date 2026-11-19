@@ -24,7 +24,7 @@ export default defineBackground(() => {
   void browser.contextMenus.removeAll().then(() =>
     browser.contextMenus.create({
       id: MENU_SAVE_LINK,
-      title: 'Save job to Pocket Career',
+      title: 'Save job to Career Pocket',
       contexts: ['link'],
     }),
   );
@@ -72,11 +72,11 @@ export default defineBackground(() => {
   browser.runtime.onMessage.addListener((message: unknown, sender) => {
     if (sender.id !== browser.runtime.id) return;
     const m = message as BackgroundMessage;
-    if (m?.type === 'pocket-career:jobs-changed') {
+    if (m?.type === 'career-pocket:jobs-changed') {
       void refresh();
       syncSoon();
-    } else if (m?.type === 'pocket-career:sync-now') void syncAndRefresh();
-    else if (m?.type === 'pocket-career:open-job' && typeof m.jobId === 'string') {
+    } else if (m?.type === 'career-pocket:sync-now') void syncAndRefresh();
+    else if (m?.type === 'career-pocket:open-job' && typeof m.jobId === 'string') {
       void openDashboard(m.jobId);
     }
   });
@@ -117,7 +117,7 @@ async function saveFromShortcut(tabId?: number) {
   const extracted = tab?.id === undefined ? undefined : await extractFromTab(tab.id);
   const { job } = extracted ?? {};
   if (!job?.url || !job.title || !job.company || (await repo.getJobByUrl(job.url))) {
-    if (!(await openPopup())) await flashBadge('!', '#d97706', 'Open Pocket Career to save');
+    if (!(await openPopup())) await flashBadge('!', '#d97706', 'Open Career Pocket to save');
     return;
   }
   const { automation } = await repo.getSettings();
@@ -126,5 +126,5 @@ async function saveFromShortcut(tabId?: number) {
   await repo.addJob({ ...saved, status: automation.defaultSaveStatus });
   void refresh();
   syncSoon();
-  await flashBadge('✓', '#16a34a', 'Saved to Pocket Career');
+  await flashBadge('✓', '#16a34a', 'Saved to Career Pocket');
 }

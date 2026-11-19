@@ -34,11 +34,19 @@ export type LocalState = {
   onboardingDone?: boolean;
 };
 
-export class PocketCareerDB extends Dexie {
+export const DB_NAME = 'career-pocket';
+/** The database's name before the app was renamed; its data moves over on first open. */
+export const LEGACY_DB_NAME = 'pocket-career';
+
+export class CareerPocketDB extends Dexie {
   jobs!: Table<JobRecord, string>;
   settings!: Table<SettingsRow, string>;
 
-  constructor(name = 'pocket-career') {
+  /** `legacyName`: a database to take the data from once (the default DB adopts the old one). */
+  constructor(
+    name = DB_NAME,
+    { legacyName = name === DB_NAME ? LEGACY_DB_NAME : undefined }: { legacyName?: string } = {},
+  ) {
     super(name);
     // Only indexed fields are listed; every other field is still stored. Tombstones have no
     // `url`/`company`/`status`/`updatedAt`, so they never appear in those indexes.
@@ -46,6 +54,40 @@ export class PocketCareerDB extends Dexie {
       jobs: 'id, url, company, status, updatedAt, deletedAt',
       settings: 'id',
     });
+    // Runs before the first query; queries wait for it.
+    if (legacyName) this.on('ready', () => adoptLegacyDatabase(this, legacyName));
+  }
+}
+
+/**
+ * Copies jobs and settings from the database the app used before its rename, if there is one
+ * and this one is still empty, then deletes it. Never throws: at worst the old data stays where
+ * it was and the app starts empty.
+ */
+async function adoptLegacyDatabase(db: CareerPocketDB, legacyName: string): Promise<void> {
+  try {
+    if (!(await Dexie.exists(legacyName))) return;
+    const legacy = new Dexie(legacyName);
+    let jobs: JobRecord[] = [];
+    let settings: SettingsRow[] = [];
+    try {
+      await legacy.open();
+      const tables = legacy.tables.map((t) => t.name);
+      if (tables.includes('jobs')) jobs = await legacy.table('jobs').toArray();
+      if (tables.includes('settings')) settings = await legacy.table('settings').toArray();
+    } finally {
+      legacy.close();
+    }
+    // In a transaction, so two pages opening at once don't both copy.
+    await db.transaction('rw', db.jobs, db.settings, async () => {
+      if ((await db.jobs.count()) > 0 || (await db.settings.count()) > 0) return;
+      await db.jobs.bulkPut(jobs);
+      await db.settings.bulkPut(settings);
+    });
+    // Not awaited: another open page may hold the old database open for a moment.
+    void Dexie.delete(legacyName).catch(() => {});
+  } catch (error) {
+    console.warn('Career Pocket: could not move data from the old database', error);
   }
 }
 
@@ -72,7 +114,7 @@ export type ImportResult = {
 /** Fields a patch may never overwrite, even if a caller passes them at runtime. */
 const PROTECTED_FIELDS = ['id', 'history', 'createdAt', 'updatedAt', 'deletedAt'] as const;
 
-export function createJobRepository(db: PocketCareerDB, now: () => number = Date.now) {
+export function createJobRepository(db: CareerPocketDB, now: () => number = Date.now) {
   async function getAllRecords(): Promise<JobRecord[]> {
     return db.jobs.toArray();
   }
@@ -286,7 +328,7 @@ export function createJobRepository(db: PocketCareerDB, now: () => number = Date
     /**
      * Merges a file produced by `exportJSON` (or the Drive file) into the local store with
      * `mergeJobs`: newer versions win, nothing local is lost. Malformed records are skipped;
-     * a file that is not a Pocket Career export throws.
+     * a file that is not a Career Pocket export throws.
      */
     async importJSON(json: string): Promise<ImportResult> {
       let data: unknown;
@@ -299,10 +341,10 @@ export function createJobRepository(db: PocketCareerDB, now: () => number = Date
       const snapshot = data as (Partial<SyncSnapshot> & { version?: unknown }) | null;
       const schema = snapshot?.schemaVersion ?? snapshot?.version;
       if (!snapshot || !Array.isArray(snapshot.records) || typeof schema !== 'number') {
-        throw new Error('Import failed: not a Pocket Career export.');
+        throw new Error('Import failed: not a Career Pocket export.');
       }
       if (schema > SCHEMA_VERSION) {
-        throw new Error('Import failed: this file is from a newer version of Pocket Career.');
+        throw new Error('Import failed: this file is from a newer version of Career Pocket.');
       }
       const { records, skipped } = sanitizeRecords(snapshot.records);
       await mergeIntoLocal(records);

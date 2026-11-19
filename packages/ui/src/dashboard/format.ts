@@ -1,4 +1,4 @@
-import { type DateFormat, type Salary, daysSince } from '@pocket-career/core';
+import { type DateFormat, type Salary, daysSince } from '@career-pocket/core';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 

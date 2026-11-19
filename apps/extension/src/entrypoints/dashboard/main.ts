@@ -1,4 +1,4 @@
-import { applyCachedAppearance } from '@pocket-career/ui';
+import { applyCachedAppearance } from '@career-pocket/ui';
 import { mount } from 'svelte';
 import App from './App.svelte';
 import './app.css';

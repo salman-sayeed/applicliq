@@ -10,7 +10,9 @@ import type { JobRecord } from '../types';
  * extension, Google Identity Services on the web), so callers inject `getToken`.
  */
 export const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
-export const SYNC_FILE_NAME = 'pocket-career.json';
+export const SYNC_FILE_NAME = 'career-pocket.json';
+/** The file's name before the app was renamed; such a file is adopted and renamed on sync. */
+export const LEGACY_SYNC_FILE_NAME = 'pocket-career.json';
 
 /** Format of the Drive file and of exports. Bump on incompatible changes. */
 export const SCHEMA_VERSION = 1;
@@ -35,8 +37,12 @@ export type DriveClientOptions = {
   /** Called when Drive rejects a token (401), before one retry with a fresh token. */
   onUnauthorized?: (token: string) => Promise<void>;
   fileName?: string;
+  /** Also listed, so data from before a rename is found; `rename` moves it to `fileName`. */
+  legacyFileName?: string;
   fetch?: typeof fetch;
 };
+
+export type DriveFile = { id: string; name: string };
 
 export class DriveError extends Error {
   constructor(
@@ -55,6 +61,7 @@ export function createDriveClient({
   getToken,
   onUnauthorized,
   fileName = SYNC_FILE_NAME,
+  legacyFileName = fileName === SYNC_FILE_NAME ? LEGACY_SYNC_FILE_NAME : undefined,
   fetch: fetchImpl = globalThis.fetch.bind(globalThis),
 }: DriveClientOptions) {
   async function request(url: string, init: RequestInit = {}, retried = false): Promise<Response> {
@@ -71,18 +78,34 @@ export function createDriveClient({
   }
 
   return {
-    /** Ids of the sync files, oldest first (two devices may each have created one). */
-    async list(): Promise<string[]> {
+    /** The current file name; a file listed under another name is a legacy one. */
+    fileName,
+
+    /**
+     * The sync files (and legacy-named ones), oldest first: two devices may each have created
+     * one.
+     */
+    async list(): Promise<DriveFile[]> {
+      const names = [fileName, legacyFileName].filter(Boolean).map((n) => `name = '${n}'`);
       const params = new URLSearchParams({
         spaces: 'appDataFolder',
-        q: `name = '${fileName}' and trashed = false`,
-        fields: 'files(id)',
+        q: `(${names.join(' or ')}) and trashed = false`,
+        fields: 'files(id,name)',
         orderBy: 'createdTime',
         pageSize: '10',
       });
       const res = await request(`${API}/files?${params}`);
-      const body = (await res.json()) as { files?: { id: string }[] };
-      return (body.files ?? []).map((f) => f.id);
+      const body = (await res.json()) as { files?: DriveFile[] };
+      return (body.files ?? []).map((f) => ({ id: f.id, name: f.name ?? fileName }));
+    },
+
+    /** Gives a file the current name (adopts a legacy-named file). */
+    async rename(id: string): Promise<void> {
+      await request(`${API}/files/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: fileName }),
+      });
     },
 
     async download(id: string): Promise<DriveDownload> {

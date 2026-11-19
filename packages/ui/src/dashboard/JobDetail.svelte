@@ -8,7 +8,7 @@
     type WorkType,
     interviewIcs,
     interviewIcsFileName,
-  } from '@pocket-career/core';
+  } from '@career-pocket/core';
   import { onMount, untrack } from 'svelte';
   import { fade, fly } from 'svelte/transition';
   import { getPrefs } from '../prefs.svelte';

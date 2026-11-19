@@ -16,8 +16,8 @@ import {
   quietHoursEnd,
   startOfDay,
   statusLabel,
-} from '@pocket-career/core';
-import { STATUS_LABELS } from '@pocket-career/ui';
+} from '@career-pocket/core';
+import { STATUS_LABELS } from '@career-pocket/ui';
 import { showGoalBadge, todayProgress } from './badge';
 import { openDashboard } from './config';
 import { repo } from './db';
@@ -39,8 +39,8 @@ const GHOST_CHECK_MINUTES = 6 * 60;
 const SHOWN_REMINDERS_KEY = 'shownReminders';
 /** The day (`dayKey`) the daily goal reminder last ran, so it nudges at most once a day. */
 const GOAL_REMINDER_DAY_KEY = 'goalReminderDay';
-const NOTIFICATION_PREFIX = 'pocket-career-reminder:';
-const GOAL_NOTIFICATION_ID = 'pocket-career-goal';
+const NOTIFICATION_PREFIX = 'career-pocket-reminder:';
+const GOAL_NOTIFICATION_ID = 'career-pocket-goal';
 
 /**
  * Creates the periodic alarms (6-hour ghost check, sync every `syncIntervalMinutes`) unless they
@@ -104,7 +104,7 @@ export function refresh({ ghost = false } = {}): Promise<void> {
       // Today's count starts over at midnight.
       await browser.alarms.create(ALARM_MIDNIGHT, { when: addDays(startOfDay(Date.now()), 1) });
     })
-    .catch((error: unknown) => console.error('Pocket Career: background refresh failed', error));
+    .catch((error: unknown) => console.error('Career Pocket: background refresh failed', error));
   return queue;
 }
 
@@ -193,10 +193,10 @@ async function showGoalReminder(left: number, goal: number): Promise<void> {
       type: 'basic',
       iconUrl: browser.runtime.getURL('/icon/128.png'),
       title: `${left} more application${left === 1 ? '' : 's'} to reach today's goal`,
-      message: `Your daily goal is ${goal}. Open Pocket Career to see your saved jobs.`,
+      message: `Your daily goal is ${goal}. Open Career Pocket to see your saved jobs.`,
     });
   } catch (error) {
-    console.error('Pocket Career: could not show the goal reminder', error);
+    console.error('Career Pocket: could not show the goal reminder', error);
   }
 }
 
@@ -225,7 +225,7 @@ async function showReminder({ kind, job }: Reminder, settings: Settings): Promis
       message,
     });
   } catch (error) {
-    console.error('Pocket Career: could not show a reminder', error);
+    console.error('Career Pocket: could not show a reminder', error);
   }
 }
 
@@ -264,6 +264,6 @@ export async function updatePageBadge(tabId: number, url: string | undefined): P
 }
 
 async function sendPageBadge(tabId: number, badge: PageBadgeMessage['badge']): Promise<void> {
-  const message: PageBadgeMessage = { type: 'pocket-career:page-badge', badge };
+  const message: PageBadgeMessage = { type: 'career-pocket:page-badge', badge };
   await browser.tabs.sendMessage(tabId, message).catch(() => {});
 }
