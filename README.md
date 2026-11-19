@@ -16,7 +16,11 @@ A free, open-source, lightweight job application tracker.
 - **Web dashboard:** https://career-pocket.pages.dev (no install).
 - **Extension:** download the Chrome, Edge or Firefox zip from the latest
   [GitHub Release](https://github.com/salman-sayeed/careerpocket/releases) and load it unpacked,
-  or build it from source (see [Getting started](#getting-started)). Store listings are coming.
+  or build it from source (see [Getting started](#getting-started)).
+  - Chrome, Brave, Edge and other Chromium browsers: unzip the `-chrome.zip` (or `-edge.zip`),
+    open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked** and pick the
+    unzipped folder. These zips pin the extension ID, so Google Drive sync works.
+  - Firefox: install it from Firefox Add-ons once it's listed.
 
 ## How it fits together
 
