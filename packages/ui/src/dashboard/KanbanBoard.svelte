@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { JOB_STATUSES, type Job, type JobStatus } from '@pocket-career/core';
+  import { JOB_STATUSES, type Job, type JobStatus } from '@career-pocket/core';
   import { flip } from 'svelte/animate';
   import { crossfade } from 'svelte/transition';
   import { getPrefs } from '../prefs.svelte';

@@ -1,4 +1,4 @@
-import type { Job, NewJob, SalaryPeriod, Settings, WorkType } from '@pocket-career/core';
+import type { Job, NewJob, SalaryPeriod, Settings, WorkType } from '@career-pocket/core';
 
 /** The popup form's editable state (strings, so inputs can be empty). */
 export type Draft = {

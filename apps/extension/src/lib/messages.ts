@@ -4,14 +4,14 @@
  * An extension page changed jobs or settings: the background updates badge and reminders and
  * syncs a few seconds later.
  */
-export type JobsChangedMessage = { type: 'pocket-career:jobs-changed' };
+export type JobsChangedMessage = { type: 'career-pocket:jobs-changed' };
 
 /** The page badge asks to open a job in the dashboard. */
-export type OpenJobMessage = { type: 'pocket-career:open-job'; jobId: string };
+export type OpenJobMessage = { type: 'career-pocket:open-job'; jobId: string };
 
 /** Background → page badge: show this job's summary, or remove the badge (`badge: null`). */
 export type PageBadgeMessage = {
-  type: 'pocket-career:page-badge';
+  type: 'career-pocket:page-badge';
   badge: {
     jobId: string;
     text: string;
@@ -20,7 +20,7 @@ export type PageBadgeMessage = {
 };
 
 /** Sync with Drive now (popup opened, "Sync now", just signed in). */
-export type SyncNowMessage = { type: 'pocket-career:sync-now' };
+export type SyncNowMessage = { type: 'career-pocket:sync-now' };
 
 export type BackgroundMessage = JobsChangedMessage | OpenJobMessage | SyncNowMessage;
 
@@ -29,12 +29,12 @@ export type BackgroundMessage = JobsChangedMessage | OpenJobMessage | SyncNowMes
  * follow changes made in the popup or dashboard. Never fails the write.
  */
 export function notifyJobsChanged(): void {
-  const message: JobsChangedMessage = { type: 'pocket-career:jobs-changed' };
+  const message: JobsChangedMessage = { type: 'career-pocket:jobs-changed' };
   browser.runtime.sendMessage(message).catch(() => {});
 }
 
 /** Asks the background to sync now; it records the outcome in the sync status. */
 export function requestSync(): void {
-  const message: SyncNowMessage = { type: 'pocket-career:sync-now' };
+  const message: SyncNowMessage = { type: 'career-pocket:sync-now' };
   browser.runtime.sendMessage(message).catch(() => {});
 }

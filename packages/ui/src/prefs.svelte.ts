@@ -5,7 +5,7 @@ import {
   statusLabel,
   tagColor,
   visibleStatuses,
-} from '@pocket-career/core';
+} from '@career-pocket/core';
 import { getContext, setContext } from 'svelte';
 import { formatDate, formatDateTime } from './dashboard/format';
 import { STATUS_LABELS, TAG_CLASSES } from './status';
@@ -33,7 +33,7 @@ export class Prefs {
   dateTime = (ms: number): string => formatDateTime(ms, this.settings.regional.dateFormat);
 }
 
-const KEY = Symbol('pocket-career-prefs');
+const KEY = Symbol('career-pocket-prefs');
 
 export function setPrefs(prefs: Prefs): Prefs {
   return setContext(KEY, prefs);

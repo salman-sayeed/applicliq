@@ -4,7 +4,7 @@
     type DashboardViewSetting,
     type Density,
     type Theme,
-  } from '@pocket-career/core';
+  } from '@career-pocket/core';
   import { ACCENT_SWATCH } from '../../status';
   import Choice from '../Choice.svelte';
   import Field from '../Field.svelte';
@@ -62,7 +62,7 @@
 
 <Field
   label="Reduce motion"
-  hint="Turns off animations. Pocket Career already follows your system's reduced-motion setting."
+  hint="Turns off animations. Career Pocket already follows your system's reduced-motion setting."
 >
   <Toggle
     label="Reduce motion"

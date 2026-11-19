@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { type BadgePosition, type ToolbarBadgeMode, siteHost } from '@pocket-career/core';
+  import { type BadgePosition, type ToolbarBadgeMode, siteHost } from '@career-pocket/core';
   import Choice from '../Choice.svelte';
   import Field from '../Field.svelte';
   import Toggle from '../Toggle.svelte';
@@ -140,7 +140,7 @@
   />
 </Field>
 
-<Field label="Toolbar badge" hint="What the number on the Pocket Career toolbar icon shows.">
+<Field label="Toolbar badge" hint="What the number on the Career Pocket toolbar icon shows.">
   <Choice
     label="Toolbar badge"
     value={pages.toolbarBadge}

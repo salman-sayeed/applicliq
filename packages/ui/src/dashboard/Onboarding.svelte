@@ -7,7 +7,7 @@
   const steps = [
     {
       title: 'Save jobs from any site',
-      body: 'Open a job posting and click the Pocket Career icon in your toolbar, or press the save shortcut. Title, company and salary are filled in from the page.',
+      body: 'Open a job posting and click the Career Pocket icon in your toolbar, or press the save shortcut. Title, company and salary are filled in from the page.',
     },
     {
       title: 'Track every application',
@@ -46,7 +46,7 @@
     class="bg-surface border-line w-full max-w-md rounded-xl border p-6 shadow-2xl outline-none"
   >
     <p class="text-ink-muted text-xs font-medium">
-      Welcome to Pocket Career · {step + 1} of {steps.length}
+      Welcome to Career Pocket · {step + 1} of {steps.length}
     </p>
     {#key step}
       <div in:fade={{ duration: 120 }}>

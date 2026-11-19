@@ -5,10 +5,10 @@
 </script>
 
 <svelte:head>
-  <title>Privacy policy · Pocket Career</title>
+  <title>Privacy policy · Career Pocket</title>
   <meta
     name="description"
-    content="Pocket Career has no server. Your job data stays in your browser and in a hidden app folder in your own Google Drive."
+    content="Career Pocket has no server. Your job data stays in your browser and in a hidden app folder in your own Google Drive."
   />
 </svelte:head>
 
@@ -22,7 +22,7 @@
     <p class="mt-0! font-medium">In short</p>
     <ul>
       <li>
-        Pocket Career has <strong>no server and no database</strong>. We never receive, store or see
+        Career Pocket has <strong>no server and no database</strong>. We never receive, store or see
         your data.
       </li>
       <li>
@@ -35,13 +35,13 @@
 
   <h2>Who we are</h2>
   <p>
-    Pocket Career is a free, open-source job application tracker made up of a browser extension
+    Career Pocket is a free, open-source job application tracker made up of a browser extension
     (Chrome, Edge, Firefox) and this website. Its full source code is public on
     <a href={GITHUB_URL} rel="external">GitHub</a>, so anyone can check that it does what this
     policy says.
   </p>
 
-  <h2>What data Pocket Career handles</h2>
+  <h2>What data Career Pocket handles</h2>
   <p>Only what you choose to save about your job search:</p>
   <ul>
     <li>
@@ -68,20 +68,20 @@
     </li>
     <li>
       <strong>In your Google Drive</strong>, only if you sign in to sync: a single file,
-      <code>pocket-career.json</code>, in Drive's hidden application data folder. It doesn't appear
+      <code>career-pocket.json</code>, in Drive's hidden application data folder. It doesn't appear
       among your files and counts toward your Drive storage.
     </li>
   </ul>
   <p>
-    Data travels only between your browser and Google, over HTTPS. Pocket Career has no servers it
+    Data travels only between your browser and Google, over HTTPS. Career Pocket has no servers it
     could send it to.
   </p>
 
   <h2>Google user data</h2>
   <p>
-    When you sign in with Google, Pocket Career asks for one permission:
+    When you sign in with Google, Career Pocket asks for one permission:
     <code>https://www.googleapis.com/auth/drive.appdata</code> ("See, create, and delete its own
-    configuration data in your Google Drive"). With it, Pocket Career can only see the files it
+    configuration data in your Google Drive"). With it, Career Pocket can only see the files it
     created in its own hidden folder. It <strong>cannot</strong> see, read or change any other file in
     your Drive, and it does not ask for your name, email address, contacts or anything else.
   </p>
@@ -101,7 +101,7 @@
     </li>
   </ul>
   <p>
-    Pocket Career's use and transfer of information received from Google APIs adheres to the
+    Career Pocket's use and transfer of information received from Google APIs adheres to the
     <a href="https://developers.google.com/terms/api-services-user-data-policy">
       Google API Services User Data Policy
     </a>, including the Limited Use requirements.
@@ -141,7 +141,7 @@
       <a href="https://myaccount.google.com/connections">Google Account connections</a>.
     </li>
     <li>
-      <strong>Delete the Drive copy:</strong> in Google Drive, open Settings → Manage apps → Pocket Career
+      <strong>Delete the Drive copy:</strong> in Google Drive, open Settings → Manage apps → Career Pocket
       → Options → Delete hidden app data.
     </li>
     <li>
@@ -155,7 +155,7 @@
   </p>
 
   <h2>Children</h2>
-  <p>Pocket Career is not directed at children under 13 and doesn't knowingly handle their data.</p>
+  <p>Career Pocket is not directed at children under 13 and doesn't knowingly handle their data.</p>
 
   <h2>Changes to this policy</h2>
   <p>

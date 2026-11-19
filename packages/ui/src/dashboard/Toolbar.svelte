@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { JobFilter } from '@pocket-career/core';
+  import type { JobFilter } from '@career-pocket/core';
   import { getPrefs } from '../prefs.svelte';
   import { WORK_TYPE_LABELS } from '../status';
   import type { DashboardView } from './types';

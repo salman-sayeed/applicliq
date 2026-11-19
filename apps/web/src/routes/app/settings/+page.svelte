@@ -3,7 +3,7 @@
   import { resolve } from '$app/paths';
   import { page } from '$app/state';
   import { onMount } from 'svelte';
-  import { jobsToCsv, statusLabel } from '@pocket-career/core';
+  import { jobsToCsv, statusLabel } from '@career-pocket/core';
   import {
     SETTINGS_PAGES,
     STATUS_LABELS,
@@ -11,8 +11,8 @@
     type SettingsPageId,
     type SettingsPlatform,
     type SettingsSync,
-  } from '@pocket-career/ui';
-  import favicon from '#lib/assets/favicon.svg';
+  } from '@career-pocket/ui';
+  import logo from '#lib/assets/logo.png';
   import { isSyncConfigured, loadGis } from '#lib/google-auth.ts';
   import { GITHUB_URL, ISSUES_URL } from '#lib/links.ts';
   import { session, startSignIn, startSignOut, syncNow } from '#lib/session.svelte.ts';
@@ -89,7 +89,7 @@
 </script>
 
 <svelte:head>
-  <title>Settings · Pocket Career</title>
+  <title>Settings · Career Pocket</title>
   <meta name="robots" content="noindex" />
 </svelte:head>
 
@@ -100,8 +100,8 @@
         href={resolve('/app')}
         class="focus-visible:ring-accent flex items-center gap-2 rounded focus-visible:ring-2 focus-visible:outline-none"
       >
-        <img src={favicon} alt="" class="size-6" />
-        <span class="text-base font-semibold">Pocket Career</span>
+        <img src={logo} alt="" class="size-6" />
+        <span class="text-base font-semibold">Career Pocket</span>
       </a>
       <span class="text-ink-muted text-base">/ Settings</span>
       <a

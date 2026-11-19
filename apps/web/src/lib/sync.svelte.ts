@@ -1,14 +1,15 @@
+import './legacy-keys.ts';
 import {
   DEFAULT_SETTINGS,
-  PocketCareerDB,
+  CareerPocketDB,
   type SyncErrorKind,
   createDriveClient,
   createJobRepository,
   deleteDriveData,
   syncWithDrive,
   toSyncError,
-} from '@pocket-career/core';
-import type { DashboardAdapter, SyncMenuStatus } from '@pocket-career/ui';
+} from '@career-pocket/core';
+import type { DashboardAdapter, SyncMenuStatus } from '@career-pocket/ui';
 import { NotSignedInError, dropToken, getToken, isSignedIn } from './google-auth.ts';
 
 /**
@@ -18,11 +19,11 @@ import { NotSignedInError, dropToken, getToken, isSignedIn } from './google-auth
  * connection returns. A Web Lock keeps two tabs from syncing at once.
  */
 
-export const db = new PocketCareerDB();
+export const db = new CareerPocketDB();
 export const repo = createJobRepository(db);
 
-const LAST_SYNCED_KEY = 'pocket-career:last-synced';
-const ACCOUNT_KEY = 'pocket-career:account';
+const LAST_SYNCED_KEY = 'career-pocket:last-synced';
+const ACCOUNT_KEY = 'career-pocket:account';
 const DEBOUNCE_MS = 3000;
 /** A tab coming back to the foreground syncs if the last sync is older than this. */
 const STALE_MS = 60_000;
@@ -84,7 +85,7 @@ export function runSync(): Promise<void> {
 }
 
 function withSyncLock(task: () => Promise<void>): Promise<void> {
-  return navigator.locks ? navigator.locks.request('pocket-career-sync', task) : task();
+  return navigator.locks ? navigator.locks.request('career-pocket-sync', task) : task();
 }
 
 async function syncOnce(): Promise<void> {
@@ -158,7 +159,7 @@ export async function clearLocalData(): Promise<void> {
   writeStored(ACCOUNT_KEY, undefined);
 }
 
-/** Deletes the Pocket Career file from Drive (settings page). The caller then signs out. */
+/** Deletes the Career Pocket file from Drive (settings page). The caller then signs out. */
 export async function deleteRemoteData(): Promise<void> {
   await deleteDriveData(drive);
 }

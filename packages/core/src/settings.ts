@@ -5,7 +5,7 @@ import { JOB_STATUSES, type JobStatus, type SalaryPeriod } from './types';
 /**
  * App preferences. One typed object, split in storage:
  *
- * - **Synced** keys go to Drive with the jobs (`settings` in `pocket-career.json`) and merge by
+ * - **Synced** keys go to Drive with the jobs (`settings` in `career-pocket.json`) and merge by
  *   last write wins on `updatedAt`, as a whole.
  * - **Device** keys ({@link DEVICE_KEYS}) stay in this browser: notifications and the page badge
  *   depend on the browser's permissions and on where the user is.

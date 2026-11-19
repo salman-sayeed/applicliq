@@ -1,4 +1,4 @@
-import type { ExtractedJob } from '@pocket-career/core';
+import type { ExtractedJob } from '@career-pocket/core';
 
 /** `action` in MV3, `browserAction` in Firefox MV2. */
 export const actionApi = browser.action ?? browser.browserAction;

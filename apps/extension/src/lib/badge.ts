@@ -4,7 +4,7 @@ import {
   WEEK_START_INDEX,
   goalProgress,
   toolbarBadgeText,
-} from '@pocket-career/core';
+} from '@career-pocket/core';
 import { repo } from './db';
 import { actionApi } from './tabs';
 
@@ -38,10 +38,10 @@ export async function showGoalBadge(jobs?: readonly Job[], settings?: Settings):
   await actionApi.setTitle({
     title:
       mode === 'off'
-        ? 'Pocket Career'
+        ? 'Career Pocket'
         : goal > 0
-          ? `Pocket Career: ${count} of ${goal} applications today`
-          : `Pocket Career: ${count} applications today`,
+          ? `Career Pocket: ${count} of ${goal} applications today`
+          : `Career Pocket: ${count} applications today`,
   });
 }
 

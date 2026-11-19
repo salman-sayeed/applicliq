@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { SyncMenu } from '@pocket-career/ui';
+  import { SyncMenu } from '@career-pocket/ui';
   import { isSignedIn, isSyncConfigured, signIn, signOut } from '@/lib/google-auth';
   import { requestSync } from '@/lib/messages';
   import { SYNC_STATUS_KEY, type SyncStatus, readSyncStatus, resetSyncStatus } from '@/lib/sync';

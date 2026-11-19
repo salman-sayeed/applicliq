@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Job, JobSortKey, SortDirection } from '@pocket-career/core';
+  import type { Job, JobSortKey, SortDirection } from '@career-pocket/core';
   import StatusBadge from '../components/StatusBadge.svelte';
   import { getPrefs } from '../prefs.svelte';
   import { WORK_TYPE_LABELS } from '../status';

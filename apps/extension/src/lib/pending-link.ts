@@ -1,5 +1,5 @@
 /**
- * Hand-off from the "Save job to Pocket Career" context menu to the popup: the background
+ * Hand-off from the "Save job to Career Pocket" context menu to the popup: the background
  * stores the link, the popup picks it up on open. Kept briefly in extension storage only.
  */
 export type PendingLink = { url: string; title: string; at: number };

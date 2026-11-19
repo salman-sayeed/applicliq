@@ -1,5 +1,5 @@
 @import 'tailwindcss';
-@import '@pocket-career/ui/theme.css';
+@import '@career-pocket/ui/theme.css';
 
 body {
   width: 380px;

@@ -1,4 +1,4 @@
-# Pocket Career
+# Career Pocket
 
 ## Goal
 
@@ -165,7 +165,7 @@ synced key changes. Status keys never change; `labels.statusLabels` only renames
 
 ### Sync / merge
 
-The Drive file `pocket-career.json` in `appDataFolder` holds
+The Drive file `career-pocket.json` in `appDataFolder` holds
 `{ schemaVersion: 1, updatedAt, records, settings }` (`settings` = the synced part; files from
 older versions lack it and it is added on the next upload)
 (older files and exports used `version: 1`, still read). Sync = download, sanitize,

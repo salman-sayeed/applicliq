@@ -16,7 +16,7 @@ export default defineConfig({
     // docs/google-setup.md). Without them the extension builds fine and sync stays off.
     const env = loadEnv(mode, process.cwd(), 'WXT_');
     return {
-      name: 'Pocket Career',
+      name: 'Career Pocket',
       description:
         'Track job applications from any job posting. Local-first, synced to your own Google Drive.',
       // Minimal permissions: no host access. `activeTab` grants the current tab only when the user
@@ -45,7 +45,7 @@ export default defineConfig({
         : {}),
       // A fixed add-on ID keeps Firefox's identity redirect URL stable across installs.
       ...(browser === 'firefox'
-        ? { browser_specific_settings: { gecko: { id: 'pocket-career@pocket-career' } } }
+        ? { browser_specific_settings: { gecko: { id: 'career-pocket@career-pocket' } } }
         : {}),
       // All-sites access only for the opt-in saved-job page badge (dashboard toggle): it lets the
       // background see tab URLs and inject the badge into pages of saved jobs. MV2 (Firefox) has

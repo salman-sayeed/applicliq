@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { jobsToCsv, statusLabel } from '@pocket-career/core';
+  import { jobsToCsv, statusLabel } from '@career-pocket/core';
   import {
     STATUS_LABELS,
     SettingsPage,
     type SettingsPageId,
     type SettingsPlatform,
-  } from '@pocket-career/ui';
+  } from '@career-pocket/ui';
   import { onMount } from 'svelte';
   import {
     GITHUB_URL,
@@ -128,7 +128,7 @@
 <SettingsPage adapter={dashboardAdapter} {platform} {sync} bind:section>
   {#snippet header()}
     <img src="/icon/32.png" alt="" class="size-6" />
-    <span class="text-base font-semibold">Pocket Career</span>
+    <span class="text-base font-semibold">Career Pocket</span>
     <span class="text-ink-muted text-base">/ Settings</span>
     <button
       type="button"

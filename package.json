@@ -1,5 +1,5 @@
 {
-  "name": "pocket-career",
+  "name": "career-pocket",
   "version": "0.0.0",
   "private": true,
   "description": "Free, open-source, lightweight job application tracker: browser extension + static dashboard. Your data stays local and in your own Google Drive.",
@@ -10,11 +10,11 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev:ext": "pnpm --filter @pocket-career/extension dev",
-    "dev:web": "pnpm --filter @pocket-career/web dev",
+    "dev:ext": "pnpm --filter @career-pocket/extension dev",
+    "dev:web": "pnpm --filter @career-pocket/web dev",
     "build": "pnpm -r --filter \"./apps/*\" build",
-    "build:ext": "pnpm --filter @pocket-career/extension build:all",
-    "deploy:web": "pnpm --filter @pocket-career/web build && pnpm dlx wrangler@4 pages deploy apps/web/build --project-name pocket-career",
+    "build:ext": "pnpm --filter @career-pocket/extension build:all",
+    "deploy:web": "pnpm --filter @career-pocket/web build && pnpm dlx wrangler@4 pages deploy apps/web/build --project-name career-pocket",
     "test": "pnpm -r --if-present test",
     "typecheck": "tsc -b && pnpm -r --if-present check",
     "lint": "eslint .",

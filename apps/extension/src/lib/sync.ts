@@ -4,7 +4,7 @@ import {
   deleteDriveData,
   syncWithDrive,
   toSyncError,
-} from '@pocket-career/core';
+} from '@career-pocket/core';
 import { repo } from './db';
 import { NotSignedInError, dropToken, getToken, isSignedIn, signOut } from './google-auth';
 
@@ -110,7 +110,7 @@ async function syncOnce(): Promise<boolean> {
 }
 
 /**
- * Deletes the Pocket Career file from Drive, then signs this device out so the next sync
+ * Deletes the Career Pocket file from Drive, then signs this device out so the next sync
  * doesn't upload it again. Local jobs are kept.
  */
 export async function deleteDriveDataAndSignOut(): Promise<void> {

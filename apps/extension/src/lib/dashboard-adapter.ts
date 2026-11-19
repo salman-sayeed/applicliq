@@ -1,4 +1,4 @@
-import type { DashboardAdapter } from '@pocket-career/ui';
+import type { DashboardAdapter } from '@career-pocket/ui';
 import { repo } from './db';
 import { notifyJobsChanged } from './messages';
 

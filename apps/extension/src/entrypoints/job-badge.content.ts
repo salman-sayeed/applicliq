@@ -11,7 +11,7 @@ import type { OpenJobMessage, PageBadgeMessage } from '@/lib/messages';
 export default defineContentScript({
   registration: 'runtime',
   main() {
-    const flag = '__pocketCareerPageBadge';
+    const flag = '__careerPocketPageBadge';
     const scope = globalThis as unknown as Record<string, boolean>;
     // Injected again on every matching navigation; one listener is enough.
     if (scope[flag]) return;
@@ -33,7 +33,7 @@ export default defineContentScript({
       // e.g. 'bottom-right' → bottom:16px;right:16px (the setting is validated by the sender).
       const [vertical, horizontal] = position.split('-');
       const place = `${vertical === 'top' ? 'top' : 'bottom'}:16px;${horizontal === 'left' ? 'left' : 'right'}:16px`;
-      host = document.createElement('pocket-career-badge');
+      host = document.createElement('career-pocket-badge');
       host.style.cssText = `all:initial;position:fixed;${place};z-index:2147483647;display:block`;
       const root = host.attachShadow({ mode: 'closed' });
 
@@ -46,13 +46,13 @@ export default defineContentScript({
       const open = document.createElement('button');
       open.type = 'button';
       open.className = 'open';
-      open.title = 'Open in Pocket Career';
+      open.title = 'Open in Career Pocket';
       const dot = document.createElement('span');
       dot.className = 'dot';
       dot.setAttribute('aria-hidden', 'true');
       open.append(dot, text);
       open.addEventListener('click', () => {
-        const message: OpenJobMessage = { type: 'pocket-career:open-job', jobId };
+        const message: OpenJobMessage = { type: 'career-pocket:open-job', jobId };
         browser.runtime.sendMessage(message).catch(() => {});
       });
 
@@ -73,7 +73,7 @@ export default defineContentScript({
 
     browser.runtime.onMessage.addListener((message: unknown) => {
       const m = message as PageBadgeMessage | undefined;
-      if (m?.type !== 'pocket-career:page-badge') return;
+      if (m?.type !== 'career-pocket:page-badge') return;
       if (m.badge) show(m.badge.jobId, m.badge.text, m.badge.position);
       else remove();
     });

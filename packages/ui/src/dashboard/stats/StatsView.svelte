@@ -9,7 +9,7 @@
     applicationStreak,
     breakdownBy,
     goalProgress,
-  } from '@pocket-career/core';
+  } from '@career-pocket/core';
   import { slide } from 'svelte/transition';
   import { WORK_TYPE_LABELS } from '../../status';
   import Breakdown from './Breakdown.svelte';

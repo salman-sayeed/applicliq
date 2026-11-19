@@ -1,8 +1,8 @@
 /*
- * Pocket Career theme for Tailwind v4.
+ * Career Pocket theme for Tailwind v4.
  * Usage in an app stylesheet:
  *   @import 'tailwindcss';
- *   @import '@pocket-career/ui/theme.css';
+ *   @import '@career-pocket/ui/theme.css';
  */
 
 /* Let Tailwind see the classes used by shared components. */

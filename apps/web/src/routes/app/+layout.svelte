@@ -1,6 +1,6 @@
 <script lang="ts">
   import './app.css';
-  import { applyCachedAppearance } from '@pocket-career/ui';
+  import { applyCachedAppearance } from '@career-pocket/ui';
   import type { LayoutProps } from './$types';
 
   // Theme and accent from the last visit, before settings load from IndexedDB.
