@@ -31,6 +31,7 @@
     header,
     emptyHint,
     onboarding = false,
+    onboardingSync,
   }: {
     adapter: DashboardAdapter;
     /** Opens this job's detail panel on load (e.g. from a `#job=` link). */
@@ -41,6 +42,8 @@
     emptyHint?: Snippet;
     /** Show the introduction even if it was seen before ("Replay onboarding"). */
     onboarding?: boolean;
+    /** Sign-in control shown in the last onboarding step (optional Drive sync). */
+    onboardingSync?: Snippet;
   } = $props();
 
   const TOAST_MS = 6000;
@@ -261,5 +264,10 @@
 <Toast {toast} ondismiss={() => (toast = undefined)} />
 
 {#if showIntro}
-  <Onboarding onclose={closeIntro} />
+  <Onboarding
+    goals={settings?.goals}
+    onsavegoals={saveGoals}
+    sync={onboardingSync}
+    onclose={closeIntro}
+  />
 {/if}

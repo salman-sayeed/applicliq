@@ -1,7 +1,7 @@
 <script lang="ts">
   import { JOB_STATUSES, type Job, type JobStatus } from '@career-pocket/core';
-  import { flip } from 'svelte/animate';
-  import { crossfade } from 'svelte/transition';
+  import { flip } from '../motion';
+  import { crossfade } from '../motion';
   import { getPrefs } from '../prefs.svelte';
   import { STATUS_DOT } from '../status';
   import { formatSalary } from './format';

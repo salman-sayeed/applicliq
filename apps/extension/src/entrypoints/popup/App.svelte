@@ -1,8 +1,7 @@
 <script lang="ts">
   import type { Job, JobStatus } from '@career-pocket/core';
-  import { Prefs, applyAppearance, setPrefs } from '@career-pocket/ui';
+  import { Prefs, applyAppearance, fly, setPrefs, slide } from '@career-pocket/ui';
   import { onMount } from 'svelte';
-  import { fly, slide } from 'svelte/transition';
   import { getSaveShortcut, openDashboard, openSettings } from '@/lib/config';
   import { repo } from '@/lib/db';
   import { type Draft, draftFrom, isDraftValid, toNewJob } from '@/lib/draft';

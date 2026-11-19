@@ -76,6 +76,11 @@
         </a>
       </div>
     {/snippet}
+    {#snippet onboardingSync()}
+      <p class="text-status-offer text-sm font-medium" role="status">
+        ✓ You're signed in. Jobs you save with the extension show up here.
+      </p>
+    {/snippet}
     {#snippet emptyHint()}
       {#if sync.syncing && !sync.lastSyncedAt}
         <p>Loading your jobs from Google Drive…</p>

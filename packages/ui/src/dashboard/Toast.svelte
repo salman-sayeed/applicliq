@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { fly } from 'svelte/transition';
+  import { fly } from '../motion';
   import type { ToastMessage } from './types';
 
   let { toast, ondismiss }: { toast?: ToastMessage; ondismiss: () => void } = $props();

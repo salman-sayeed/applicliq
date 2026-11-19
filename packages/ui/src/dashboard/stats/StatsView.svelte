@@ -10,7 +10,7 @@
     breakdownBy,
     goalProgress,
   } from '@career-pocket/core';
-  import { slide } from 'svelte/transition';
+  import { slide } from '../../motion';
   import { WORK_TYPE_LABELS } from '../../status';
   import Breakdown from './Breakdown.svelte';
   import Funnel from './Funnel.svelte';

@@ -32,6 +32,10 @@ apps/
     src/lib/google-auth.ts launchWebAuthFlow (Web client); getAuthToken on Chrome if only a Chrome client
     src/lib/sync.ts     background sync runner + status in extension storage
 docs/google-setup.md    creating the OAuth client IDs (env vars in apps/extension/.env, apps/web/.env)
+docs/store-listing.md   Chrome Web Store / Edge / AMO listing text, permission justifications
+.github/workflows/      ci.yml (format, lint, typecheck, test, build on PRs and main);
+                        release.yml (on a v* tag: zips for Chrome, Edge, Firefox + sources zip,
+                        attached to a GitHub Release)
     wxt.config.ts       manifest + Vite plugins (Tailwind)
   web/                  SvelteKit static site (Cloudflare Pages: docs/deploy-web.md)
     src/routes/         +layout.ts sets `prerender = true`; (site)/ landing + privacy (site.css),
@@ -67,6 +71,10 @@ packages/
                         SettingsPlatform prop; extension-only sections are disabled on the web.
     src/prefs.svelte.ts Prefs context: status names, hidden statuses, tag colours, date format
     src/appearance.ts   applyAppearance: theme / accent / density / reduce-motion on <html>
+    src/motion.ts       fade/fly/slide/flip/crossfade that honour reduced motion (Svelte 5 runs
+                        transitions with Web Animations, which the CSS rule can't stop): import
+                        these, never svelte/transition or svelte/animate directly
+    src/a11y/focus.ts   rememberFocus (restore focus when a dialog/panel closes), trapTab
 ```
 
 Workspace packages export their TypeScript/Svelte **source** directly (no build step); each app's

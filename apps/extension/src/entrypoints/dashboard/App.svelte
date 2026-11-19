@@ -3,6 +3,7 @@
   import { onMount } from 'svelte';
   import { getSaveShortcut, openSettings } from '@/lib/config';
   import { dashboardAdapter } from '@/lib/dashboard-adapter';
+  import OnboardingSignIn from './OnboardingSignIn.svelte';
   import SyncControl from './SyncControl.svelte';
   import SettingsLink from './SettingsLink.svelte';
 
@@ -22,6 +23,9 @@
       <SyncControl />
       <SettingsLink onclick={() => openSettings()} />
     </div>
+  {/snippet}
+  {#snippet onboardingSync()}
+    <OnboardingSignIn />
   {/snippet}
   {#snippet emptyHint()}
     <p>
