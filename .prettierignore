@@ -6,3 +6,4 @@ node_modules
 build
 dist
 packages/core/src/scrapers/__fixtures__
+.claude

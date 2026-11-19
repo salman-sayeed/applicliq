@@ -8,6 +8,35 @@ const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
 export default defineConfig({
   srcDir: 'src',
   modules: ['@wxt-dev/module-svelte'],
+  zip: {
+    artifactTemplate: 'career-pocket-{{version}}-{{browser}}.zip',
+    sourcesTemplate: 'career-pocket-{{version}}-sources.zip',
+    // addons.mozilla.org reviewers rebuild the add-on from this zip, so it holds the whole
+    // monorepo (shared packages, lockfile), minus build output and local secrets.
+    sourcesRoot: '../..',
+    includeSources: [
+      '**/*',
+      '.gitignore',
+      '.node-version',
+      '.npmrc',
+      '.prettierrc',
+      'apps/extension/.env.example',
+    ],
+    excludeSources: [
+      '**/node_modules/**',
+      '**/.env',
+      '**/.env.*.local',
+      '**/.env.local',
+      '.claude/**',
+      '.github/**',
+      '**/.output/**',
+      '**/.wxt/**',
+      '**/.svelte-kit/**',
+      '**/build/**',
+      '**/*.zip',
+      '**/*.pem',
+    ],
+  },
   vite: () => ({
     plugins: [tailwindcss()],
   }),
@@ -40,12 +69,23 @@ export default defineConfig({
         ? { oauth2: { client_id: env.WXT_GOOGLE_CLIENT_ID_CHROME, scopes: [DRIVE_SCOPE] } }
         : {}),
       // Pins the Chrome extension ID in development so it matches the OAuth client's item ID.
-      ...(browser === 'chrome' && env.WXT_CHROME_EXTENSION_KEY
+      // Left out of production builds: the Chrome Web Store rejects packages with a `key`.
+      ...(browser === 'chrome' && mode === 'development' && env.WXT_CHROME_EXTENSION_KEY
         ? { key: env.WXT_CHROME_EXTENSION_KEY }
         : {}),
       // A fixed add-on ID keeps Firefox's identity redirect URL stable across installs.
+      // `data_collection_permissions` (required by addons.mozilla.org for new add-ons): nothing is
+      // sent to the developers or any third party; optional sync writes only to the user's own
+      // Google Drive, which they turn on themselves.
       ...(browser === 'firefox'
-        ? { browser_specific_settings: { gecko: { id: 'career-pocket@career-pocket' } } }
+        ? {
+            browser_specific_settings: {
+              gecko: {
+                id: 'career-pocket@career-pocket',
+                data_collection_permissions: { required: ['none'] },
+              },
+            },
+          }
         : {}),
       // All-sites access only for the opt-in saved-job page badge (dashboard toggle): it lets the
       // background see tab URLs and inject the badge into pages of saved jobs. MV2 (Firefox) has

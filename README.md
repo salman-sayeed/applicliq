@@ -11,12 +11,12 @@ A free, open-source, lightweight job application tracker.
   (IndexedDB) and synced to a hidden app folder in **your own** Google Drive. Nothing is sent
   anywhere else.
 
-> Status: early development. The extension popup and dashboard are placeholders.
-
 ## Install
 
-The extension isn't in the browser stores yet. Until it is, build it from source (see
-[Getting started](#getting-started)) and load it unpacked. The web dashboard needs no install.
+- **Web dashboard:** https://career-pocket.pages.dev (no install).
+- **Extension:** download the Chrome, Edge or Firefox zip from the latest
+  [GitHub Release](https://github.com/salman-sayeed/careerpocket/releases) and load it unpacked,
+  or build it from source (see [Getting started](#getting-started)). Store listings are coming.
 
 ## How it fits together
 
@@ -73,7 +73,8 @@ Then open `chrome://extensions`, enable **Developer mode**, click **Load unpacke
 
 Other browsers: `pnpm build:ext` builds Chrome, Edge (`.output/edge-mv3`) and Firefox
 (`.output/firefox-mv2`). Use `pnpm --filter @career-pocket/extension zip` (or `zip:firefox`,
-`zip:edge`) for store uploads.
+`zip:edge`) for store uploads; tagging a version does this in CI and publishes a GitHub Release
+(see [CONTRIBUTING.md](CONTRIBUTING.md#releasing)).
 
 ### Web dashboard
 
@@ -112,9 +113,8 @@ See [CLAUDE.md](CLAUDE.md) for the data model, sync design and project rules.
 
 ## Contributing
 
-Issues and pull requests are welcome. Please keep the project's rules in mind: small bundle, no
-heavy dependencies, offline-first, and no user data leaves the user's devices except to their own
-Google Drive. Run `pnpm lint && pnpm typecheck && pnpm test` before opening a PR.
+Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, the
+project's rules, how to add support for a job site, and how releases work.
 
 ## License
 

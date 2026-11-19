@@ -91,7 +91,8 @@
                 e.stopPropagation();
                 onselect(job.id);
               }}
-              class="block w-full truncate text-left font-medium focus-visible:underline focus-visible:outline-none"
+              aria-current={selectedId === job.id ? 'true' : undefined}
+              class="focus-visible:ring-accent block w-full truncate rounded-sm text-left font-medium focus-visible:ring-2 focus-visible:outline-none"
             >
               {job.title}
             </button>

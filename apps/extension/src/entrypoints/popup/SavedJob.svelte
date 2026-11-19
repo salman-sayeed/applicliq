@@ -1,7 +1,7 @@
 <script lang="ts">
   import { type Job, type JobStatus, daysAgoLabel, daysSince } from '@career-pocket/core';
   import { Button, StatusBadge, getPrefs } from '@career-pocket/ui';
-  import { fade } from 'svelte/transition';
+  import { fade } from '@career-pocket/ui';
 
   let {
     job,

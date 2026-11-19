@@ -60,7 +60,11 @@ export default defineBackground(() => {
     void refresh({ ghost: true });
     void syncAndRefresh();
   };
-  browser.runtime.onInstalled.addListener(onStart);
+  browser.runtime.onInstalled.addListener(({ reason }) => {
+    onStart();
+    // First install: open the dashboard, which shows the introduction (goals, optional sign-in).
+    if (reason === 'install') void openDashboard();
+  });
   browser.runtime.onStartup.addListener(onStart);
   void ensureAlarms();
 

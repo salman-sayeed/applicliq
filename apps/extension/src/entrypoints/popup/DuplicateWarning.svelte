@@ -5,7 +5,7 @@
     daysAgoLabel,
     mostRecentApplication,
   } from '@career-pocket/core';
-  import { slide } from 'svelte/transition';
+  import { slide } from '@career-pocket/ui';
   import { repo } from '@/lib/db';
 
   let { company }: { company: string } = $props();

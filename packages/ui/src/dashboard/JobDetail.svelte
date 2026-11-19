@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { rememberFocus } from '../a11y/focus';
   import {
     type Job,
     type JobPatch,
@@ -10,7 +11,7 @@
     interviewIcsFileName,
   } from '@career-pocket/core';
   import { onMount, untrack } from 'svelte';
-  import { fade, fly } from 'svelte/transition';
+  import { fade, fly } from '../motion';
   import { getPrefs } from '../prefs.svelte';
   import { PERIOD_LABELS, WORK_TYPE_LABELS } from '../status';
   import {
@@ -185,7 +186,11 @@
   }
 
   let panel = $state<HTMLElement>();
-  onMount(() => panel?.focus());
+  const restoreFocus = rememberFocus();
+  onMount(() => {
+    panel?.focus();
+    return restoreFocus;
+  });
 
   const inputClass =
     'border-line bg-surface text-ink placeholder:text-ink-muted/60 focus:border-accent focus:ring-accent/25 w-full rounded-md border px-2.5 py-1.5 text-sm transition focus:ring-2 focus:outline-none';

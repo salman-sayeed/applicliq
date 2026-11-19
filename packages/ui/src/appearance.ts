@@ -36,9 +36,3 @@ export function applyCachedAppearance(root = document.documentElement): void {
     // Nothing cached.
   }
 }
-
-/** Whether animations should run (setting and system preference). */
-export function motionAllowed(appearance: Appearance): boolean {
-  if (appearance.reduceMotion) return false;
-  return !globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-}
