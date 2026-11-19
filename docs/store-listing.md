@@ -113,11 +113,13 @@ creditworthiness).
   `WXT_GOOGLE_CLIENT_ID_WEB` repository secret. The store assigns a new extension ID, so add
   `https://<store-extension-id>.chromiumapp.org/` to the Web client's **Authorized redirect URIs**
   (see [google-setup.md](google-setup.md)) once the item exists.
-- The uploaded zip must not contain a `key` field; production builds leave it out.
+- The uploaded zip must not contain a `key` field. Store builds leave it out
+  (`WXT_STORE_BUILD=true`); the release's `-edge-store.zip` is built that way. The plain
+  `-chrome.zip` and `-edge.zip` keep the key, for loading unpacked.
 
 ### Microsoft Edge Add-ons
 
-Same text and answers. Upload the `-edge.zip`. After the first upload, add its
+Same text and answers. Upload the `-edge-store.zip`. After the first upload, add its
 `https://<edge-extension-id>.chromiumapp.org/` redirect URI as well.
 
 ---

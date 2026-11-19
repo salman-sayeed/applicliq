@@ -4,6 +4,13 @@ import { defineConfig } from 'wxt';
 
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
 
+// Public half of the project's extension key. With it in the manifest, every unpacked install
+// (the GitHub release zips, `pnpm dev`) gets the same ID, kijhchopbdlfbjogdeclceledkbbjkbj, so
+// one Google redirect URI covers everyone. It is public by design; the private .pem never leaves
+// the maintainer's machine. Forks can use their own with WXT_CHROME_EXTENSION_KEY.
+const EXTENSION_KEY =
+  'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA3ZThMsiwnSJbuni2hvAgTEftbnef4VmxG0RpPVGwztG/l2DXObe0Vc0CqL6Jt05HDRPp91J/nccIVV12WeH6Uqe0PfCZ94FWyCIAXAs2F1rVM4c2evCxoSv5P+o+ti6y+sCJw03Pk6Q5t7kcdtbVQdUSB5CTq/1KmWg38zwlHFv5NR2VI/paHldgup+FK7C9ItoYovoYKpi2AAntsrxD+Hiz1XEdfC2hVOzb6i28HnyaAzUp4kbzPGphFcHh1NsIj+A3WDFFNAJYQ9ZeXqljGOCB7ptcLW2S5J6ZqMn3Jl3LMhJJrQBpvYrkTXDu9M5nC8kD2ux/RePkrRGVZCjoOwIDAQAB';
+
 // See https://wxt.dev/api/config.html
 export default defineConfig({
   srcDir: 'src',
@@ -68,10 +75,10 @@ export default defineConfig({
       ...(browser === 'chrome' && env.WXT_GOOGLE_CLIENT_ID_CHROME
         ? { oauth2: { client_id: env.WXT_GOOGLE_CLIENT_ID_CHROME, scopes: [DRIVE_SCOPE] } }
         : {}),
-      // Pins the Chrome extension ID in development so it matches the OAuth client's item ID.
-      // Left out of production builds: the Chrome Web Store rejects packages with a `key`.
-      ...(browser === 'chrome' && mode === 'development' && env.WXT_CHROME_EXTENSION_KEY
-        ? { key: env.WXT_CHROME_EXTENSION_KEY }
+      // Pins the Chromium extension ID (Chrome, Edge, Brave...) so it matches the Google redirect
+      // URI. Store uploads leave it out (WXT_STORE_BUILD=true): a store assigns its own ID.
+      ...(browser !== 'firefox' && env.WXT_STORE_BUILD !== 'true'
+        ? { key: env.WXT_CHROME_EXTENSION_KEY || EXTENSION_KEY }
         : {}),
       // A fixed add-on ID keeps Firefox's identity redirect URL stable across installs.
       // `data_collection_permissions` (required by addons.mozilla.org for new add-ons): nothing is

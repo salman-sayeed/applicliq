@@ -3,7 +3,8 @@ name: Release
 # Push a version tag to publish a release:
 #   git tag v1.2.3 && git push origin v1.2.3
 # The tag sets the extension version; Chrome, Edge and Firefox zips (plus the Firefox sources zip
-# that addons.mozilla.org asks for) are attached to a GitHub Release.
+# that addons.mozilla.org asks for, and an Edge Add-ons upload without the pinned key) are attached
+# to a GitHub Release.
 
 on:
   push:
@@ -53,9 +54,14 @@ jobs:
       - name: Build zips
         working-directory: apps/extension
         run: |
+          # Edge Add-ons upload first, without the pinned key (the store assigns its own ID).
+          WXT_STORE_BUILD=true pnpm zip:edge
+          mv ".output/career-pocket-$VERSION-edge.zip" "$RUNNER_TEMP/career-pocket-$VERSION-edge-store.zip"
+          # Chrome/Edge/Brave zips for loading unpacked: pinned ID, so Google sign-in works.
           pnpm zip
           pnpm zip:edge
           pnpm zip:firefox
+          mv "$RUNNER_TEMP/career-pocket-$VERSION-edge-store.zip" .output/
           ls -l .output/*.zip
 
       - name: Publish the GitHub Release

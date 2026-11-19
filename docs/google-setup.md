@@ -46,16 +46,20 @@ In **Google Auth Platform** (formerly _APIs & Services → OAuth consent screen_
 The Chrome redirect URI (section 4) and the Chrome extension client both depend on the
 extension's **ID**, so first make that ID stable.
 
-### Pin the extension ID in development (recommended)
+### Pin the extension ID
 
-An unpacked extension's ID comes from its folder unless the manifest has a `key`. To get the same
-ID on every machine, generate a key once (outside the repo, or anywhere: `*.pem` is gitignored):
+An unpacked extension's ID comes from its folder unless the manifest has a `key`. Chromium builds
+(Chrome, Edge, Brave) include the project's public key from `wxt.config.ts`, so every unpacked
+install, dev or release zip, has the ID `kijhchopbdlfbjogdeclceledkbbjkbj` and needs a single
+redirect URI. Store uploads are built with `WXT_STORE_BUILD=true`, which leaves the key out.
+
+In a fork, use your own key: generate one once (outside the repo, or anywhere: `*.pem` is gitignored):
 
 ```bash
 openssl genrsa 2048 | openssl pkcs8 -topk8 -nocrypt -out career-pocket-dev.pem
 ```
 
-The public key, for `WXT_CHROME_EXTENSION_KEY`:
+The public key, for `WXT_CHROME_EXTENSION_KEY` (or replace `EXTENSION_KEY` in `wxt.config.ts`):
 
 ```bash
 openssl rsa -in career-pocket-dev.pem -pubout -outform DER | openssl base64 -A
@@ -93,8 +97,9 @@ This one client serves Chrome, Firefox, Edge and the web dashboard.
    derives one from the extension ID:
    - **Firefox**: `https://<hash>.extensions.allizom.org/`. The add-on ID is fixed to
      `career-pocket@career-pocket` in `wxt.config.ts`, so this URL is stable.
-   - **Chrome**: `https://<extension-id>.chromiumapp.org/`, with the pinned ID from section 3.
-   - **Edge**: `https://<edge-extension-id>.chromiumapp.org/`.
+   - **Chrome, Edge, Brave (unpacked)**: `https://<extension-id>.chromiumapp.org/`, with the
+     pinned ID from section 3 (`https://kijhchopbdlfbjogdeclceledkbbjkbj.chromiumapp.org/`).
+   - **Edge Add-ons store**: `https://<edge-store-id>.chromiumapp.org/`.
 
    To get the exact value, open the extension's background console (Firefox:
    `about:debugging` → This Firefox → Inspect; Chrome or Edge: the extensions page → service
