@@ -66,6 +66,10 @@ made with [screenshots/capture.mjs](screenshots/capture.mjs)). Suggested order:
 
 **Store icon:** `apps/extension/public/icon/128.png`.
 
+**Small promo tile** (Chrome, required; Edge too): `screenshots/store/promo-tile-440x280.png`,
+440×280, no transparency. Made from [screenshots/promo/tile.html](screenshots/promo/tile.html)
+(the render command is at the top of that file).
+
 ---
 
 ## Chrome Web Store
