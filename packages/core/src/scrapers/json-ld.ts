@@ -99,6 +99,34 @@ function parseAddress(value: unknown): string | undefined {
   return [...new Set(parts.filter(Boolean))].join(', ') || undefined;
 }
 
+/** A list this long covers (nearly) every country: some boards list them all for "anywhere". */
+const WORLDWIDE_COUNT = 100;
+/** Longer lists show the first few and a count, so the field stays readable. */
+const SHOWN_PLACES = 3;
+
+let regionNames: Intl.DisplayNames | undefined | null;
+
+/** "DE" → "Germany". Other names are returned unchanged. */
+function countryName(value: string): string {
+  if (!/^[A-Z]{2}$/.test(value)) return value;
+  if (regionNames === undefined) {
+    try {
+      regionNames = new Intl.DisplayNames(['en'], { type: 'region', fallback: 'none' });
+    } catch {
+      regionNames = null;
+    }
+  }
+  return regionNames?.of(value) ?? value;
+}
+
+function summarizePlaces(places: string[]): string | undefined {
+  const unique = [...new Set(places)];
+  if (unique.length === 0) return undefined;
+  if (unique.length >= WORLDWIDE_COUNT) return 'Anywhere';
+  if (unique.length <= SHOWN_PLACES + 1) return unique.join(' / ');
+  return `${unique.slice(0, SHOWN_PLACES).join(' / ')} +${unique.length - SHOWN_PLACES} more`;
+}
+
 function parseLocation(posting: JsonObject): string | undefined {
   const places = asList(posting.jobLocation)
     .map((loc) => {
@@ -106,12 +134,13 @@ function parseLocation(posting: JsonObject): string | undefined {
       return place ? (parseAddress(place.address) ?? asString(place.name)) : asString(loc);
     })
     .filter((p): p is string => !!p);
-  if (places.length) return [...new Set(places)].join(' / ');
-  // Remote postings often only say where applicants may live.
+  if (places.length) return summarizePlaces(places);
+  // Remote postings often only say where applicants may live, sometimes as country codes.
   const regions = asList(posting.applicantLocationRequirements)
     .map(nameOf)
-    .filter((r): r is string => !!r);
-  return regions.length ? regions.join(' / ') : undefined;
+    .filter((r): r is string => !!r)
+    .map(countryName);
+  return summarizePlaces(regions);
 }
 
 function parsePeriod(unit: string | undefined): SalaryPeriod | undefined {
