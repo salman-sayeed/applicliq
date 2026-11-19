@@ -54,13 +54,15 @@ Export everything as JSON (a full backup you can import again) or CSV for spread
 Free and open source (MIT): https://github.com/salman-sayeed/careerpocket
 ```
 
-**Screenshots** (Chrome: 1280×800 or 640×400, up to 5; Firefox: any size). Suggested set:
+**Screenshots** (Chrome: 1280×800, up to 5; Firefox: any size; Edge: 1280×800, up to 10). Ready-made
+1280×800 PNGs of the dashboard are in [screenshots/store](screenshots/store) (fictional demo data,
+made with [screenshots/capture.mjs](screenshots/capture.mjs)). Suggested order:
 
-1. The popup on a job posting with the fields filled in.
-2. The dashboard list view with a few jobs and the detail panel open.
-3. The board view.
-4. Stats: goals, streak and funnel.
-5. Settings, Data section (export / import / sync).
+1. The popup on a job posting with the fields filled in (capture by hand: it needs the extension).
+2. `dashboard-list.png`: the list with the detail panel open.
+3. `dashboard-board.png`: the board.
+4. `dashboard-stats.png`: goals, streak and funnel.
+5. `settings-data.png`: sync, export and import.
 
 **Store icon:** `apps/extension/public/icon/128.png`.
 

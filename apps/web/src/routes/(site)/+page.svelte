@@ -1,6 +1,9 @@
 <script lang="ts">
   import { resolve } from '$app/paths';
   import { GITHUB_URL, INSTALL_LINKS } from '#lib/links.ts';
+  import boardShot from '#lib/assets/screenshots/dashboard-board.webp';
+  import listShot from '#lib/assets/screenshots/dashboard-list.webp';
+  import statsShot from '#lib/assets/screenshots/dashboard-stats.webp';
 
   // Icon paths (24×24, stroke) for the feature list.
   const features = [
@@ -36,10 +39,26 @@
     },
   ];
 
+  // Captured with docs/screenshots/capture.mjs (fictional demo data), 2560×1600.
   const screenshots = [
-    { label: 'Dashboard: list view', wide: true },
-    { label: 'Kanban board', wide: false },
-    { label: 'Saving a job from the extension popup', wide: false },
+    {
+      src: listShot,
+      label: 'Every application in one list, with the details a click away',
+      alt: 'The Career Pocket dashboard: a list of job applications with their status, location and salary, and the details of one job open in a side panel.',
+      wide: true,
+    },
+    {
+      src: boardShot,
+      label: 'Drag jobs across the board as they progress',
+      alt: 'The board view: job cards in Saved, Applied, Assessment, Interview and Offer columns, with salaries, tags and upcoming interview dates.',
+      wide: false,
+    },
+    {
+      src: statsShot,
+      label: 'Goals, streaks and where your applications lead',
+      alt: 'The stats view: daily, weekly and monthly goal rings, a four-day streak, a heatmap of applications per day and an application funnel.',
+      wide: false,
+    },
   ];
 
   const steps = [
@@ -92,15 +111,17 @@
 
   <section aria-label="Screenshots" class="mx-auto max-w-5xl px-4 pb-20">
     <div class="grid gap-4 sm:grid-cols-2">
-      {#each screenshots as shot (shot.label)}
+      {#each screenshots as shot, i (shot.src)}
         <figure class={shot.wide ? 'sm:col-span-2' : ''}>
-          <div
-            class="border-line bg-surface-muted text-ink-muted flex items-center justify-center rounded-xl border border-dashed text-sm {shot.wide
-              ? 'aspect-video'
-              : 'aspect-[4/3]'}"
-          >
-            Screenshot coming soon
-          </div>
+          <img
+            src={shot.src}
+            alt={shot.alt}
+            width="2560"
+            height="1600"
+            loading={i === 0 ? 'eager' : 'lazy'}
+            decoding="async"
+            class="border-line bg-surface-muted h-auto w-full rounded-xl border shadow-sm"
+          />
           <figcaption class="text-ink-muted mt-2 text-center text-sm">{shot.label}</figcaption>
         </figure>
       {/each}
