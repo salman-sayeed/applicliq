@@ -58,7 +58,7 @@ Free and open source (MIT): https://github.com/salman-sayeed/careerpocket
 1280×800 PNGs of the dashboard are in [screenshots/store](screenshots/store) (fictional demo data,
 made with [screenshots/capture.mjs](screenshots/capture.mjs)). Suggested order:
 
-1. The popup on a job posting with the fields filled in (capture by hand: it needs the extension).
+1. `popup.png`: the popup on a job posting with the fields filled in (a frame of the demo recording).
 2. `dashboard-list.png`: the list with the detail panel open.
 3. `dashboard-board.png`: the board.
 4. `dashboard-stats.png`: goals, streak and funnel.

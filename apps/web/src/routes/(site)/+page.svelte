@@ -4,6 +4,21 @@
   import boardShot from '#lib/assets/screenshots/dashboard-board.webp';
   import listShot from '#lib/assets/screenshots/dashboard-list.webp';
   import statsShot from '#lib/assets/screenshots/dashboard-stats.webp';
+  import saveVideo from '#lib/assets/screenshots/save-a-job.mp4';
+  import savePoster from '#lib/assets/screenshots/save-a-job-poster.jpg';
+  import { onMount } from 'svelte';
+
+  // The demo plays only when motion is welcome; otherwise its poster shows and the button
+  // starts it. Autoplay starts here, after hydration, never from the prerendered HTML.
+  let video = $state<HTMLVideoElement>();
+  let playing = $state(false);
+  onMount(() => {
+    const reduced =
+      matchMedia('(prefers-reduced-motion: reduce)').matches ||
+      document.documentElement.hasAttribute('data-reduce-motion');
+    if (!reduced) video?.play().catch(() => {});
+  });
+  const toggleVideo = () => (video?.paused ? video.play().catch(() => {}) : video?.pause());
 
   // Icon paths (24×24, stroke) for the feature list.
   const features = [
@@ -110,6 +125,45 @@
   </section>
 
   <section aria-label="Screenshots" class="mx-auto max-w-5xl px-4 pb-20">
+    <figure class="mb-4">
+      <div class="relative">
+        <!-- Silent screen recording; the caption and the popup screenshot below describe it. -->
+        <video
+          bind:this={video}
+          src={saveVideo}
+          poster={savePoster}
+          width="1600"
+          height="1000"
+          muted
+          loop
+          playsinline
+          preload="metadata"
+          onplay={() => (playing = true)}
+          onpause={() => (playing = false)}
+          aria-label="Saving a job: on a job posting, the Career Pocket popup opens with the title, company, location and salary already filled in; a note is added and the job is saved."
+          class="border-line bg-surface-muted h-auto w-full rounded-xl border shadow-sm"
+        ></video>
+        <button
+          type="button"
+          onclick={toggleVideo}
+          aria-label={playing ? 'Pause the demo' : 'Play the demo'}
+          class="bg-ink/70 text-surface hover:bg-ink/85 focus-visible:ring-accent absolute right-3 bottom-3 flex size-9 items-center justify-center rounded-full backdrop-blur transition focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+        >
+          <svg viewBox="0 0 20 20" fill="currentColor" class="size-4" aria-hidden="true">
+            {#if playing}
+              <path d="M5.5 4h3v12h-3zM11.5 4h3v12h-3z" />
+            {:else}
+              <path
+                d="M6 4.5v11a.5.5 0 0 0 .77.42l8.5-5.5a.5.5 0 0 0 0-.84l-8.5-5.5A.5.5 0 0 0 6 4.5Z"
+              />
+            {/if}
+          </svg>
+        </button>
+      </div>
+      <figcaption class="text-ink-muted mt-2 text-center text-sm">
+        Save a job in seconds: the details fill themselves in from the page
+      </figcaption>
+    </figure>
     <div class="grid gap-4 sm:grid-cols-2">
       {#each screenshots as shot, i (shot.src)}
         <figure class={shot.wide ? 'sm:col-span-2' : ''}>
