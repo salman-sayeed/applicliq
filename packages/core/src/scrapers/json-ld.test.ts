@@ -39,6 +39,39 @@ describe('parseJobPostingJsonLd', () => {
     expect(parse(posting)?.location).toBe('Berlin, DE / Munich, Germany');
   });
 
+  describe('applicant location requirements', () => {
+    const countries = (...codes: string[]) => ({
+      ...base,
+      jobLocationType: 'TELECOMMUTE',
+      applicantLocationRequirements: codes.map((name) => ({ '@type': 'Country', name })),
+    });
+    // Every ISO 3166 code from AA to ZZ that Intl knows, like WeWorkRemotely's "Anywhere".
+    const everyCountry = Array.from({ length: 26 * 26 }, (_, i) =>
+      String.fromCharCode(65 + Math.floor(i / 26), 65 + (i % 26)),
+    ).filter((code) =>
+      new Intl.DisplayNames(['en'], { type: 'region', fallback: 'none' }).of(code),
+    );
+
+    it('names countries given as ISO codes', () => {
+      expect(parse(countries('DE', 'NL'))?.location).toBe('Germany / Netherlands');
+    });
+
+    it('keeps names that are not codes', () => {
+      expect(parse(countries('EU', 'Canada'))?.location).toBe('European Union / Canada');
+    });
+
+    it('shortens a long list to the first few and a count', () => {
+      expect(parse(countries('DE', 'FR', 'ES', 'IT', 'PT', 'NL'))?.location).toBe(
+        'Germany / France / Spain +3 more',
+      );
+    });
+
+    it('shows every country as Anywhere', () => {
+      expect(everyCountry.length).toBeGreaterThan(200);
+      expect(parse(countries(...everyCountry))?.location).toBe('Anywhere');
+    });
+  });
+
   describe('salary', () => {
     it('reads a single value with currency on the amount', () => {
       const posting = {
