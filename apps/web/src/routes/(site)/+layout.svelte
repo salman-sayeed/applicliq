@@ -45,6 +45,7 @@
       <div class="flex flex-col items-center gap-2 sm:items-start">
         <p>Career Pocket · free and open source (MIT)</p>
         <div class="flex gap-6">
+          <a href={resolve('/(site)/install')} class={link}>Manual install</a>
           <a href={resolve('/(site)/privacy')} class={link}>Privacy policy</a>
           <a href={GITHUB_URL} rel="external" class={link}>Source code</a>
         </div>

@@ -1,12 +1,19 @@
 <script lang="ts">
   import { resolve } from '$app/paths';
-  import { GITHUB_URL, STORE_URLS } from '#lib/links.ts';
+  import { GITHUB_URL } from '#lib/links.ts';
+  import { MANUAL_BROWSERS, STORES, hasSupport, storeById, type StoreId } from '#lib/config.ts';
+  import { detectBrowser, type DetectedBrowser } from '#lib/browser.ts';
+  import StoreGrid from '#lib/StoreGrid.svelte';
+  import SupportSection from '#lib/SupportSection.svelte';
   import boardShot from '#lib/assets/screenshots/dashboard-board.webp';
   import listShot from '#lib/assets/screenshots/dashboard-list.webp';
   import statsShot from '#lib/assets/screenshots/dashboard-stats.webp';
   import saveVideo from '#lib/assets/screenshots/save-a-job.mp4';
   import savePoster from '#lib/assets/screenshots/save-a-job-poster.jpg';
   import { onMount } from 'svelte';
+  import type { PageProps } from './$types';
+
+  let { data }: PageProps = $props();
 
   // The demo plays only when motion is welcome; otherwise its poster shows and the button
   // starts it. Autoplay starts here, after hydration, never from the prerendered HTML.
@@ -20,19 +27,26 @@
   });
   const toggleVideo = () => (video?.paused ? video.play().catch(() => {}) : video?.pause());
 
-  // Which install button to lead with. The prerendered HTML (no browser known yet) offers
-  // Firefox, the store that's live; Chromium browsers switch after hydration.
-  type BrowserKind = 'firefox' | 'chromium' | 'other';
-  let browser = $state<BrowserKind>('other');
-  onMount(() => {
-    const ua = navigator.userAgent;
-    const brands =
-      (navigator as Navigator & { userAgentData?: { brands: { brand: string }[] } }).userAgentData
-        ?.brands ?? [];
-    if (/Firefox\//.test(ua)) browser = 'firefox';
-    else if (brands.some((b) => b.brand === 'Chromium') || /Chrom(e|ium)\/|Edg\//.test(ua))
-      browser = 'chromium';
+  // The visitor's browser picks the lead install button and the highlighted store card. The
+  // prerendered HTML (no browser known yet) points to the store list.
+  let browser = $state<DetectedBrowser>('other');
+  onMount(() => (browser = detectBrowser()));
+
+  const storeFor: Partial<Record<DetectedBrowser, StoreId>> = {
+    firefox: 'firefox',
+    'firefox-android': 'firefox-android',
+    chrome: 'chrome',
+    brave: 'chrome',
+    edge: 'edge',
+    opera: 'opera',
+    safari: 'safari',
+  };
+  const myStore = $derived.by(() => {
+    const id = storeFor[browser];
+    return id ? storeById(id) : null;
   });
+  // Chromium browsers without a live store listing can load the release zip by hand.
+  const manual = $derived(MANUAL_BROWSERS.find((b) => b.id === browser));
 
   // Icon paths (24×24, stroke) for the feature list.
   const features = [
@@ -95,12 +109,14 @@
   const secondaryBtn =
     'border-line text-ink hover:bg-surface-muted focus-visible:ring-accent rounded-md border px-4 py-2 text-sm font-medium transition focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none';
 
+  const liveStores = [
+    ...new Set(STORES.filter((s) => s.status === 'live').map((s) => s.name.split(' ')[0])),
+  ].join(', ');
+
   const steps = [
     [
       'Install the extension',
-      STORE_URLS.chrome
-        ? 'Add Career Pocket to Firefox, Chrome or Edge.'
-        : 'Add Career Pocket to Firefox. Chrome and Edge are coming soon.',
+      `Get it from ${liveStores}, or install it by hand in Chrome, Brave, Edge or Opera.`,
     ],
     ['Save while you browse', 'Click the icon on any job posting; the details fill themselves in.'],
     ['Track it anywhere', 'Update statuses in the extension or here on the web, after signing in.'],
@@ -128,23 +144,18 @@
       never leaves your browser, except to sync with your own Google Drive.
     </p>
     <div id="install" class="mt-8 flex scroll-mt-20 flex-wrap justify-center gap-3">
-      {#if browser === 'chromium'}
-        {#if STORE_URLS.chrome}
-          <a href={STORE_URLS.chrome} target="_blank" rel="external noopener" class={primaryBtn}>
-            Add to Chrome
-          </a>
-        {:else}
-          <button type="button" disabled class="{primaryBtn} cursor-not-allowed opacity-60">
-            Chrome version coming soon
-          </button>
-        {/if}
-        <a href={STORE_URLS.firefox} target="_blank" rel="external noopener" class={secondaryBtn}>
-          Get it for Firefox
+      {#if myStore?.status === 'live'}
+        <a href={myStore.url} target="_blank" rel="external noopener" class={primaryBtn}>
+          Add to {myStore.name.split(' ')[0]}
         </a>
+        <a href="#get" class={secondaryBtn}>Other browsers</a>
+      {:else if manual}
+        <a href="{resolve('/(site)/install')}#{manual.id}" class={primaryBtn}>
+          Install on {manual.name}
+        </a>
+        <a href="#get" class={secondaryBtn}>All browsers</a>
       {:else}
-        <a href={STORE_URLS.firefox} target="_blank" rel="external noopener" class={primaryBtn}>
-          {browser === 'firefox' ? 'Add to Firefox' : 'Get it for Firefox'}
-        </a>
+        <a href="#get" class={primaryBtn}>Get Career Pocket</a>
       {/if}
     </div>
     <div class="text-ink-muted mt-4 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
@@ -264,7 +275,26 @@
     </ol>
   </section>
 
-  <section class="mx-auto max-w-5xl px-4 pb-24">
+  <section id="get" aria-labelledby="get-title" class="mx-auto max-w-5xl scroll-mt-16 px-4 pb-20">
+    <h2 id="get-title" class="text-center text-2xl font-semibold tracking-tight sm:text-3xl">
+      Get Career Pocket
+    </h2>
+    <p class="text-ink-muted mx-auto mt-3 max-w-xl text-center text-balance">
+      Free on every store it's in. More stores are on the way; until then, Chrome, Brave, Edge and
+      Opera can load it by hand.
+    </p>
+    <div class="mt-10">
+      <StoreGrid current={myStore?.id ?? null} />
+    </div>
+    <div class="mt-8 flex flex-col items-center gap-2">
+      <a href={resolve('/(site)/install')} class={secondaryBtn}>Manual install</a>
+      <p class="text-ink-muted text-xs">
+        For Chrome, Brave, Edge and Opera, from the latest release
+      </p>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-5xl px-4 pb-20">
     <div class="border-line rounded-2xl border p-8 sm:p-10">
       <h2 class="text-2xl font-semibold tracking-tight">Private by design</h2>
       <p class="text-ink-muted mt-3 max-w-2xl">
@@ -280,4 +310,8 @@
       </a>
     </div>
   </section>
+
+  {#if hasSupport()}
+    <SupportSection qr={data.qr} />
+  {/if}
 </main>
