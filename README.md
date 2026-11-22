@@ -2,6 +2,15 @@
 
 # Career Pocket
 
+<p align="center">
+  <a href="https://addons.mozilla.org/en-US/firefox/addon/career-pocket/"><img src="https://img.shields.io/badge/Get_the_add--on_for_Firefox-FF7139?style=for-the-badge&logo=firefoxbrowser&logoColor=white" alt="Get the add-on for Firefox"></a>
+</p>
+<p align="center">
+  <a href="https://addons.mozilla.org/en-US/firefox/addon/career-pocket/"><img src="https://img.shields.io/amo/v/career-pocket" alt="Firefox Add-ons version"></a>
+  <a href="https://addons.mozilla.org/en-US/firefox/addon/career-pocket/"><img src="https://img.shields.io/amo/users/career-pocket" alt="Firefox Add-ons users"></a>
+  <a href="https://addons.mozilla.org/en-US/firefox/addon/career-pocket/"><img src="https://img.shields.io/amo/rating/career-pocket" alt="Firefox Add-ons rating"></a>
+</p>
+
 A free, open-source, lightweight job application tracker.
 
 - **Browser extension** (Chrome, Edge, Firefox): save a job posting from the page you're on and
@@ -13,12 +22,6 @@ A free, open-source, lightweight job application tracker.
 
 ## Install
 
-<p align="center">
-  <a href="https://addons.mozilla.org/en-US/firefox/addon/career-pocket/">
-    <img src="https://img.shields.io/badge/Firefox-Get_the_add--on-FF7139?style=for-the-badge&logo=firefoxbrowser&logoColor=white" alt="Get Career Pocket for Firefox">
-  </a>
-</p>
-
 - **Web dashboard:** https://career-pocket.pages.dev (no install).
 - **Extension:** download the Chrome, Edge or Firefox zip from the latest
   [GitHub Release](https://github.com/salman-sayeed/careerpocket/releases) and load it unpacked,
@@ -26,7 +29,8 @@ A free, open-source, lightweight job application tracker.
   - Chrome, Brave, Edge and other Chromium browsers: unzip the `-chrome.zip` (or `-edge.zip`),
     open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked** and pick the
     unzipped folder. These zips pin the extension ID, so Google Drive sync works.
-  - Firefox: install it from Firefox Add-ons once it's listed.
+  - Firefox: install it from
+    [Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/career-pocket/).
 
 ## How it fits together
 

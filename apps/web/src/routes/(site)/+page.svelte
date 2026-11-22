@@ -1,6 +1,6 @@
 <script lang="ts">
   import { resolve } from '$app/paths';
-  import { GITHUB_URL, INSTALL_LINKS } from '#lib/links.ts';
+  import { GITHUB_URL, STORE_URLS } from '#lib/links.ts';
   import boardShot from '#lib/assets/screenshots/dashboard-board.webp';
   import listShot from '#lib/assets/screenshots/dashboard-list.webp';
   import statsShot from '#lib/assets/screenshots/dashboard-stats.webp';
@@ -19,6 +19,20 @@
     if (!reduced) video?.play().catch(() => {});
   });
   const toggleVideo = () => (video?.paused ? video.play().catch(() => {}) : video?.pause());
+
+  // Which install button to lead with. The prerendered HTML (no browser known yet) offers
+  // Firefox, the store that's live; Chromium browsers switch after hydration.
+  type BrowserKind = 'firefox' | 'chromium' | 'other';
+  let browser = $state<BrowserKind>('other');
+  onMount(() => {
+    const ua = navigator.userAgent;
+    const brands =
+      (navigator as Navigator & { userAgentData?: { brands: { brand: string }[] } }).userAgentData
+        ?.brands ?? [];
+    if (/Firefox\//.test(ua)) browser = 'firefox';
+    else if (brands.some((b) => b.brand === 'Chromium') || /Chrom(e|ium)\/|Edg\//.test(ua))
+      browser = 'chromium';
+  });
 
   // Icon paths (24×24, stroke) for the feature list.
   const features = [
@@ -76,8 +90,18 @@
     },
   ];
 
+  const primaryBtn =
+    'bg-accent text-accent-ink focus-visible:ring-accent rounded-md px-4 py-2 text-sm font-medium transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none';
+  const secondaryBtn =
+    'border-line text-ink hover:bg-surface-muted focus-visible:ring-accent rounded-md border px-4 py-2 text-sm font-medium transition focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none';
+
   const steps = [
-    ['Install the extension', 'Add Career Pocket to Chrome, Firefox or Edge.'],
+    [
+      'Install the extension',
+      STORE_URLS.chrome
+        ? 'Add Career Pocket to Firefox, Chrome or Edge.'
+        : 'Add Career Pocket to Firefox. Chrome and Edge are coming soon.',
+    ],
     ['Save while you browse', 'Click the icon on any job posting; the details fill themselves in.'],
     ['Track it anywhere', 'Update statuses in the extension or here on the web, after signing in.'],
   ];
@@ -104,15 +128,24 @@
       never leaves your browser, except to sync with your own Google Drive.
     </p>
     <div id="install" class="mt-8 flex scroll-mt-20 flex-wrap justify-center gap-3">
-      {#each INSTALL_LINKS as { browser, href } (browser)}
-        <a
-          {href}
-          rel="external"
-          class="bg-accent text-accent-ink focus-visible:ring-accent rounded-md px-4 py-2 text-sm font-medium transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-        >
-          Add to {browser}
+      {#if browser === 'chromium'}
+        {#if STORE_URLS.chrome}
+          <a href={STORE_URLS.chrome} target="_blank" rel="external noopener" class={primaryBtn}>
+            Add to Chrome
+          </a>
+        {:else}
+          <button type="button" disabled class="{primaryBtn} cursor-not-allowed opacity-60">
+            Chrome version coming soon
+          </button>
+        {/if}
+        <a href={STORE_URLS.firefox} target="_blank" rel="external noopener" class={secondaryBtn}>
+          Get it for Firefox
         </a>
-      {/each}
+      {:else}
+        <a href={STORE_URLS.firefox} target="_blank" rel="external noopener" class={primaryBtn}>
+          {browser === 'firefox' ? 'Add to Firefox' : 'Get it for Firefox'}
+        </a>
+      {/if}
     </div>
     <div class="text-ink-muted mt-4 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
       <a href={resolve('/app')} class="hover:text-ink underline-offset-4 hover:underline">

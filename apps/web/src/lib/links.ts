@@ -1,12 +1,15 @@
-/** Outbound links used across the site. Swap the store links in once the listings are live. */
+/** Outbound links used across the site. */
 export const GITHUB_URL = 'https://github.com/salman-sayeed/careerpocket';
 export const ISSUES_URL = `${GITHUB_URL}/issues/new`;
 
-export const INSTALL_LINKS = [
-  { browser: 'Chrome', href: `${GITHUB_URL}#install` },
-  { browser: 'Firefox', href: `${GITHUB_URL}#install` },
-  { browser: 'Edge', href: `${GITHUB_URL}#install` },
-] as const;
+/**
+ * Extension store listings, the one place to change them. `null` = not listed yet: the landing
+ * page then shows "coming soon" for that browser. Chrome's URL also serves Edge, Brave, etc.
+ */
+export const STORE_URLS: { firefox: string; chrome: string | null } = {
+  firefox: 'https://addons.mozilla.org/en-US/firefox/addon/career-pocket/',
+  chrome: null,
+};
 
 /** The author's profiles, shown in the site footer. */
 export const AUTHOR_URL = 'https://salmansayeed.dev';
