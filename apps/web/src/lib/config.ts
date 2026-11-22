@@ -96,9 +96,9 @@ export const MANUAL_BROWSERS = [
 export type ManualBrowserId = (typeof MANUAL_BROWSERS)[number]['id'];
 
 /**
- * Donations. Leave everything empty to hide the Support section; fill in a link, a crypto
- * address, or both (and add a Support section to README.md). The QR code for the address is
- * generated at build time.
+ * Donations, shown in the Support section above the landing page's footer (and listed in the
+ * README's Support section). Empty values show "coming soon" placeholders; fill in a link, a
+ * crypto address, or both. The QR code for the address is generated at build time.
  */
 export const SUPPORT: {
   /** A donation page, e.g. Buy Me a Coffee or Ko-fi. */
@@ -117,5 +117,3 @@ export const SUPPORT: {
   donationLabel: 'Buy me a coffee',
   crypto: { coin: '', network: '', address: '' },
 };
-
-export const hasSupport = (): boolean => Boolean(SUPPORT.donationUrl || SUPPORT.crypto.address);
