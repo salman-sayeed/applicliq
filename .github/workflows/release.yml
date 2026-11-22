@@ -3,8 +3,9 @@ name: Release
 # Push a version tag to publish a release:
 #   git tag v1.2.3 && git push origin v1.2.3
 # The tag sets the extension version; Chrome, Edge and Firefox zips (plus the Firefox sources zip
-# that addons.mozilla.org asks for, and an Edge Add-ons upload without the pinned key) are attached
-# to a GitHub Release.
+# that addons.mozilla.org asks for, an Edge Add-ons upload without the pinned key, and the Chrome
+# zip again as career-pocket-chromium.zip for the website's manual install guide) are attached to
+# a GitHub Release.
 
 on:
   push:
@@ -59,6 +60,9 @@ jobs:
           mv ".output/career-pocket-$VERSION-edge.zip" "$RUNNER_TEMP/career-pocket-$VERSION-edge-store.zip"
           # Chrome/Edge/Brave zips for loading unpacked: pinned ID, so Google sign-in works.
           pnpm zip
+          # The same Chrome build under a fixed name, so the site's link to
+          # releases/latest/download/career-pocket-chromium.zip always gets the newest one.
+          cp ".output/career-pocket-$VERSION-chrome.zip" .output/career-pocket-chromium.zip
           pnpm zip:edge
           pnpm zip:firefox
           mv "$RUNNER_TEMP/career-pocket-$VERSION-edge-store.zip" .output/

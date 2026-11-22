@@ -1,65 +1,51 @@
-<p align="center"><img src="docs/logo.png" alt="" width="96" /></p>
+<p align="center"><img src="docs/logo.png" alt="" width="80" /></p>
 
-# Career Pocket
+<h1 align="center">Career Pocket</h1>
+
+<p align="center">A free, open-source job application tracker that lives in your browser.</p>
 
 <p align="center">
-  <a href="https://addons.mozilla.org/en-US/firefox/addon/career-pocket/"><img src="https://img.shields.io/badge/Get_the_add--on_for_Firefox-FF7139?style=for-the-badge&logo=firefoxbrowser&logoColor=white" alt="Get the add-on for Firefox"></a>
-</p>
-<p align="center">
-  <a href="https://addons.mozilla.org/en-US/firefox/addon/career-pocket/"><img src="https://img.shields.io/amo/v/career-pocket" alt="Firefox Add-ons version"></a>
-  <a href="https://addons.mozilla.org/en-US/firefox/addon/career-pocket/"><img src="https://img.shields.io/amo/users/career-pocket" alt="Firefox Add-ons users"></a>
-  <a href="https://addons.mozilla.org/en-US/firefox/addon/career-pocket/"><img src="https://img.shields.io/amo/rating/career-pocket" alt="Firefox Add-ons rating"></a>
+  <img src="docs/screenshots/store/dashboard-list.png" alt="The Career Pocket dashboard: a list of job applications with status, location and salary, and one job's details open in a side panel." width="800" />
 </p>
 
-A free, open-source, lightweight job application tracker.
+## Get it
 
-- **Browser extension** (Chrome, Edge, Firefox): save a job posting from the page you're on and
-  track it from _saved_ to _offer_.
-- **Web dashboard**: a static site to review and manage everything you've saved.
-- **Private by design**: no account, no server, no tracking. Your data is stored in your browser
-  (IndexedDB) and synced to a hidden app folder in **your own** Google Drive. Nothing is sent
-  anywhere else.
+<a href="https://addons.mozilla.org/en-US/firefox/addon/career-pocket/"><img src="apps/web/src/lib/assets/stores/firefoxbrowser.svg" alt="" width="18" /> Firefox</a> ·
+<a href="https://addons.mozilla.org/en-US/firefox/addon/career-pocket/"><img src="apps/web/src/lib/assets/stores/firefoxbrowser.svg" alt="" width="18" /> Firefox for Android</a> ·
+<img src="docs/stores/googlechrome-soon.svg" alt="" width="18" /> Chrome (soon) ·
+<img src="docs/stores/microsoftedge-soon.svg" alt="" width="18" /> Edge (soon) ·
+<img src="docs/stores/opera-soon.svg" alt="" width="18" /> Opera (soon) ·
+<img src="docs/stores/safari-soon.svg" alt="" width="18" /> Safari (soon)
 
-## Install
+Chrome, Brave, Edge or Opera today: follow the
+[manual install guide](https://career-pocket.pages.dev/install). No install needed for the
+[web dashboard](https://career-pocket.pages.dev/app).
 
-- **Web dashboard:** https://career-pocket.pages.dev (no install).
-- **Extension:** download the Chrome, Edge or Firefox zip from the latest
-  [GitHub Release](https://github.com/salman-sayeed/careerpocket/releases) and load it unpacked,
-  or build it from source (see [Getting started](#getting-started)).
-  - Chrome, Brave, Edge and other Chromium browsers: unzip the `-chrome.zip` (or `-edge.zip`),
-    open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked** and pick the
-    unzipped folder. These zips pin the extension ID, so Google Drive sync works.
-  - Firefox: install it from
-    [Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/career-pocket/).
+## Features
 
-## How it fits together
+- Save a job from any posting in one click (or Alt+Shift+S); title, company, location and salary
+  fill themselves in.
+- Track each application from saved to offer in a list, a kanban board, or stats with weekly goals.
+- Follow-up and interview reminders; quiet applications are marked ghosted after three weeks.
+- A badge on job pages you already saved, and a note when you've applied to a company before.
+- Works offline. Export to JSON or CSV any time.
 
-One codebase, two things you ship:
+## Privacy
 
-```
-                 packages/core  (data model, storage, merge, Drive sync, scrapers)
-                 packages/ui    (shared components + theme)
-                    │                         │
-        ┌───────────┘                         └───────────┐
-        ▼                                                 ▼
- apps/extension                                     apps/web
- installed from the Chrome / Edge / Firefox         static site on Cloudflare Pages
- stores; saves jobs while you browse                full dashboard in any browser
-        │                                                 │
-        └──────────► your Google Drive (appDataFolder) ◄──┘
-```
+- Your jobs are stored in your browser. There is no Career Pocket server or account.
+- Sync is optional: it uses a hidden app folder in your own Google Drive, which Career Pocket can't
+  see outside of.
+- No analytics, no tracking, no ads. See the [privacy policy](https://career-pocket.pages.dev/privacy).
 
-- The **extension** and the **website** are built from the same repo and share the same code for
-  data, sync and UI, so they always agree on the data format.
-- They are published separately: the extension goes to the browser stores, the website to
-  Cloudflare Pages.
-- They don't talk to each other or to any server of ours. Each keeps its own local copy
-  (IndexedDB) and both sync through the user's own Google Drive, so a job saved in the extension
-  shows up on the website after sign-in, and vice versa.
-- The website works on its own (e.g. on a phone or a computer without the extension); the
-  extension adds one-click saving from job pages.
+## How to use
 
-## Getting started
+1. Install the extension and pin it to the toolbar.
+2. Open a job posting and click the Career Pocket icon. Check the details and save.
+3. Open the dashboard to update statuses, add notes and set reminders.
+4. Optional: turn on Google Drive sync in Settings to see your jobs in other browsers and on
+   [the website](https://career-pocket.pages.dev/app).
+
+## Development
 
 Requires Node 22+ and pnpm 10.
 
@@ -67,68 +53,34 @@ Requires Node 22+ and pnpm 10.
 git clone https://github.com/salman-sayeed/careerpocket.git
 cd careerpocket
 pnpm install
+pnpm dev:ext   # extension with hot reload (opens Chrome)
+pnpm dev:web   # website and web dashboard on http://localhost:5173
 ```
 
-### Extension
-
-```bash
-pnpm dev:ext
-```
-
-This starts WXT in dev mode and opens Chrome with the extension loaded. To load a production
-build manually instead:
-
-```bash
-pnpm --filter @career-pocket/extension build
-```
-
-Then open `chrome://extensions`, enable **Developer mode**, click **Load unpacked** and select
-`apps/extension/.output/chrome-mv3`.
-
-Other browsers: `pnpm build:ext` builds Chrome, Edge (`.output/edge-mv3`) and Firefox
-(`.output/firefox-mv2`). Use `pnpm --filter @career-pocket/extension zip` (or `zip:firefox`,
-`zip:edge`) for store uploads; tagging a version does this in CI and publishes a GitHub Release
-(see [CONTRIBUTING.md](CONTRIBUTING.md#releasing)).
-
-### Web dashboard
-
-```bash
-pnpm dev:web
-```
-
-Open http://localhost:5173. `pnpm build` writes the static site to `apps/web/build`. For Drive
-sync, put the Web OAuth client ID in `apps/web/.env` (see [docs/google-setup.md](docs/google-setup.md)).
-
-Deploying to Cloudflare Pages: see [docs/deploy-web.md](docs/deploy-web.md).
-
-## Scripts
-
-| Command          | What it does                                   |
-| ---------------- | ---------------------------------------------- |
-| `pnpm dev:ext`   | Extension dev mode with hot reload             |
-| `pnpm dev:web`   | Dashboard dev server                           |
-| `pnpm build`     | Build the extension (Chrome) and the dashboard |
-| `pnpm build:ext` | Build the extension for Chrome, Edge, Firefox  |
-| `pnpm test`      | Unit tests (Vitest)                            |
-| `pnpm typecheck` | `tsc -b` + `svelte-check`                      |
-| `pnpm lint`      | ESLint                                         |
-| `pnpm format`    | Prettier                                       |
-
-## Project layout
+| Command          | What it does                                     |
+| ---------------- | ------------------------------------------------ |
+| `pnpm build`     | Build the extension (Chrome) and the website     |
+| `pnpm build:ext` | Build the extension for Chrome, Edge and Firefox |
+| `pnpm test`      | Unit tests (Vitest)                              |
+| `pnpm typecheck` | `tsc -b` + `svelte-check`                        |
+| `pnpm lint`      | ESLint                                           |
+| `pnpm format`    | Prettier                                         |
 
 ```
-apps/extension    WXT + Svelte 5 + Tailwind v4 browser extension
-apps/web          SvelteKit (adapter-static) dashboard
-packages/core     types, IndexedDB storage (Dexie), merge, Drive sync, scrapers
-packages/ui       shared Svelte components and Tailwind theme
+apps/extension    browser extension (WXT, Svelte 5, Tailwind)
+apps/web          website and web dashboard (SvelteKit, static, Cloudflare Pages)
+packages/core     data model, storage, merge, Drive sync, job-page scrapers
+packages/ui       shared Svelte components and theme
 ```
 
-See [CLAUDE.md](CLAUDE.md) for the data model, sync design and project rules.
+Drive sync needs your own OAuth client IDs: see [docs/google-setup.md](docs/google-setup.md).
+Store links and their status live in [`apps/web/src/lib/config.ts`](apps/web/src/lib/config.ts);
+update the "Get it" row above when a store goes live. [CLAUDE.md](CLAUDE.md) covers the data
+model, sync design and project rules.
 
 ## Contributing
 
-Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, the
-project's rules, how to add support for a job site, and how releases work.
+Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 

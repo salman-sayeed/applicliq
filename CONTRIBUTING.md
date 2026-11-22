@@ -80,7 +80,8 @@ Maintainers only.
    ```
 
 3. The **Release** workflow checks the code, builds the Chrome, Edge and Firefox zips (plus the
-   Firefox sources zip) and attaches them to a new GitHub Release with generated notes.
+   Firefox sources zip, and the Chrome zip again as `career-pocket-chromium.zip`, which the
+   website's manual install guide links to) and attaches them to a new GitHub Release with generated notes.
 4. Upload the zips to the stores using [docs/store-listing.md](docs/store-listing.md).
 
 The workflow reads the optional repository secrets `WXT_GOOGLE_CLIENT_ID_WEB` and
