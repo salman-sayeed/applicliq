@@ -13,6 +13,12 @@ A free, open-source, lightweight job application tracker.
 
 ## Install
 
+<p align="center">
+  <a href="https://addons.mozilla.org/en-US/firefox/addon/career-pocket/">
+    <img src="https://img.shields.io/badge/Firefox-Get_the_add--on-FF7139?style=for-the-badge&logo=firefoxbrowser&logoColor=white" alt="Get Career Pocket for Firefox">
+  </a>
+</p>
+
 - **Web dashboard:** https://career-pocket.pages.dev (no install).
 - **Extension:** download the Chrome, Edge or Firefox zip from the latest
   [GitHub Release](https://github.com/salman-sayeed/careerpocket/releases) and load it unpacked,
