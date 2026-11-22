@@ -119,7 +119,14 @@
     },
     replayOnboarding: () => void openDashboard(undefined, { onboarding: true }),
     // Must run inside the click: the browser only shows the permission prompt for a user gesture.
-    setPageAccess: (on) => (on ? requestPageAccess() : removePageAccess().then(() => false)),
+    // Turning the badge off keeps the access while the sidebar (which follows tabs) uses it.
+    setPageAccess: (on) =>
+      on
+        ? requestPageAccess()
+        : repo.getSettings().then(async (s) => {
+            if (s.jobPages.openIn !== 'sidebar') await removePageAccess();
+            return false;
+          }),
     getShortcut: getSaveShortcut,
     openShortcutSettings: () => void openShortcutSettings(),
   };

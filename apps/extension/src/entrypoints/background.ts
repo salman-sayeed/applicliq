@@ -2,7 +2,11 @@ import { flashBadge } from '@/lib/badge';
 import { SAVE_SHORTCUT_COMMAND, openDashboard } from '@/lib/config';
 import { repo } from '@/lib/db';
 import type { BackgroundMessage } from '@/lib/messages';
+import { DRAFT_FIELDS, type DraftField, isDraftField } from '@career-pocket/core';
+import { drafts } from '@/lib/draft';
+import { applyOpenIn, toggleSidebar } from '@/lib/open-in';
 import { setPendingLink } from '@/lib/pending-link';
+import { setTabDraftField } from '@/lib/tab-draft';
 import {
   ALARM_GHOST_CHECK,
   ALARM_SYNC,
@@ -15,22 +19,65 @@ import {
   syncSoon,
   updatePageBadge,
 } from '@/lib/background';
-import { extractFromTab, getActiveTab, isSavableUrl, openPopup, readLinkText } from '@/lib/tabs';
+import {
+  actionApi,
+  extractFromTab,
+  getActiveTab,
+  isSavableUrl,
+  openPopup,
+  readLinkText,
+} from '@/lib/tabs';
 
 const MENU_SAVE_LINK = 'save-link';
+const MENU_SELECTION = 'selection';
+/** Menu ids of the "Set as …" items under the selection menu: `set:title`, `set:notes`, … */
+const MENU_SET_PREFIX = 'set:';
+
+const SET_MENU_TITLES: Record<DraftField, string> = {
+  title: 'Set as Title',
+  company: 'Set as Company',
+  location: 'Set as Location',
+  salary: 'Set as Salary',
+  notes: 'Append to Notes',
+};
 
 export default defineBackground(() => {
   // Menus survive restarts in Chrome but not in Firefox; recreating on every start covers both.
-  void browser.contextMenus.removeAll().then(() =>
+  void browser.contextMenus.removeAll().then(() => {
     browser.contextMenus.create({
       id: MENU_SAVE_LINK,
       title: 'Save job to Career Pocket',
       contexts: ['link'],
-    }),
-  );
+    });
+    // Selected text → a field of this page's draft (the popup shows it when opened).
+    browser.contextMenus.create({
+      id: MENU_SELECTION,
+      title: 'Career Pocket',
+      contexts: ['selection'],
+    });
+    for (const field of DRAFT_FIELDS) {
+      browser.contextMenus.create({
+        id: MENU_SET_PREFIX + field,
+        parentId: MENU_SELECTION,
+        title: SET_MENU_TITLES[field],
+        contexts: ['selection'],
+      });
+    }
+  });
 
   browser.contextMenus.onClicked.addListener((info, tab) => {
-    if (info.menuItemId !== MENU_SAVE_LINK || !isSavableUrl(info.linkUrl)) return;
+    const menuId = String(info.menuItemId);
+    if (menuId.startsWith(MENU_SET_PREFIX)) {
+      const field = menuId.slice(MENU_SET_PREFIX.length);
+      // `tab.url` needs access to the tab; the click's own `pageUrl` is always there.
+      const url = tab?.url ?? info.pageUrl;
+      if (isDraftField(field) && tab?.id !== undefined && isSavableUrl(url)) {
+        const page = { id: tab.id, url, title: tab.title };
+        void setTabDraftField(page, field, info.selectionText ?? '');
+      }
+      return;
+    }
+    if (menuId !== MENU_SAVE_LINK || !isSavableUrl(info.linkUrl)) return;
     const url = info.linkUrl;
     // The linked page isn't loaded, so only its URL and text are known: the popup asks for the
     // rest (company is required). Firefox gives the link text and only opens the popup within
@@ -56,6 +103,7 @@ export default defineBackground(() => {
   // closed) and then every 6 hours; reminders and the goal badge follow every change. Drive
   // sync runs on start-up, every 15 minutes, 3 s after a change and when the popup opens.
   const onStart = () => {
+    void drafts.purgeExpired().catch(() => {});
     void reconcilePageBadge();
     void refresh({ ghost: true });
     void syncAndRefresh();
@@ -67,6 +115,11 @@ export default defineBackground(() => {
   });
   browser.runtime.onStartup.addListener(onStart);
   void ensureAlarms();
+  // The toolbar button's popup / sidebar choice isn't kept across restarts everywhere.
+  void repo.getSettings().then((s) => applyOpenIn(s.jobPages.openIn));
+  // Firefox, "Open in: Sidebar": the button has no popup, so its click toggles the sidebar.
+  // Must not await first: Firefox opens the sidebar only within the click.
+  actionApi.onClicked.addListener(() => toggleSidebar());
 
   browser.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name === ALARM_SYNC) void syncAndRefresh();
@@ -78,7 +131,16 @@ export default defineBackground(() => {
     const m = message as BackgroundMessage;
     if (m?.type === 'career-pocket:jobs-changed') {
       void refresh();
+      void repo.getSettings().then((s) => applyOpenIn(s.jobPages.openIn));
       syncSoon();
+    } else if (m?.type === 'career-pocket:picked') {
+      // From the picker in the page's top frame; the tab's URL keys the draft.
+      const tab = sender.tab;
+      const url = tab?.url ?? sender.url;
+      const valid = isDraftField(m.field) && typeof m.text === 'string';
+      if (valid && tab?.id !== undefined && sender.frameId === 0 && isSavableUrl(url)) {
+        void setTabDraftField({ id: tab.id, url, title: tab.title }, m.field, m.text);
+      }
     } else if (m?.type === 'career-pocket:sync-now') void syncAndRefresh();
     else if (m?.type === 'career-pocket:open-job' && typeof m.jobId === 'string') {
       void openDashboard(m.jobId);

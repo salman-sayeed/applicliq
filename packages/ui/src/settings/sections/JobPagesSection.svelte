@@ -1,5 +1,10 @@
 <script lang="ts">
-  import { type BadgePosition, type ToolbarBadgeMode, siteHost } from '@career-pocket/core';
+  import {
+    type BadgePosition,
+    type OpenInMode,
+    type ToolbarBadgeMode,
+    siteHost,
+  } from '@career-pocket/core';
   import Choice from '../Choice.svelte';
   import Field from '../Field.svelte';
   import Toggle from '../Toggle.svelte';
@@ -26,6 +31,11 @@
     { value: 'bottom-left', label: 'Bottom left' },
     { value: 'top-right', label: 'Top right' },
     { value: 'top-left', label: 'Top left' },
+  ];
+
+  const openInModes: { value: OpenInMode; label: string }[] = [
+    { value: 'popup', label: 'Popup' },
+    { value: 'sidebar', label: 'Sidebar' },
   ];
 
   const toolbarModes: { value: ToolbarBadgeMode; label: string }[] = [
@@ -147,5 +157,18 @@
     options={toolbarModes}
     {disabled}
     onchange={(toolbarBadge) => save({ jobPages: { toolbarBadge } })}
+  />
+</Field>
+
+<Field
+  label="Open Career Pocket in"
+  hint="What the toolbar button opens. The sidebar stays open beside the page and follows the tab you're on."
+>
+  <Choice
+    label="Open Career Pocket in"
+    value={pages.openIn}
+    options={openInModes}
+    {disabled}
+    onchange={(openIn) => save({ jobPages: { openIn } })}
   />
 </Field>

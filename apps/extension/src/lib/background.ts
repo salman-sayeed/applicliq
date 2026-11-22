@@ -60,14 +60,14 @@ export async function ensureAlarms(settings?: Settings): Promise<void> {
 }
 
 /**
- * The page badge setting mirrors the optional all-sites permission: the permission can be
- * granted or removed outside the settings page (browser's extension settings, older versions
- * that toggled the permission alone), so line the setting up with it.
+ * The page badge needs the optional all-sites permission, which can be removed outside the
+ * settings page (the browser's extension settings), so the badge turns off with it.
  */
 export async function reconcilePageBadge(): Promise<void> {
   const [access, settings] = await Promise.all([hasPageAccess(), repo.getSettings()]);
-  if (access !== settings.jobPages.showBadge) {
-    await repo.updateSettings({ jobPages: { showBadge: access } });
+  // Only turns the badge off: the sidebar can also be why the access was granted.
+  if (!access && settings.jobPages.showBadge) {
+    await repo.updateSettings({ jobPages: { showBadge: false } });
   }
 }
 

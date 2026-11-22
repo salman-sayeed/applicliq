@@ -2,7 +2,7 @@
   import type { JobStatus } from '@career-pocket/core';
   import { Button, getPrefs } from '@career-pocket/ui';
   import { onMount } from 'svelte';
-  import { type Draft, isDraftValid } from '@/lib/draft';
+  import { DRAFT_FIELD_LABELS, type Draft, type DraftField, isDraftValid } from '@/lib/draft';
   import DuplicateWarning from './DuplicateWarning.svelte';
 
   let {
@@ -11,6 +11,7 @@
     defaultStatus = 'saved',
     duplicateWarning = true,
     onsave,
+    onpick,
   }: {
     draft: Draft;
     saving: boolean;
@@ -19,6 +20,8 @@
     /** Mention other jobs at the same company (setting). */
     duplicateWarning?: boolean;
     onsave: (status: JobStatus) => void;
+    /** "Pick from page" for a field; left out where the page can't be picked from. */
+    onpick?: (field: DraftField) => void;
   } = $props();
 
   const prefs = getPrefs();
@@ -47,38 +50,78 @@
   }
 </script>
 
+{#snippet pickButton(field: DraftField, placement = 'absolute top-1/2 right-1 -translate-y-1/2')}
+  {#if onpick}
+    <button
+      type="button"
+      onclick={() => onpick(field)}
+      aria-label="Pick {DRAFT_FIELD_LABELS[field].toLowerCase()} from the page"
+      title="Pick from the page"
+      class="{placement} text-ink-muted hover:text-accent hover:bg-surface-muted focus-visible:ring-accent rounded p-1 transition focus-visible:ring-2 focus-visible:outline-none"
+    >
+      <svg
+        viewBox="0 0 20 20"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.6"
+        stroke-linecap="round"
+        class="size-3.5"
+        aria-hidden="true"
+      >
+        <circle cx="10" cy="10" r="5.5" />
+        <circle cx="10" cy="10" r="1" fill="currentColor" />
+        <path d="M10 1.5v3M10 15.5v3M1.5 10h3M15.5 10h3" />
+      </svg>
+    </button>
+  {/if}
+{/snippet}
+
 <form class="flex flex-col gap-3" onsubmit={submit} novalidate>
   <p class="text-ink-muted truncate text-xs" title={draft.url}>{host}</p>
 
   <div>
     <label class="label" for="title">Job title <span class="text-accent">*</span></label>
-    <input
-      id="title"
-      class="field"
-      bind:this={titleInput}
-      bind:value={draft.title}
-      required
-      placeholder="e.g. Frontend Engineer"
-    />
+    <div class="relative">
+      <input
+        id="title"
+        class="field {onpick ? 'pr-8' : ''}"
+        bind:this={titleInput}
+        bind:value={draft.title}
+        required
+        placeholder="e.g. Frontend Engineer"
+      />
+      {@render pickButton('title')}
+    </div>
   </div>
 
   <div>
     <label class="label" for="company">Company <span class="text-accent">*</span></label>
-    <input
-      id="company"
-      class="field"
-      bind:this={companyInput}
-      bind:value={draft.company}
-      required
-      placeholder="e.g. Acme"
-    />
+    <div class="relative">
+      <input
+        id="company"
+        class="field {onpick ? 'pr-8' : ''}"
+        bind:this={companyInput}
+        bind:value={draft.company}
+        required
+        placeholder="e.g. Acme"
+      />
+      {@render pickButton('company')}
+    </div>
     {#if duplicateWarning}<DuplicateWarning company={draft.company} />{/if}
   </div>
 
   <div class="grid grid-cols-[1fr_7.5rem] gap-2">
     <div>
       <label class="label" for="location">Location</label>
-      <input id="location" class="field" bind:value={draft.location} placeholder="City, country" />
+      <div class="relative">
+        <input
+          id="location"
+          class="field {onpick ? 'pr-8' : ''}"
+          bind:value={draft.location}
+          placeholder="City, country"
+        />
+        {@render pickButton('location')}
+      </div>
     </div>
     <div>
       <label class="label" for="workType">Work type</label>
@@ -92,7 +135,10 @@
   </div>
 
   <fieldset>
-    <legend class="label">Salary</legend>
+    <legend class="label flex w-full items-center justify-between">
+      Salary
+      {@render pickButton('salary', '-my-1')}
+    </legend>
     <div class="grid grid-cols-[1fr_1fr_4rem_5.5rem] gap-2">
       <input
         class="field"
@@ -126,7 +172,14 @@
 
   <div>
     <label class="label" for="notes">Notes</label>
-    <textarea id="notes" class="field resize-none" rows="2" bind:value={draft.notes}></textarea>
+    <div class="relative">
+      <textarea
+        id="notes"
+        class="field resize-none {onpick ? 'pr-8' : ''}"
+        rows="2"
+        bind:value={draft.notes}></textarea>
+      {@render pickButton('notes', 'absolute top-1 right-1')}
+    </div>
   </div>
 
   <div class="grid grid-cols-2 gap-2 pt-1 {defaultStatus === 'applied' ? 'grid-cols-1' : ''}">

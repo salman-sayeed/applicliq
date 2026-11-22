@@ -20,6 +20,8 @@ export const SETTINGS_VERSION = 1;
 export type Theme = 'system' | 'light' | 'dark';
 export type WeekStartDay = 'sat' | 'sun' | 'mon';
 export type ToolbarBadgeMode = 'today' | 'goal' | 'off';
+/** Where the toolbar button opens Career Pocket: its popup or the browser's sidebar. */
+export type OpenInMode = 'popup' | 'sidebar';
 export type BadgePosition = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
 export type Density = 'comfortable' | 'compact';
 export type DashboardViewSetting = 'list' | 'board' | 'stats';
@@ -81,6 +83,8 @@ export type Settings = {
     sitesWithBadgeOff: string[];
     duplicateWarning: boolean;
     toolbarBadge: ToolbarBadgeMode;
+    /** What the toolbar button opens (extension only; the sidebar where the browser has one). */
+    openIn: OpenInMode;
   };
   appearance: {
     theme: Theme;
@@ -152,6 +156,7 @@ export const DEFAULT_SETTINGS: Settings = {
     sitesWithBadgeOff: [],
     duplicateWarning: true,
     toolbarBadge: 'goal',
+    openIn: 'popup',
   },
   appearance: {
     theme: 'system',
@@ -173,7 +178,7 @@ export const DEVICE_KEYS: { readonly [K in SettingsSection]?: readonly (keyof Se
     'dailyGoalReminder',
     'quietHours',
   ],
-  jobPages: ['showBadge', 'badgePosition', 'sitesWithBadgeOff'],
+  jobPages: ['showBadge', 'badgePosition', 'sitesWithBadgeOff', 'openIn'],
 };
 
 export function isDeviceKey<K extends SettingsSection>(
@@ -331,6 +336,7 @@ export const SETTINGS_SCHEMA: {
     sitesWithBadgeOff: textList(500, 253, siteHost),
     duplicateWarning: bool,
     toolbarBadge: oneOf(['today', 'goal', 'off']),
+    openIn: oneOf(['popup', 'sidebar']),
   },
   appearance: {
     theme: oneOf(['system', 'light', 'dark']),

@@ -131,7 +131,12 @@ describe('split / combine', () => {
     const { synced, device } = splitSettings(settings);
     expect(device).toEqual({
       notifications: { ...DEFAULT_SETTINGS.notifications, followUpReminders: false },
-      jobPages: { showBadge: true, badgePosition: 'top-left', sitesWithBadgeOff: [] },
+      jobPages: {
+        showBadge: true,
+        badgePosition: 'top-left',
+        sitesWithBadgeOff: [],
+        openIn: 'popup',
+      },
     });
     expect(synced.jobPages).toEqual({ duplicateWarning: true, toolbarBadge: 'today' });
     expect(combineSettings(synced, device)).toEqual(settings);

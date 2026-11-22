@@ -57,9 +57,10 @@ export default defineConfig({
         'Track job applications from any job posting. Local-first, synced to your own Google Drive.',
       // Minimal permissions: no host access. `activeTab` grants the current tab only when the user
       // opens the popup, presses the shortcut or uses the context menu; `scripting` then injects
-      // the extractor into that tab. `storage` holds the context-menu hand-off to the popup and
-      // which reminders were shown; `alarms` runs the ghost check and reminders; `notifications`
-      // shows follow-up and interview reminders.
+      // the extractor (and the "pick from page" helper) into that tab. `storage` holds the
+      // context-menu hand-off to the popup, form drafts (session storage) and which reminders
+      // were shown; `alarms` runs the ghost check and reminders; `notifications` shows
+      // follow-up and interview reminders. WXT adds `sidePanel` on Chromium for the sidebar.
       // `identity` signs in to Google for Drive sync (drive.appdata scope only).
       permissions: [
         'activeTab',

@@ -25,9 +25,15 @@ nothing else in the user's Drive).
 ```
 apps/
   extension/            WXT extension
-    src/entrypoints/    popup/, dashboard/ (extension page), options/ (settings page, also the
-                        extension's options page), background.ts, extract.content.ts,
-                        job-badge.content.ts (saved-job page badge, injected by background)
+    src/entrypoints/    popup/ and sidepanel/ (both mount components/JobPanel), dashboard/
+                        (extension page), options/ (settings page, also the extension's options
+                        page), background.ts, extract.content.ts, job-badge.content.ts (saved-job
+                        page badge, injected by background), picker.content.ts ("pick from page")
+    src/components/     JobPanel (save form + per-page draft, tab following in the sidebar),
+                        JobForm, SavedJob, RecentJobs, form.css
+    src/lib/draft.ts    form drafts in storage.session (per page URL, 24 h), toolbar "•" badge
+    src/lib/tab-draft.ts  writes selected / picked page text into a tab's draft, page toast
+    src/lib/open-in.ts  toolbar button opens popup or sidebar (side_panel / sidebar_action)
     src/lib/background.ts  auto-ghosting, reminders (quiet hours, goal nudge), goal badge, page badge
     src/lib/google-auth.ts launchWebAuthFlow (Web client); getAuthToken on Chrome if only a Chrome client
     src/lib/sync.ts     background sync runner + status in extension storage
@@ -53,6 +59,7 @@ packages/
     src/storage.ts      Dexie DB (jobs, settings) + repository: CRUD, URL/company lookup, settings,
                         import/export
     src/csv.ts          jobsToCsv (spreadsheet export)
+    src/draft.ts        save-form Draft, setDraftField (salary text parsing), createDraftStore
     src/reminders.ts    auto-ghost selection, due reminders, job summary, goal badge text
     src/merge.ts        mergeJobs: last-write-wins merge, tombstone purge
     src/url.ts          normalizeUrl (strips hash + tracking params) for duplicate detection
