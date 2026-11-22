@@ -82,17 +82,18 @@ made with [screenshots/capture.mjs](screenshots/capture.mjs)). Suggested order:
 
 **Permission justifications:**
 
-| Permission                            | Justification                                                                                                                                                                        |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `activeTab`                           | Reads the job posting on the current tab only when the user opens the popup or presses the save shortcut.                                                                            |
-| `scripting`                           | Injects the job-details extractor into that tab (granted through `activeTab`), and the optional "already saved" badge on pages of saved jobs.                                        |
-| `contextMenus`                        | Adds "Save job to Career Pocket" to the right-click menu of links, to save a job from a list of postings.                                                                            |
-| `storage`                             | Keeps the sign-in state, sync status and which reminders were already shown.                                                                                                         |
-| `alarms`                              | Runs the periodic ghosted-job check, reminders and background sync.                                                                                                                  |
-| `notifications`                       | Shows interview and follow-up reminders and goal nudges the user turned on.                                                                                                          |
-| `identity`                            | Signs in to Google so the user can sync their data to their own Google Drive (`drive.appdata` scope only).                                                                           |
-| Optional host permission `<all_urls>` | Only requested when the user turns on the "saved job" badge in Settings; used to recognise pages of jobs they already saved and show a small badge there. Never requested otherwise. |
-| Remote code                           | No. All code is in the package.                                                                                                                                                      |
+| Permission                            | Justification                                                                                                                                                                |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `activeTab`                           | Reads the job posting on the current tab only when the user opens the popup, presses the save shortcut or uses the right-click menu.                                         |
+| `scripting`                           | Injects the job-details extractor, the "pick from page" helper and a short confirmation into that tab (granted through `activeTab`), and the optional "already saved" badge. |
+| `contextMenus`                        | Adds "Save job to Career Pocket" to links, and "Set as Title / Company / …" to selected text to fix a detail the page didn't give correctly.                                 |
+| `storage`                             | Keeps the sign-in state, sync status, which reminders were already shown, and unsaved form drafts (in session storage, deleted after 24 hours).                              |
+| `sidePanel`                           | Shows the same save-job form in the browser's side panel when the user chooses it, so it stays open beside the posting.                                                      |
+| `alarms`                              | Runs the periodic ghosted-job check, reminders and background sync.                                                                                                          |
+| `notifications`                       | Shows interview and follow-up reminders and goal nudges the user turned on.                                                                                                  |
+| `identity`                            | Signs in to Google so the user can sync their data to their own Google Drive (`drive.appdata` scope only).                                                                   |
+| Optional host permission `<all_urls>` | Only requested when the user turns on the "saved job" badge or lets the side panel follow their tabs; used to read the job page they switch to. Never requested otherwise.   |
+| Remote code                           | No. All code is in the package.                                                                                                                                              |
 
 **Data usage** (check these boxes):
 
