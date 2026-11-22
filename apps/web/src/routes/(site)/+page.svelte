@@ -27,8 +27,8 @@
   });
   const toggleVideo = () => (video?.paused ? video.play().catch(() => {}) : video?.pause());
 
-  // The visitor's browser picks the lead install button and the highlighted store card. The
-  // prerendered HTML (no browser known yet) points to the store list.
+  // The visitor's browser picks the highlighted store card and the manual install button. The
+  // prerendered HTML (no browser known yet) shows neither.
   let browser = $state<DetectedBrowser>('other');
   onMount(() => (browser = detectBrowser()));
 
@@ -45,7 +45,7 @@
     const id = storeFor[browser];
     return id ? storeById(id) : null;
   });
-  // Chromium browsers without a live store listing can load the release zip by hand.
+  // Chrome, Brave, Edge and Opera can load the release zip by hand.
   const manual = $derived(MANUAL_BROWSERS.find((b) => b.id === browser));
 
   // Icon paths (24×24, stroke) for the feature list.
@@ -104,8 +104,6 @@
     },
   ];
 
-  const primaryBtn =
-    'bg-accent text-accent-ink focus-visible:ring-accent rounded-md px-4 py-2 text-sm font-medium transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none';
   const secondaryBtn =
     'border-line text-ink hover:bg-surface-muted focus-visible:ring-accent rounded-md border px-4 py-2 text-sm font-medium transition focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none';
 
@@ -143,22 +141,15 @@
       Save postings from any job site in one click and track them from saved to offer. Your data
       never leaves your browser, except to sync with your own Google Drive.
     </p>
-    <div id="install" class="mt-8 flex scroll-mt-20 flex-wrap justify-center gap-3">
-      {#if myStore?.status === 'live'}
-        <a href={myStore.url} target="_blank" rel="external noopener" class={primaryBtn}>
-          Add to {myStore.name.split(' ')[0]}
-        </a>
-        <a href="#get" class={secondaryBtn}>Other browsers</a>
-      {:else if manual}
-        <a href="{resolve('/(site)/install')}#{manual.id}" class={primaryBtn}>
-          Install on {manual.name}
-        </a>
-        <a href="#get" class={secondaryBtn}>All browsers</a>
-      {:else}
-        <a href="#get" class={primaryBtn}>Get Career Pocket</a>
-      {/if}
+    <div id="install" class="mx-auto mt-10 max-w-3xl scroll-mt-20 text-left">
+      <StoreGrid current={myStore?.id ?? null} />
     </div>
-    <div class="text-ink-muted mt-4 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
+    <div class="mt-6">
+      <a href="{resolve('/(site)/install')}{manual ? `#${manual.id}` : ''}" class={secondaryBtn}>
+        {manual ? `Install manually on ${manual.name}` : 'Manual install'}
+      </a>
+    </div>
+    <div class="text-ink-muted mt-6 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
       <a href={resolve('/app')} class="hover:text-ink underline-offset-4 hover:underline">
         Open the web dashboard →
       </a>
@@ -273,25 +264,6 @@
         </li>
       {/each}
     </ol>
-  </section>
-
-  <section id="get" aria-labelledby="get-title" class="mx-auto max-w-5xl scroll-mt-16 px-4 pb-20">
-    <h2 id="get-title" class="text-center text-2xl font-semibold tracking-tight sm:text-3xl">
-      Get Career Pocket
-    </h2>
-    <p class="text-ink-muted mx-auto mt-3 max-w-xl text-center text-balance">
-      Free on every store it's in. More stores are on the way; until then, Chrome, Brave, Edge and
-      Opera can load it by hand.
-    </p>
-    <div class="mt-10">
-      <StoreGrid current={myStore?.id ?? null} />
-    </div>
-    <div class="mt-8 flex flex-col items-center gap-2">
-      <a href={resolve('/(site)/install')} class={secondaryBtn}>Manual install</a>
-      <p class="text-ink-muted text-xs">
-        For Chrome, Brave, Edge and Opera, from the latest release
-      </p>
-    </div>
   </section>
 
   <section class="mx-auto max-w-5xl px-4 pb-20">
