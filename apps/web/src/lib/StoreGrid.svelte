@@ -5,17 +5,17 @@
   let { current = null }: { current?: StoreId | null } = $props();
 
   const base =
-    'store border-line bg-surface relative flex h-full items-center gap-3 rounded-xl border p-4 text-left';
+    'store border-line bg-surface relative flex h-full items-center gap-2.5 rounded-xl border p-3 text-left sm:gap-3 sm:p-4';
 </script>
 
-<ul class="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2 lg:grid-cols-3">
+<ul class="grid grid-cols-2 gap-3 sm:grid-cols-3">
   {#each STORES as store (store.id)}
     {@const mine = store.id === current}
     <li style="--brand: {store.color}">
       {#snippet body()}
-        <img src={store.icon} alt="" width="40" height="40" class="size-10 shrink-0" />
+        <img src={store.icon} alt="" width="40" height="40" class="size-8 shrink-0 sm:size-10" />
         <span class="min-w-0">
-          <span class="block leading-snug font-medium">{store.name}</span>
+          <span class="block text-sm leading-snug font-medium sm:text-base">{store.name}</span>
           {#if store.status === 'live'}
             <span class="text-ink-muted mt-0.5 flex items-center gap-1.5 text-xs">
               <span class="size-1.5 rounded-full bg-emerald-500" aria-hidden="true"></span>
