@@ -24,6 +24,13 @@
         >
           {donationLabel}
         </a>
+      {:else}
+        <!-- Placeholder until SUPPORT.donationUrl is set in config.ts. -->
+        <span
+          class="border-line text-ink-muted mt-4 inline-block rounded-md border border-dashed px-4 py-2 text-sm"
+        >
+          {donationLabel} · link coming soon
+        </span>
       {/if}
       {#if crypto.address}
         <div class="mt-4">
@@ -49,6 +56,16 @@
             </p>
           {/if}
         </div>
+      {:else}
+        <!-- Placeholder until SUPPORT.crypto is set in config.ts. -->
+        <div class="mt-4">
+          <p class="text-ink-muted text-sm font-medium">Crypto</p>
+          <p
+            class="border-line text-ink-muted mt-2 rounded-md border border-dashed px-2.5 py-1.5 text-xs"
+          >
+            Wallet address coming soon
+          </p>
+        </div>
       {/if}
     </div>
     {#if qr}
@@ -61,6 +78,13 @@
       >
         <path d={qr.path} fill="#000" />
       </svg>
+    {:else}
+      <div
+        class="border-line text-ink-muted flex size-36 shrink-0 items-center justify-center self-center rounded-lg border border-dashed text-xs"
+        aria-hidden="true"
+      >
+        QR code
+      </div>
     {/if}
   </div>
 </section>

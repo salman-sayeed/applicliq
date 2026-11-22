@@ -37,6 +37,8 @@ apps/
     src/lib/background.ts  auto-ghosting, reminders (quiet hours, goal nudge), goal badge, page badge
     src/lib/google-auth.ts launchWebAuthFlow (Web client); getAuthToken on Chrome if only a Chrome client
     src/lib/sync.ts     background sync runner + status in extension storage
+docs/screenshots/       capture.mjs (dashboard shots), capture-extension.mjs (sidebar, pick from
+                        page, right-click menu on fictional postings from demo-job.html)
 docs/google-setup.md    creating the OAuth client IDs (env vars in apps/extension/.env, apps/web/.env)
 docs/store-listing.md   Chrome Web Store / Edge / AMO listing text, permission justifications
 .github/workflows/      ci.yml (format, lint, typecheck, test, build on PRs and main);
@@ -47,6 +49,10 @@ docs/store-listing.md   Chrome Web Store / Edge / AMO listing text, permission j
     src/routes/         +layout.ts sets `prerender = true`; (site)/ landing + privacy (site.css),
                         app/ the dashboard and app/settings (client-only, app.css with the
                         dashboard and settings @source)
+    src/lib/config.ts   store list (live / coming soon), manual-install browsers, donation details
+                        (SUPPORT: the landing page's Support section and the README's)
+    src/lib/Screenshots.svelte  landing-page screenshot tabs (scroll-snap, swipe on phones)
+    src/routes/(site)/install/  manual install guide (Chrome, Brave, Edge, Opera)
     src/lib/session.svelte.ts  sign-in / sign-out shared by /app and /app/settings
     src/lib/google-auth.ts  Google Identity Services token client (loaded only on /app)
     src/lib/sync.svelte.ts  IndexedDB repo, dashboard adapter, sync runner + triggers

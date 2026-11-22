@@ -1,13 +1,18 @@
 <script lang="ts">
   import { resolve } from '$app/paths';
   import { GITHUB_URL } from '#lib/links.ts';
-  import { MANUAL_BROWSERS, STORES, hasSupport, storeById, type StoreId } from '#lib/config.ts';
+  import { MANUAL_BROWSERS, STORES, storeById, type StoreId } from '#lib/config.ts';
   import { detectBrowser, type DetectedBrowser } from '#lib/browser.ts';
   import StoreGrid from '#lib/StoreGrid.svelte';
   import SupportSection from '#lib/SupportSection.svelte';
   import boardShot from '#lib/assets/screenshots/dashboard-board.webp';
   import listShot from '#lib/assets/screenshots/dashboard-list.webp';
   import statsShot from '#lib/assets/screenshots/dashboard-stats.webp';
+  import settingsShot from '#lib/assets/screenshots/settings-data.webp';
+  import sidebarShot from '#lib/assets/screenshots/extension-sidebar.webp';
+  import pickerShot from '#lib/assets/screenshots/extension-picker.webp';
+  import menuShot from '#lib/assets/screenshots/extension-menu.webp';
+  import Screenshots from '#lib/Screenshots.svelte';
   import saveVideo from '#lib/assets/screenshots/save-a-job.mp4';
   import savePoster from '#lib/assets/screenshots/save-a-job-poster.jpg';
   import { onMount } from 'svelte';
@@ -82,25 +87,59 @@
     },
   ];
 
-  // Captured with docs/screenshots/capture.mjs (fictional demo data), 2560×1600.
+  // Captured with docs/screenshots/capture.mjs and capture-extension.mjs (fictional demo data),
+  // 2560×1600.
   const screenshots = [
     {
+      id: 'sidebar',
+      label: 'Save a job',
+      src: sidebarShot,
+      alt: 'A job posting with the Career Pocket sidebar next to it: title, company, location, work type and salary already filled in from the page, and a note added.',
+      caption:
+        'Open the sidebar on any posting: the details fill themselves in, and your draft is kept',
+    },
+    {
+      id: 'picker',
+      label: 'Pick from page',
+      src: pickerShot,
+      alt: 'Picking the location on a job posting for a Product Designer: the location is highlighted, with a label saying "Click to set Location · Esc to cancel", and the empty Location field in the sidebar.',
+      caption:
+        'Something missing? Click the target next to a field, then click the text on the page',
+    },
+    {
+      id: 'menu',
+      label: 'Right-click',
+      src: menuShot,
+      alt: 'The salary selected on a Data Engineer posting, with the right-click menu open at Career Pocket, then Set as Salary.',
+      caption: 'Or select text, right-click and choose Set as Title, Company, Location or Salary',
+    },
+    {
+      id: 'list',
+      label: 'List',
       src: listShot,
-      label: 'Every application in one list, with the details a click away',
       alt: 'The Career Pocket dashboard: a list of job applications with their status, location and salary, and the details of one job open in a side panel.',
-      wide: true,
+      caption: 'Every application in one list, with the details a click away',
     },
     {
+      id: 'board',
+      label: 'Board',
       src: boardShot,
-      label: 'Drag jobs across the board as they progress',
       alt: 'The board view: job cards in Saved, Applied, Assessment, Interview and Offer columns, with salaries, tags and upcoming interview dates.',
-      wide: false,
+      caption: 'Drag jobs across the board as they progress',
     },
     {
+      id: 'stats',
+      label: 'Stats',
       src: statsShot,
-      label: 'Goals, streaks and where your applications lead',
-      alt: 'The stats view: daily, weekly and monthly goal rings, a four-day streak, a heatmap of applications per day and an application funnel.',
-      wide: false,
+      alt: 'The stats view: daily, weekly and monthly goal rings, a streak, a heatmap of applications per day and an application funnel.',
+      caption: 'Goals, streaks and where your applications lead',
+    },
+    {
+      id: 'sync',
+      label: 'Sync & data',
+      src: settingsShot,
+      alt: 'The Sync & data settings: Google Drive account, sync interval, export to JSON or CSV, and import.',
+      caption: 'Sync through your own Google Drive, export to JSON or CSV any time',
     },
   ];
 
@@ -160,7 +199,7 @@
   </section>
 
   <section aria-label="Screenshots" class="mx-auto max-w-5xl px-4 pb-20">
-    <figure class="mb-4">
+    <figure>
       <div class="relative">
         <!-- Silent screen recording; the caption and the popup screenshot below describe it. -->
         <video
@@ -199,21 +238,8 @@
         Save a job in seconds: the details fill themselves in from the page
       </figcaption>
     </figure>
-    <div class="grid gap-4 sm:grid-cols-2">
-      {#each screenshots as shot, i (shot.src)}
-        <figure class={shot.wide ? 'sm:col-span-2' : ''}>
-          <img
-            src={shot.src}
-            alt={shot.alt}
-            width="2560"
-            height="1600"
-            loading={i === 0 ? 'eager' : 'lazy'}
-            decoding="async"
-            class="border-line bg-surface-muted h-auto w-full rounded-xl border shadow-sm"
-          />
-          <figcaption class="text-ink-muted mt-2 text-center text-sm">{shot.label}</figcaption>
-        </figure>
-      {/each}
+    <div class="mt-10">
+      <Screenshots shots={screenshots} />
     </div>
   </section>
 
@@ -283,7 +309,5 @@
     </div>
   </section>
 
-  {#if hasSupport()}
-    <SupportSection qr={data.qr} />
-  {/if}
+  <SupportSection qr={data.qr} />
 </main>

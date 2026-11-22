@@ -85,3 +85,12 @@ Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
 ## License
 
 [MIT](LICENSE)
+
+## Support
+
+Career Pocket is free. If it helped you, you can buy me a coffee ☕
+
+- Buy me a coffee: _link coming soon_
+- Crypto: _wallet address coming soon_
+
+<!-- Keep these in step with SUPPORT in apps/web/src/lib/config.ts, which the website's Support section reads. -->

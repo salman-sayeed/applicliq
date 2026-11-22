@@ -260,7 +260,7 @@ try {
 
   await go('/app/settings#data');
   await waitFor(`/Export JSON/.test(document.body.innerText)`);
-  await shoot('settings-data', { web: false });
+  await shoot('settings-data');
 } finally {
   ws.close();
   chrome.kill();
