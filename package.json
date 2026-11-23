@@ -20,7 +20,8 @@
     "typecheck": "tsc -b && pnpm -r --if-present check",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "readme:cards": "node --experimental-strip-types scripts/generate-readme-cards.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

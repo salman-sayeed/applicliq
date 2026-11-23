@@ -1,7 +1,7 @@
 /**
  * Where AppliCliq can be installed, and how to support it: the one place to change them.
- * The landing page and /install follow this list; the README's "Get it" buttons (shields.io) are
- * updated by hand.
+ * The landing page and /install follow this list. The README's "Get it" cards are images made by
+ * scripts/generate-readme-cards.ts (`pnpm readme:cards`): update its list too.
  *
  * Icons are brand marks from Simple Icons (CC0), saved in `assets/stores/` with each brand's
  * colour baked in. Microsoft Edge comes from simple-icons 12, the last version that has it.
