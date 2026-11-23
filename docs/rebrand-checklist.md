@@ -61,7 +61,6 @@ their data: everything stored in their browsers or Drive still uses the old iden
 | Firefox ID `career-pocket@career-pocket`, Chrome `key`            | the extension's identity and Google redirect URLs             |
 | OAuth client IDs and the `drive.appdata` scope                    | sign-in for existing installs                                 |
 | AMO URL `/addon/career-pocket/`                                   | the listing's slug hasn't changed yet                         |
-| GitHub URL `salman-sayeed/careerpocket`                           | until the repo is renamed (then update the links)             |
 
 ## Remaining manual steps
 
@@ -107,15 +106,15 @@ are set. To replace the token later:
 
 ### GitHub
 
-- [ ] Rename the repository `careerpocket` → `applicliq` (Settings → General). Old links and
-      clones redirect automatically.
-- [ ] Update the description ("AppliCliq: a free, open-source job application tracker") and the
+- [x] Renamed the repository `careerpocket` → `applicliq` (2026-11-23). Old links and clones
+      redirect automatically.
+- [x] Update the description ("AppliCliq: a free, open-source job application tracker") and the
       website field (`https://applicliq.pages.dev`).
-- [ ] Then update `GITHUB_URL` in `apps/web/src/lib/links.ts` and `apps/extension/src/lib/config.ts`,
+- [x] Then update `GITHUB_URL` in `apps/web/src/lib/links.ts` and `apps/extension/src/lib/config.ts`,
       and the clone URLs in README.md, CONTRIBUTING.md and docs/store-listing.md, and
       `git remote set-url origin https://github.com/salman-sayeed/applicliq.git`.
-- [ ] The old Pages project is connected to `salman-sayeed/careerpocket`; after the rename check
-      that it still follows the repo (Cloudflare tracks it by ID).
+- [x] The old Pages project still follows the renamed repo (Cloudflare tracks it by ID,
+      `1462517255`; its stored name `careerpocket` is just a label).
 
 ### Firefox Add-ons (AMO)
 

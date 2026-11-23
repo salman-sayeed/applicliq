@@ -8,7 +8,7 @@ Links used below:
 
 - Website: https://applicliq.pages.dev
 - Privacy policy: https://applicliq.pages.dev/privacy
-- Source code / support: https://github.com/salman-sayeed/careerpocket (issues for support)
+- Source code / support: https://github.com/salman-sayeed/applicliq (issues for support)
 
 ---
 
@@ -51,7 +51,7 @@ PRIVATE BY DESIGN
 YOURS TO KEEP
 Export everything as JSON (a full backup you can import again) or CSV for spreadsheets.
 
-Free and open source (MIT): https://github.com/salman-sayeed/careerpocket
+Free and open source (MIT): https://github.com/salman-sayeed/applicliq
 ```
 
 **Screenshots** (Chrome: 1280×800, up to 5; Firefox: any size; Edge: 1280×800, up to 10). Ready-made
@@ -164,7 +164,7 @@ Google OAuth client ID (it appears in the built background.js); with it set to t
 the output matches the submitted package byte for byte. Without it the build is identical except
 that Google Drive sync is turned off.
 
-The code is open source: https://github.com/salman-sayeed/careerpocket
+The code is open source: https://github.com/salman-sayeed/applicliq
 ```
 
 After the first upload, check the redirect URL: it is

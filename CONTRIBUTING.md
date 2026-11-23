@@ -26,8 +26,8 @@ For anything larger than a bug fix, please open an issue first so we can agree o
 You need Node 22+ (see `.node-version`) and pnpm 10.
 
 ```bash
-git clone https://github.com/salman-sayeed/careerpocket.git
-cd careerpocket
+git clone https://github.com/salman-sayeed/applicliq.git
+cd applicliq
 pnpm install
 pnpm dev:ext      # extension in a fresh Chrome profile, with hot reload
 pnpm dev:web      # web dashboard on http://localhost:5173
