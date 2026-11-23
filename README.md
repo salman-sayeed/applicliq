@@ -24,7 +24,7 @@
 
 <p align="center">
   <a href="https://applicliq.pages.dev/install"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/readme/install-manually-dark.svg" /><img src="docs/readme/install-manually-light.svg" alt="Install manually on Chrome, Brave, Edge or Opera" /></picture></a>
-  <a href="https://applicliq.pages.dev/app"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/readme/web-dashboard-dark.svg" /><img src="docs/readme/web-dashboard-light.svg" alt="Open the web dashboard" /></picture></a>
+  <a href="https://applicliq.pages.dev"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/readme/web-dashboard-dark.svg" /><img src="docs/readme/web-dashboard-light.svg" alt="Open the web dashboard" /></picture></a>
 </p>
 
 ## Features
