@@ -1,6 +1,13 @@
 <script lang="ts">
-  /** Copies `text` to the clipboard and says so for a moment. */
-  let { text, label = 'Copy' }: { text: string; label?: string } = $props();
+  /**
+   * Copies `text` to the clipboard and says so for a moment. `compact` shows only the icon on
+   * small screens (the label stays for screen readers).
+   */
+  let {
+    text,
+    label = 'Copy',
+    compact = false,
+  }: { text: string; label?: string; compact?: boolean } = $props();
 
   let copied = $state(false);
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -39,5 +46,7 @@
       <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
     {/if}
   </svg>
-  <span aria-live="polite">{copied ? 'Copied' : label}</span>
+  <span aria-live="polite" class={compact ? 'sr-only sm:not-sr-only' : ''}>
+    {copied ? 'Copied' : label}
+  </span>
 </button>
