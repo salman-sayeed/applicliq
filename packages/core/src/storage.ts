@@ -34,11 +34,12 @@ export type LocalState = {
   onboardingDone?: boolean;
 };
 
+// Kept from the Career Pocket days: renaming it would hide every existing user's saved jobs.
 export const DB_NAME = 'career-pocket';
 /** The database's name before the app was renamed; its data moves over on first open. */
 export const LEGACY_DB_NAME = 'pocket-career';
 
-export class CareerPocketDB extends Dexie {
+export class AppliCliqDB extends Dexie {
   jobs!: Table<JobRecord, string>;
   settings!: Table<SettingsRow, string>;
 
@@ -64,7 +65,7 @@ export class CareerPocketDB extends Dexie {
  * and this one is still empty, then deletes it. Never throws: at worst the old data stays where
  * it was and the app starts empty.
  */
-async function adoptLegacyDatabase(db: CareerPocketDB, legacyName: string): Promise<void> {
+async function adoptLegacyDatabase(db: AppliCliqDB, legacyName: string): Promise<void> {
   try {
     if (!(await Dexie.exists(legacyName))) return;
     const legacy = new Dexie(legacyName);
@@ -87,7 +88,7 @@ async function adoptLegacyDatabase(db: CareerPocketDB, legacyName: string): Prom
     // Not awaited: another open page may hold the old database open for a moment.
     void Dexie.delete(legacyName).catch(() => {});
   } catch (error) {
-    console.warn('Career Pocket: could not move data from the old database', error);
+    console.warn('AppliCliq: could not move data from the old database', error);
   }
 }
 
@@ -114,7 +115,7 @@ export type ImportResult = {
 /** Fields a patch may never overwrite, even if a caller passes them at runtime. */
 const PROTECTED_FIELDS = ['id', 'history', 'createdAt', 'updatedAt', 'deletedAt'] as const;
 
-export function createJobRepository(db: CareerPocketDB, now: () => number = Date.now) {
+export function createJobRepository(db: AppliCliqDB, now: () => number = Date.now) {
   async function getAllRecords(): Promise<JobRecord[]> {
     return db.jobs.toArray();
   }
@@ -328,7 +329,7 @@ export function createJobRepository(db: CareerPocketDB, now: () => number = Date
     /**
      * Merges a file produced by `exportJSON` (or the Drive file) into the local store with
      * `mergeJobs`: newer versions win, nothing local is lost. Malformed records are skipped;
-     * a file that is not a Career Pocket export throws.
+     * a file that is not a AppliCliq export throws.
      */
     async importJSON(json: string): Promise<ImportResult> {
       let data: unknown;
@@ -341,10 +342,10 @@ export function createJobRepository(db: CareerPocketDB, now: () => number = Date
       const snapshot = data as (Partial<SyncSnapshot> & { version?: unknown }) | null;
       const schema = snapshot?.schemaVersion ?? snapshot?.version;
       if (!snapshot || !Array.isArray(snapshot.records) || typeof schema !== 'number') {
-        throw new Error('Import failed: not a Career Pocket export.');
+        throw new Error('Import failed: not a AppliCliq export.');
       }
       if (schema > SCHEMA_VERSION) {
-        throw new Error('Import failed: this file is from a newer version of Career Pocket.');
+        throw new Error('Import failed: this file is from a newer version of AppliCliq.');
       }
       const { records, skipped } = sanitizeRecords(snapshot.records);
       await mergeIntoLocal(records);

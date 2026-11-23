@@ -1,4 +1,4 @@
-import { extractJob } from '@career-pocket/core';
+import { extractJob } from '@applicliq/core';
 
 /**
  * Injected on demand (popup, shortcut) with `scripting.executeScript` under `activeTab`, so the

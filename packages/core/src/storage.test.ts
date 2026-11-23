@@ -1,11 +1,11 @@
 import 'fake-indexeddb/auto';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { Dexie } from 'dexie';
-import { CareerPocketDB, createJobRepository } from './storage';
+import { AppliCliqDB, createJobRepository } from './storage';
 import { DEFAULT_SETTINGS } from './settings';
 import { type Job, type JobRecord, TOMBSTONE_TTL_MS } from './types';
 
-let db: CareerPocketDB;
+let db: AppliCliqDB;
 let clock: number;
 const repo = () => createJobRepository(db, () => clock);
 const input = (extra: Partial<Job> = {}) => ({
@@ -17,7 +17,7 @@ const input = (extra: Partial<Job> = {}) => ({
 
 beforeEach(() => {
   clock = 1_000;
-  db = new CareerPocketDB(`test-${crypto.randomUUID()}`);
+  db = new AppliCliqDB(`test-${crypto.randomUUID()}`);
 });
 
 afterEach(async () => {
@@ -337,12 +337,12 @@ describe('cleanUrls', () => {
 describe('legacy database', () => {
   it('moves jobs and settings from the old database once, then deletes it', async () => {
     const oldName = `old-${crypto.randomUUID()}`;
-    const old = new CareerPocketDB(oldName, { legacyName: undefined });
+    const old = new AppliCliqDB(oldName, { legacyName: undefined });
     const job = await createJobRepository(old, () => 1).addJob(input());
     await old.settings.put({ id: 'app', theme: 'dark' });
     old.close();
 
-    const fresh = new CareerPocketDB(`new-${crypto.randomUUID()}`, { legacyName: oldName });
+    const fresh = new AppliCliqDB(`new-${crypto.randomUUID()}`, { legacyName: oldName });
     const repo2 = createJobRepository(fresh);
     expect(await repo2.getJobs()).toEqual([job]);
     expect((await repo2.getSettings()).appearance.theme).toBe('dark');
@@ -353,15 +353,15 @@ describe('legacy database', () => {
 
   it('leaves a database that already has data alone', async () => {
     const oldName = `old-${crypto.randomUUID()}`;
-    const old = new CareerPocketDB(oldName, { legacyName: undefined });
+    const old = new AppliCliqDB(oldName, { legacyName: undefined });
     await createJobRepository(old, () => 1).addJob(input());
     old.close();
 
     const name = `new-${crypto.randomUUID()}`;
-    const first = new CareerPocketDB(name, { legacyName: undefined });
+    const first = new AppliCliqDB(name, { legacyName: undefined });
     const mine = await createJobRepository(first, () => 1).addJob(input({ url: 'https://b.test' }));
     first.close();
-    const reopened = new CareerPocketDB(name, { legacyName: oldName });
+    const reopened = new AppliCliqDB(name, { legacyName: oldName });
     expect(await createJobRepository(reopened).getJobs()).toEqual([mine]);
     await reopened.delete();
   });
@@ -389,7 +389,7 @@ describe('exportJSON / importJSON', () => {
     const json = await repo().exportJSON();
     expect(JSON.parse(json)).toMatchObject({ schemaVersion: 1, updatedAt: 1_000 });
 
-    const other = new CareerPocketDB(`test-${crypto.randomUUID()}`);
+    const other = new AppliCliqDB(`test-${crypto.randomUUID()}`);
     try {
       const otherRepo = createJobRepository(other, () => clock);
       expect(await otherRepo.importJSON(json)).toEqual({
@@ -463,11 +463,11 @@ describe('exportJSON / importJSON', () => {
   it('rejects files that are not exports, without touching local data', async () => {
     const a = await repo().addJob(input());
     await expect(repo().importJSON('{nope')).rejects.toThrow('not valid JSON');
-    await expect(repo().importJSON('null')).rejects.toThrow('not a Career Pocket export');
+    await expect(repo().importJSON('null')).rejects.toThrow('not a AppliCliq export');
     await expect(repo().importJSON('{"schemaVersion":2,"records":[]}')).rejects.toThrow(
       'newer version',
     );
-    await expect(repo().importJSON('[]')).rejects.toThrow('not a Career Pocket export');
+    await expect(repo().importJSON('[]')).rejects.toThrow('not a AppliCliq export');
     expect(await repo().getJobs()).toEqual([a]);
   });
 });

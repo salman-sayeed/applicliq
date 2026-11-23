@@ -1,5 +1,5 @@
 /**
- * Where Career Pocket can be installed, and how to support it: the one place to change them.
+ * Where AppliCliq can be installed, and how to support it: the one place to change them.
  * The landing page, /install and the README's "Get it" row follow this list.
  *
  * Icons are brand marks from Simple Icons (CC0), saved in `assets/stores/` with each brand's
@@ -11,6 +11,7 @@ import edgeIcon from './assets/stores/microsoftedge.svg';
 import operaIcon from './assets/stores/opera.svg';
 import safariIcon from './assets/stores/safari.svg';
 import braveIcon from './assets/stores/brave.svg';
+import { GITHUB_URL } from './links';
 
 export type StoreId = 'firefox' | 'firefox-android' | 'chrome' | 'edge' | 'opera' | 'safari';
 
@@ -26,6 +27,7 @@ export type Store = {
   status: 'live' | 'coming-soon';
 };
 
+// The AMO slug is still career-pocket; the maintainer changes it on addons.mozilla.org first.
 const FIREFOX_URL = 'https://addons.mozilla.org/en-US/firefox/addon/career-pocket/';
 
 export const STORES: readonly Store[] = [
@@ -82,8 +84,7 @@ export const STORES: readonly Store[] = [
 export const storeById = (id: StoreId): Store => STORES.find((s) => s.id === id)!;
 
 /** The Chromium build of the newest release (the release workflow uploads it under this name). */
-export const CHROMIUM_ZIP_URL =
-  'https://github.com/salman-sayeed/careerpocket/releases/latest/download/career-pocket-chromium.zip';
+export const CHROMIUM_ZIP_URL = `${GITHUB_URL}/releases/latest/download/applicliq-chromium.zip`;
 
 /** Browsers covered by the manual install guide on /install. */
 export const MANUAL_BROWSERS = [

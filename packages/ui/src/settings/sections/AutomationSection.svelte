@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { JobStatus } from '@career-pocket/core';
+  import type { JobStatus } from '@applicliq/core';
   import { getPrefs } from '../../prefs.svelte';
   import CountInput from '../CountInput.svelte';
   import Field from '../Field.svelte';

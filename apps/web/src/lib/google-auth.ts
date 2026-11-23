@@ -1,5 +1,5 @@
 import './legacy-keys.ts';
-import { DRIVE_SCOPE } from '@career-pocket/core';
+import { DRIVE_SCOPE } from '@applicliq/core';
 
 /**
  * Google sign-in for the web dashboard with Google Identity Services (GIS), token model, scope
@@ -13,6 +13,7 @@ import { DRIVE_SCOPE } from '@career-pocket/core';
 
 const GIS_SRC = 'https://accounts.google.com/gsi/client';
 const CLIENT_ID: string = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '';
+// Storage keys kept from the Career Pocket days: renaming them would sign existing users out.
 /** Whether the user turned sync on in this browser (cleared by sign-out). */
 const SIGNED_IN_KEY = 'career-pocket:sync-signed-in';
 /** The access token: per tab, gone when the tab closes. */

@@ -9,7 +9,7 @@
     type WorkType,
     interviewIcs,
     interviewIcsFileName,
-  } from '@career-pocket/core';
+  } from '@applicliq/core';
   import { onMount, untrack } from 'svelte';
   import { fade, fly } from '../motion';
   import { getPrefs } from '../prefs.svelte';

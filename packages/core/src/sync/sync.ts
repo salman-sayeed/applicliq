@@ -19,7 +19,7 @@ export type SyncErrorKind =
   | 'conflict'
   /** The Drive file was written by a newer app version; it is left untouched. */
   | 'newer-schema'
-  /** The Drive file isn't a Career Pocket file; it is left untouched. */
+  /** The Drive file isn't a AppliCliq file; it is left untouched. */
   | 'invalid-remote'
   /** Drive is rate-limiting or failing. */
   | 'server'
@@ -68,17 +68,17 @@ export function parseSnapshot(data: unknown): {
     settings?: unknown;
   } | null;
   if (!file || typeof file !== 'object' || !Array.isArray(file.records)) {
-    throw new SyncError('invalid-remote', 'The Drive file is not a Career Pocket file.');
+    throw new SyncError('invalid-remote', 'The Drive file is not a AppliCliq file.');
   }
   const schema = file.schemaVersion ?? file.version;
   if (typeof schema === 'number' && schema > SCHEMA_VERSION) {
     throw new SyncError(
       'newer-schema',
-      'Your Drive data was saved by a newer version of Career Pocket. Update to keep syncing.',
+      'Your Drive data was saved by a newer version of AppliCliq. Update to keep syncing.',
     );
   }
   if (schema !== SCHEMA_VERSION) {
-    throw new SyncError('invalid-remote', 'The Drive file is not a Career Pocket file.');
+    throw new SyncError('invalid-remote', 'The Drive file is not a AppliCliq file.');
   }
   // Drive content is untrusted input: drop malformed records instead of storing them.
   return { ...sanitizeRecords(file.records), settings: file.settings };
@@ -184,7 +184,7 @@ function foldSettings(a: unknown, b: unknown): unknown {
 }
 
 /**
- * Removes every Career Pocket file from the user's Drive (the app folder only). Local data is not
+ * Removes every AppliCliq file from the user's Drive (the app folder only). Local data is not
  * touched; a device that syncs again uploads its copy, so callers sign out afterwards.
  */
 export async function deleteDriveData(drive: DriveClient): Promise<number> {

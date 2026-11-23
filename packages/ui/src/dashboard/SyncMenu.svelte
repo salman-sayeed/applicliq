@@ -98,8 +98,8 @@
     <div>
       <p class="text-ink font-semibold">Google Drive sync</p>
       <p class="text-ink-muted mt-1 text-xs">
-        Keeps your jobs in sync through a hidden app folder in your own Drive. Career Pocket can't
-        see your other files.
+        Keeps your jobs in sync through a hidden app folder in your own Drive. AppliCliq can't see
+        your other files.
       </p>
     </div>
 

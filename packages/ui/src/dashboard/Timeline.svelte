@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { StatusChange } from '@career-pocket/core';
+  import type { StatusChange } from '@applicliq/core';
   import { getPrefs } from '../prefs.svelte';
   import { STATUS_DOT } from '../status';
   import { formatAgo } from './format';

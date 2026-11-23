@@ -4,8 +4,8 @@
     type RecentApplication,
     daysAgoLabel,
     mostRecentApplication,
-  } from '@career-pocket/core';
-  import { slide } from '@career-pocket/ui';
+  } from '@applicliq/core';
+  import { slide } from '@applicliq/ui';
   import { repo } from '@/lib/db';
 
   let { company }: { company: string } = $props();

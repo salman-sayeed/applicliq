@@ -4,7 +4,7 @@
     type OpenInMode,
     type ToolbarBadgeMode,
     siteHost,
-  } from '@career-pocket/core';
+  } from '@applicliq/core';
   import Choice from '../Choice.svelte';
   import Field from '../Field.svelte';
   import Toggle from '../Toggle.svelte';
@@ -150,7 +150,7 @@
   />
 </Field>
 
-<Field label="Toolbar badge" hint="What the number on the Career Pocket toolbar icon shows.">
+<Field label="Toolbar badge" hint="What the number on the AppliCliq toolbar icon shows.">
   <Choice
     label="Toolbar badge"
     value={pages.toolbarBadge}
@@ -161,11 +161,11 @@
 </Field>
 
 <Field
-  label="Open Career Pocket in"
+  label="Open AppliCliq in"
   hint="What the toolbar button opens. The sidebar stays open beside the page and follows the tab you're on."
 >
   <Choice
-    label="Open Career Pocket in"
+    label="Open AppliCliq in"
     value={pages.openIn}
     options={openInModes}
     {disabled}

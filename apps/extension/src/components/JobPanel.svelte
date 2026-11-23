@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { type Job, type JobStatus, draftKey } from '@career-pocket/core';
-  import { Prefs, applyAppearance, fly, setPrefs, slide } from '@career-pocket/ui';
+  import { type Job, type JobStatus, draftKey } from '@applicliq/core';
+  import { Prefs, applyAppearance, fly, setPrefs, slide } from '@applicliq/ui';
   import { onMount, untrack } from 'svelte';
   import { showGoalBadge } from '@/lib/badge';
   import { getSaveShortcut, openDashboard, openSettings } from '@/lib/config';
@@ -313,7 +313,7 @@
   <header class="flex items-center justify-between">
     <h1 class="flex items-center gap-2 text-sm font-semibold">
       <img src="/icon/32.png" alt="" class="size-5" />
-      Career Pocket
+      AppliCliq
     </h1>
     <div class="flex items-center gap-1">
       <button
@@ -374,7 +374,7 @@
         <p class="text-ink-muted text-sm">
           {surface === 'sidebar'
             ? 'Open a job posting in this window to save it.'
-            : 'Open a job posting in this tab, then click Career Pocket to save it.'}
+            : 'Open a job posting in this tab, then click AppliCliq to save it.'}
         </p>
       {:else if view.kind === 'needs-access'}
         <div class="flex flex-col items-start gap-2 text-sm">

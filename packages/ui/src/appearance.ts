@@ -1,7 +1,8 @@
-import type { Settings } from '@career-pocket/core';
+import type { Settings } from '@applicliq/core';
 
 type Appearance = Settings['appearance'];
 
+// Kept from the Career Pocket days: renaming it would flash the default theme once for existing users.
 const CACHE_KEY = 'career-pocket:appearance';
 /** The key before the app was renamed. */
 const LEGACY_CACHE_KEY = 'pocket-career:appearance';

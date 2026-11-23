@@ -1,15 +1,15 @@
 import './legacy-keys.ts';
 import {
   DEFAULT_SETTINGS,
-  CareerPocketDB,
+  AppliCliqDB,
   type SyncErrorKind,
   createDriveClient,
   createJobRepository,
   deleteDriveData,
   syncWithDrive,
   toSyncError,
-} from '@career-pocket/core';
-import type { DashboardAdapter, SyncMenuStatus } from '@career-pocket/ui';
+} from '@applicliq/core';
+import type { DashboardAdapter, SyncMenuStatus } from '@applicliq/ui';
 import { NotSignedInError, dropToken, getToken, isSignedIn } from './google-auth.ts';
 
 /**
@@ -19,9 +19,11 @@ import { NotSignedInError, dropToken, getToken, isSignedIn } from './google-auth
  * connection returns. A Web Lock keeps two tabs from syncing at once.
  */
 
-export const db = new CareerPocketDB();
+export const db = new AppliCliqDB();
 export const repo = createJobRepository(db);
 
+// Storage keys and the lock name are kept from the Career Pocket days: renaming them would lose
+// state, or let a tab on the old version race one on the new.
 const LAST_SYNCED_KEY = 'career-pocket:last-synced';
 const ACCOUNT_KEY = 'career-pocket:account';
 const DEBOUNCE_MS = 3000;
@@ -159,7 +161,7 @@ export async function clearLocalData(): Promise<void> {
   writeStored(ACCOUNT_KEY, undefined);
 }
 
-/** Deletes the Career Pocket file from Drive (settings page). The caller then signs out. */
+/** Deletes the AppliCliq file from Drive (settings page). The caller then signs out. */
 export async function deleteRemoteData(): Promise<void> {
   await deleteDriveData(drive);
 }

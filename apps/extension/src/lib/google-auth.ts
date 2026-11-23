@@ -1,4 +1,4 @@
-import { DRIVE_SCOPE } from '@career-pocket/core';
+import { DRIVE_SCOPE } from '@applicliq/core';
 
 /**
  * Google sign-in for Drive sync, scope `drive.appdata` only.

@@ -4,8 +4,8 @@ name: Release
 #   git tag v1.2.3 && git push origin v1.2.3
 # The tag sets the extension version; Chrome, Edge and Firefox zips (plus the Firefox sources zip
 # that addons.mozilla.org asks for, an Edge Add-ons upload without the pinned key, and the Chrome
-# zip again as career-pocket-chromium.zip for the website's manual install guide) are attached to
-# a GitHub Release.
+# zip again as applicliq-chromium.zip for the website's manual install guide, and the Firefox zip as
+# applicliq-firefox.zip) are attached to a GitHub Release.
 
 on:
   push:
@@ -57,15 +57,17 @@ jobs:
         run: |
           # Edge Add-ons upload first, without the pinned key (the store assigns its own ID).
           WXT_STORE_BUILD=true pnpm zip:edge
-          mv ".output/career-pocket-$VERSION-edge.zip" "$RUNNER_TEMP/career-pocket-$VERSION-edge-store.zip"
+          mv ".output/applicliq-$VERSION-edge.zip" "$RUNNER_TEMP/applicliq-$VERSION-edge-store.zip"
           # Chrome/Edge/Brave zips for loading unpacked: pinned ID, so Google sign-in works.
           pnpm zip
           # The same Chrome build under a fixed name, so the site's link to
-          # releases/latest/download/career-pocket-chromium.zip always gets the newest one.
-          cp ".output/career-pocket-$VERSION-chrome.zip" .output/career-pocket-chromium.zip
+          # releases/latest/download/applicliq-chromium.zip always gets the newest one.
+          cp ".output/applicliq-$VERSION-chrome.zip" .output/applicliq-chromium.zip
           pnpm zip:edge
           pnpm zip:firefox
-          mv "$RUNNER_TEMP/career-pocket-$VERSION-edge-store.zip" .output/
+          # Likewise a fixed name for the newest Firefox build.
+          cp ".output/applicliq-$VERSION-firefox.zip" .output/applicliq-firefox.zip
+          mv "$RUNNER_TEMP/applicliq-$VERSION-edge-store.zip" .output/
           ls -l .output/*.zip
 
       - name: Publish the GitHub Release
@@ -73,6 +75,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "$GITHUB_REF_NAME" apps/extension/.output/*.zip \
-            --title "Career Pocket $VERSION" \
+            --title "AppliCliq $VERSION" \
             --generate-notes \
             --verify-tag

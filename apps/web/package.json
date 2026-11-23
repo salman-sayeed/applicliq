@@ -1,6 +1,6 @@
 {
-  "name": "@career-pocket/web",
-  "version": "0.0.1",
+  "name": "@applicliq/web",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "imports": {
@@ -26,10 +26,10 @@
     "tailwindcss": "^4.3.5",
     "vite": "^8.3.8"
   },
-  "description": "Career Pocket dashboard: a fully static SvelteKit site.",
+  "description": "AppliCliq dashboard: a fully static SvelteKit site.",
   "license": "MIT",
   "dependencies": {
-    "@career-pocket/core": "workspace:*",
-    "@career-pocket/ui": "workspace:*"
+    "@applicliq/core": "workspace:*",
+    "@applicliq/ui": "workspace:*"
   }
 }

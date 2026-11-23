@@ -1,5 +1,5 @@
 @import 'tailwindcss';
-@import '@career-pocket/ui/theme.css';
+@import '@applicliq/ui/theme.css';
 @import '../../components/form.css';
 
 body {

@@ -1,4 +1,4 @@
-import type { AccentColor, JobStatus, SalaryPeriod, TagColor, WorkType } from '@career-pocket/core';
+import type { AccentColor, JobStatus, SalaryPeriod, TagColor, WorkType } from '@applicliq/core';
 
 export const STATUS_LABELS: Record<JobStatus, string> = {
   saved: 'Saved',
@@ -62,10 +62,20 @@ export const TAG_SWATCH: Record<TagColor, string> = {
 };
 
 export const ACCENT_SWATCH: Record<AccentColor, string> = {
-  indigo: '#4f46e5',
+  indigo: '#406db5',
   blue: '#2563eb',
   teal: '#0f766e',
   green: '#15803d',
   amber: '#b45309',
-  rose: '#e11d48',
+  rose: '#b23f58',
+};
+
+/** Names shown for the accent presets (the keys are stored in settings and never change). */
+export const ACCENT_LABEL: Record<AccentColor, string> = {
+  indigo: 'AppliCliq blue',
+  blue: 'Blue',
+  teal: 'Teal',
+  green: 'Green',
+  amber: 'Amber',
+  rose: 'AppliCliq crimson',
 };

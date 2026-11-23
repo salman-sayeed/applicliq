@@ -5,7 +5,7 @@
 </script>
 
 <svelte:head>
-  <title>{page.status === 404 ? 'Page not found' : 'Error'} · Career Pocket</title>
+  <title>{page.status === 404 ? 'Page not found' : 'Error'} · AppliCliq</title>
 </svelte:head>
 
 <main

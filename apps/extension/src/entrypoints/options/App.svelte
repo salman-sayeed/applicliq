@@ -1,14 +1,15 @@
 <script lang="ts">
-  import { jobsToCsv, statusLabel } from '@career-pocket/core';
+  import { jobsToCsv, statusLabel } from '@applicliq/core';
   import {
     STATUS_LABELS,
     SettingsPage,
     type SettingsPageId,
     type SettingsPlatform,
-  } from '@career-pocket/ui';
+  } from '@applicliq/ui';
   import { onMount } from 'svelte';
   import {
     GITHUB_URL,
+    SITE_URL,
     ISSUES_URL,
     getSaveShortcut,
     openDashboard,
@@ -95,6 +96,7 @@
   const platform: SettingsPlatform = {
     kind: 'extension',
     version: browser.runtime.getManifest().version,
+    siteUrl: SITE_URL,
     githubUrl: GITHUB_URL,
     issuesUrl: ISSUES_URL,
     exportJSON: () => repo.exportJSON(),
@@ -135,7 +137,7 @@
 <SettingsPage adapter={dashboardAdapter} {platform} {sync} bind:section>
   {#snippet header()}
     <img src="/icon/32.png" alt="" class="size-6" />
-    <span class="text-base font-semibold">Career Pocket</span>
+    <span class="text-base font-semibold">AppliCliq</span>
     <span class="text-ink-muted text-base">/ Settings</span>
     <button
       type="button"

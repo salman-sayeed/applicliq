@@ -11,7 +11,7 @@ import type { OpenJobMessage, PageBadgeMessage } from '@/lib/messages';
 export default defineContentScript({
   registration: 'runtime',
   main() {
-    const flag = '__careerPocketPageBadge';
+    const flag = '__appliCliqPageBadge';
     const scope = globalThis as unknown as Record<string, boolean>;
     // Injected again on every matching navigation; one listener is enough.
     if (scope[flag]) return;
@@ -33,7 +33,7 @@ export default defineContentScript({
       // e.g. 'bottom-right' → bottom:16px;right:16px (the setting is validated by the sender).
       const [vertical, horizontal] = position.split('-');
       const place = `${vertical === 'top' ? 'top' : 'bottom'}:16px;${horizontal === 'left' ? 'left' : 'right'}:16px`;
-      host = document.createElement('career-pocket-badge');
+      host = document.createElement('applicliq-badge');
       host.style.cssText = `all:initial;position:fixed;${place};z-index:2147483647;display:block`;
       const root = host.attachShadow({ mode: 'closed' });
 
@@ -46,13 +46,13 @@ export default defineContentScript({
       const open = document.createElement('button');
       open.type = 'button';
       open.className = 'open';
-      open.title = 'Open in Career Pocket';
+      open.title = 'Open in AppliCliq';
       const dot = document.createElement('span');
       dot.className = 'dot';
       dot.setAttribute('aria-hidden', 'true');
       open.append(dot, text);
       open.addEventListener('click', () => {
-        const message: OpenJobMessage = { type: 'career-pocket:open-job', jobId };
+        const message: OpenJobMessage = { type: 'applicliq:open-job', jobId };
         browser.runtime.sendMessage(message).catch(() => {});
       });
 
@@ -73,7 +73,7 @@ export default defineContentScript({
 
     browser.runtime.onMessage.addListener((message: unknown) => {
       const m = message as PageBadgeMessage | undefined;
-      if (m?.type !== 'career-pocket:page-badge') return;
+      if (m?.type !== 'applicliq:page-badge') return;
       if (m.badge) show(m.badge.jobId, m.badge.text, m.badge.position);
       else remove();
     });
@@ -82,7 +82,7 @@ export default defineContentScript({
 
 const CSS = `
   .badge {
-    --bg: #ffffff; --ink: #18181b; --muted: #71717a; --line: #e4e4e7; --accent: #4f46e5;
+    --bg: #ffffff; --ink: #18181b; --muted: #71717a; --line: #e4e4e7; --accent: #406db5;
     display: flex; align-items: center; gap: 2px;
     padding: 4px 4px 4px 6px;
     background: var(--bg); color: var(--ink);
@@ -92,7 +92,7 @@ const CSS = `
     animation: in 150ms cubic-bezier(.2, 0, 0, 1);
   }
   @media (prefers-color-scheme: dark) {
-    .badge { --bg: #18181b; --ink: #f4f4f5; --muted: #a1a1aa; --line: #3f3f46; --accent: #818cf8; }
+    .badge { --bg: #18181b; --ink: #f4f4f5; --muted: #a1a1aa; --line: #3f3f46; --accent: #7b9dd6; }
   }
   @keyframes in { from { opacity: 0; transform: translateY(4px); } }
   @media (prefers-reduced-motion: reduce) { .badge { animation: none; } }

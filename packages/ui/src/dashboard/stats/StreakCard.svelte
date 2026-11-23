@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Streak } from '@career-pocket/core';
+  import type { Streak } from '@applicliq/core';
 
   let { streak, dailyGoal, todayCount }: { streak: Streak; dailyGoal: number; todayCount: number } =
     $props();

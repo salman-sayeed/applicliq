@@ -16,8 +16,8 @@ import {
   quietHoursEnd,
   startOfDay,
   statusLabel,
-} from '@career-pocket/core';
-import { STATUS_LABELS } from '@career-pocket/ui';
+} from '@applicliq/core';
+import { STATUS_LABELS } from '@applicliq/ui';
 import { showGoalBadge, todayProgress } from './badge';
 import { openDashboard } from './config';
 import { repo } from './db';
@@ -39,6 +39,8 @@ const GHOST_CHECK_MINUTES = 6 * 60;
 const SHOWN_REMINDERS_KEY = 'shownReminders';
 /** The day (`dayKey`) the daily goal reminder last ran, so it nudges at most once a day. */
 const GOAL_REMINDER_DAY_KEY = 'goalReminderDay';
+// Kept from the Career Pocket days: renaming it would stop clicks on notifications shown before an update from
+// opening their job.
 const NOTIFICATION_PREFIX = 'career-pocket-reminder:';
 const GOAL_NOTIFICATION_ID = 'career-pocket-goal';
 
@@ -104,7 +106,7 @@ export function refresh({ ghost = false } = {}): Promise<void> {
       // Today's count starts over at midnight.
       await browser.alarms.create(ALARM_MIDNIGHT, { when: addDays(startOfDay(Date.now()), 1) });
     })
-    .catch((error: unknown) => console.error('Career Pocket: background refresh failed', error));
+    .catch((error: unknown) => console.error('AppliCliq: background refresh failed', error));
   return queue;
 }
 
@@ -193,10 +195,10 @@ async function showGoalReminder(left: number, goal: number): Promise<void> {
       type: 'basic',
       iconUrl: browser.runtime.getURL('/icon/128.png'),
       title: `${left} more application${left === 1 ? '' : 's'} to reach today's goal`,
-      message: `Your daily goal is ${goal}. Open Career Pocket to see your saved jobs.`,
+      message: `Your daily goal is ${goal}. Open AppliCliq to see your saved jobs.`,
     });
   } catch (error) {
-    console.error('Career Pocket: could not show the goal reminder', error);
+    console.error('AppliCliq: could not show the goal reminder', error);
   }
 }
 
@@ -225,7 +227,7 @@ async function showReminder({ kind, job }: Reminder, settings: Settings): Promis
       message,
     });
   } catch (error) {
-    console.error('Career Pocket: could not show a reminder', error);
+    console.error('AppliCliq: could not show a reminder', error);
   }
 }
 
@@ -264,6 +266,6 @@ export async function updatePageBadge(tabId: number, url: string | undefined): P
 }
 
 async function sendPageBadge(tabId: number, badge: PageBadgeMessage['badge']): Promise<void> {
-  const message: PageBadgeMessage = { type: 'career-pocket:page-badge', badge };
+  const message: PageBadgeMessage = { type: 'applicliq:page-badge', badge };
   await browser.tabs.sendMessage(tabId, message).catch(() => {});
 }

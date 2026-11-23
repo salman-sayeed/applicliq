@@ -20,7 +20,7 @@ export const SETTINGS_VERSION = 1;
 export type Theme = 'system' | 'light' | 'dark';
 export type WeekStartDay = 'sat' | 'sun' | 'mon';
 export type ToolbarBadgeMode = 'today' | 'goal' | 'off';
-/** Where the toolbar button opens Career Pocket: its popup or the browser's sidebar. */
+/** Where the toolbar button opens AppliCliq: its popup or the browser's sidebar. */
 export type OpenInMode = 'popup' | 'sidebar';
 export type BadgePosition = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
 export type Density = 'comfortable' | 'compact';

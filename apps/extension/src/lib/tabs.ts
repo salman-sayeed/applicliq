@@ -1,4 +1,4 @@
-import { DRAFT_FIELD_LABELS, type DraftField, type ExtractedJob } from '@career-pocket/core';
+import { DRAFT_FIELD_LABELS, type DraftField, type ExtractedJob } from '@applicliq/core';
 import type { StartPickerMessage } from './messages';
 import { showPageToast } from './page-toast';
 
@@ -71,7 +71,7 @@ export async function startPicker(tabId: number, field: DraftField): Promise<boo
       files: ['/content-scripts/picker.js'],
     });
     const message: StartPickerMessage = {
-      type: 'career-pocket:start-picker',
+      type: 'applicliq:start-picker',
       field,
       label: DRAFT_FIELD_LABELS[field],
     };

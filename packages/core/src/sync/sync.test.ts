@@ -1,12 +1,12 @@
 import 'fake-indexeddb/auto';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { DEFAULT_SETTINGS, splitSettings } from '../settings';
-import { CareerPocketDB, createJobRepository } from '../storage';
+import { AppliCliqDB, createJobRepository } from '../storage';
 import type { JobRecord } from '../types';
 import { type DriveClient, DriveError, type SyncSnapshot } from './drive';
 import { SyncError, deleteDriveData, parseSnapshot, syncWithDrive, toSyncError } from './sync';
 
-let db: CareerPocketDB;
+let db: AppliCliqDB;
 const clock = () => 10_000;
 
 type File = { data: unknown; etag: number };
@@ -82,7 +82,7 @@ const snapshot = (
 });
 
 beforeEach(() => {
-  db = new CareerPocketDB(`test-${crypto.randomUUID()}`);
+  db = new AppliCliqDB(`test-${crypto.randomUUID()}`);
 });
 
 afterEach(async () => {
@@ -135,7 +135,7 @@ describe('syncWithDrive', () => {
 
   it('pulls without uploading when Drive is ahead', async () => {
     const repo = createJobRepository(db, clock);
-    const other = createJobRepository(new CareerPocketDB(`test-${crypto.randomUUID()}`), clock);
+    const other = createJobRepository(new AppliCliqDB(`test-${crypto.randomUUID()}`), clock);
     const job = await other.addJob({ url: 'https://a.test', title: 't', company: 'c' });
     const remote = fakeDrive([snapshot([job])]);
     expect(await syncWithDrive(repo, remote.drive, { now: clock })).toMatchObject({
@@ -181,7 +181,7 @@ describe('syncWithDrive', () => {
 
   it('folds duplicate files into the oldest one and deletes them', async () => {
     const repo = createJobRepository(db, clock);
-    const other = createJobRepository(new CareerPocketDB(`test-${crypto.randomUUID()}`), clock);
+    const other = createJobRepository(new AppliCliqDB(`test-${crypto.randomUUID()}`), clock);
     const a = await other.addJob({ url: 'https://a.test', title: 'a', company: 'c' });
     const b = await other.addJob({ url: 'https://b.test', title: 'b', company: 'c' });
     const remote = fakeDrive([snapshot([a]), snapshot([b])]);
@@ -275,7 +275,7 @@ describe('syncWithDrive settings', () => {
 describe('legacy Drive file', () => {
   it('syncs with a file from before the rename and gives it the current name', async () => {
     const repo = createJobRepository(db, clock);
-    const other = createJobRepository(new CareerPocketDB(`test-${crypto.randomUUID()}`), clock);
+    const other = createJobRepository(new AppliCliqDB(`test-${crypto.randomUUID()}`), clock);
     const job = await other.addJob({ url: 'https://a.test', title: 't', company: 'c' });
     const remote = fakeDrive([snapshot([job])]);
     remote.files.get('f0')!.name = 'pocket-career.json';

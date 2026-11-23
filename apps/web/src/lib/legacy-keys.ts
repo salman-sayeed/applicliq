@@ -1,9 +1,11 @@
 /**
- * Browser storage keys were prefixed `pocket-career:` before the app was renamed Career Pocket.
+ * Browser storage keys were prefixed `pocket-career:` before the app was first renamed (to Career
+ * Pocket, now AppliCliq).
  * Moves any left over to their new names once, so a returning user stays signed in and keeps
  * their sync status. Imported for its side effect before any key is read.
  */
 const OLD = 'pocket-career:';
+// Kept from the Career Pocket days: renaming it would sign existing users out and lose their sync status.
 const NEW = 'career-pocket:';
 
 function move(storage: Storage): void {

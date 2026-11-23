@@ -2,7 +2,7 @@ import { flashBadge } from '@/lib/badge';
 import { SAVE_SHORTCUT_COMMAND, openDashboard } from '@/lib/config';
 import { repo } from '@/lib/db';
 import type { BackgroundMessage } from '@/lib/messages';
-import { DRAFT_FIELDS, type DraftField, isDraftField } from '@career-pocket/core';
+import { DRAFT_FIELDS, type DraftField, isDraftField } from '@applicliq/core';
 import { drafts } from '@/lib/draft';
 import { applyOpenIn, toggleSidebar } from '@/lib/open-in';
 import { setPendingLink } from '@/lib/pending-link';
@@ -46,13 +46,13 @@ export default defineBackground(() => {
   void browser.contextMenus.removeAll().then(() => {
     browser.contextMenus.create({
       id: MENU_SAVE_LINK,
-      title: 'Save job to Career Pocket',
+      title: 'Save job to AppliCliq',
       contexts: ['link'],
     });
     // Selected text → a field of this page's draft (the popup shows it when opened).
     browser.contextMenus.create({
       id: MENU_SELECTION,
-      title: 'Career Pocket',
+      title: 'AppliCliq',
       contexts: ['selection'],
     });
     for (const field of DRAFT_FIELDS) {
@@ -129,11 +129,11 @@ export default defineBackground(() => {
   browser.runtime.onMessage.addListener((message: unknown, sender) => {
     if (sender.id !== browser.runtime.id) return;
     const m = message as BackgroundMessage;
-    if (m?.type === 'career-pocket:jobs-changed') {
+    if (m?.type === 'applicliq:jobs-changed') {
       void refresh();
       void repo.getSettings().then((s) => applyOpenIn(s.jobPages.openIn));
       syncSoon();
-    } else if (m?.type === 'career-pocket:picked') {
+    } else if (m?.type === 'applicliq:picked') {
       // From the picker in the page's top frame; the tab's URL keys the draft.
       const tab = sender.tab;
       const url = tab?.url ?? sender.url;
@@ -141,8 +141,8 @@ export default defineBackground(() => {
       if (valid && tab?.id !== undefined && sender.frameId === 0 && isSavableUrl(url)) {
         void setTabDraftField({ id: tab.id, url, title: tab.title }, m.field, m.text);
       }
-    } else if (m?.type === 'career-pocket:sync-now') void syncAndRefresh();
-    else if (m?.type === 'career-pocket:open-job' && typeof m.jobId === 'string') {
+    } else if (m?.type === 'applicliq:sync-now') void syncAndRefresh();
+    else if (m?.type === 'applicliq:open-job' && typeof m.jobId === 'string') {
       void openDashboard(m.jobId);
     }
   });
@@ -171,7 +171,7 @@ export default defineBackground(() => {
 /** If the popup couldn't open, a badge asks the user to click it to finish. */
 async function handOffLink(stored: Promise<void>, opened: Promise<boolean>) {
   await stored;
-  if (!(await opened)) await flashBadge('1', '#4f46e5', 'Click to finish saving the job link', 0);
+  if (!(await opened)) await flashBadge('1', '#406db5', 'Click to finish saving the job link', 0);
 }
 
 /**
@@ -183,7 +183,7 @@ async function saveFromShortcut(tabId?: number) {
   const extracted = tab?.id === undefined ? undefined : await extractFromTab(tab.id);
   const { job } = extracted ?? {};
   if (!job?.url || !job.title || !job.company || (await repo.getJobByUrl(job.url))) {
-    if (!(await openPopup())) await flashBadge('!', '#d97706', 'Open Career Pocket to save');
+    if (!(await openPopup())) await flashBadge('!', '#d97706', 'Open AppliCliq to save');
     return;
   }
   const { automation } = await repo.getSettings();
@@ -192,5 +192,5 @@ async function saveFromShortcut(tabId?: number) {
   await repo.addJob({ ...saved, status: automation.defaultSaveStatus });
   void refresh();
   syncSoon();
-  await flashBadge('✓', '#16a34a', 'Saved to Career Pocket');
+  await flashBadge('✓', '#16a34a', 'Saved to AppliCliq');
 }
