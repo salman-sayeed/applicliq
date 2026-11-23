@@ -162,7 +162,7 @@
 </script>
 
 <Seo
-  title="AppliCliq: a private, free job application tracker"
+  title="AppliCliq – Job Application Tracker"
   description="Save job postings from any site and track every application from saved to offer. Free and open source. Your data stays in your browser and your own Google Drive."
   path="/"
 />
