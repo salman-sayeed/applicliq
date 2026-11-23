@@ -1,93 +1,38 @@
 <script lang="ts">
   import Seo from '#lib/Seo.svelte';
-  import { onMount, tick } from 'svelte';
-  import {
-    CHROMIUM_ZIP_URL,
-    MANUAL_BROWSERS,
-    storeById,
-    type ManualBrowserId,
-  } from '#lib/config.ts';
-  import { detectBrowser } from '#lib/browser.ts';
+  import { resolve } from '$app/paths';
+  import { onMount } from 'svelte';
+  import { CHROMIUM_ZIP_URL, MANUAL_BROWSERS, storeById } from '#lib/config.ts';
+  import { detectBrowser, type DetectedBrowser } from '#lib/browser.ts';
   import CopyButton from '#lib/CopyButton.svelte';
   import { GITHUB_URL } from '#lib/links.ts';
 
   const firefox = storeById('firefox');
+  const safari = storeById('safari');
 
-  // Opens on the tab named in the URL hash (/install#brave), else the visitor's browser.
-  let selected = $state<ManualBrowserId>('chrome');
-  let onFirefox = $state(false);
-  const isManual = (id: string): id is ManualBrowserId => MANUAL_BROWSERS.some((b) => b.id === id);
+  /** Extensions page addresses. Arc and other Chromium browsers use chrome://extensions. */
+  const ADDRESSES: { id: string; name: string; icon?: string; page: string }[] = [
+    ...MANUAL_BROWSERS,
+    { id: 'vivaldi', name: 'Vivaldi', page: 'vivaldi://extensions' },
+  ];
+
+  // The highlighted row: the one named in the URL hash (/install#brave, from the home page's
+  // button), else the visitor's browser. Detected on mount: the page is prerendered.
+  let detected = $state<DetectedBrowser>('other');
+  let highlighted = $state<string>();
   onMount(() => {
+    detected = detectBrowser();
     const fromHash = location.hash.slice(1);
-    const detected = detectBrowser();
-    onFirefox = detected === 'firefox' || detected === 'firefox-android';
-    if (isManual(fromHash)) selected = fromHash;
-    else if (isManual(detected)) selected = detected;
+    highlighted = ADDRESSES.some((a) => a.id === fromHash)
+      ? fromHash
+      : ADDRESSES.some((a) => a.id === detected)
+        ? detected
+        : undefined;
   });
 
-  const browser = $derived(MANUAL_BROWSERS.find((b) => b.id === selected)!);
-
-  // Per-browser wording for the steps that differ.
-  const details: Record<
-    ManualBrowserId,
-    { menu: string; devMode: string; loadUnpacked: string; pin: string; reload: string }
-  > = {
-    chrome: {
-      menu: 'Or open the ⋮ menu, then Extensions → Manage Extensions.',
-      devMode: 'Switch on the Developer mode toggle in the top-right corner.',
-      loadUnpacked: 'A new bar appears at the top. Click Load unpacked.',
-      pin: 'Click the puzzle-piece icon next to the address bar, then the pin next to AppliCliq.',
-      reload: 'the circular reload arrow on the AppliCliq card',
-    },
-    brave: {
-      menu: 'Or open the ☰ menu, then Extensions.',
-      devMode: 'Switch on the Developer mode toggle in the top-right corner.',
-      loadUnpacked: 'A new bar appears at the top. Click Load unpacked.',
-      pin: 'Click the puzzle-piece icon next to the address bar, then the pin next to AppliCliq.',
-      reload: 'the circular reload arrow on the AppliCliq card',
-    },
-    edge: {
-      menu: 'Or open the ⋯ menu, then Extensions → Manage extensions.',
-      devMode:
-        'Switch on Developer mode in the left sidebar (on a narrow window, open the ☰ menu at the top left first).',
-      loadUnpacked: 'Buttons appear above the list. Click Load unpacked.',
-      pin: 'Click the puzzle-piece icon next to the address bar, then the eye icon next to AppliCliq (Show in toolbar).',
-      reload: 'Reload under the AppliCliq card',
-    },
-    opera: {
-      menu: 'Or press Ctrl+Shift+E (⌘+Shift+E on a Mac), or open the menu, then Extensions → Extensions.',
-      devMode: 'Switch on the Developer mode toggle in the top-right corner.',
-      loadUnpacked: 'A new bar appears at the top. Click Load unpacked.',
-      pin: 'Click the cube icon next to the address bar, then the pin next to AppliCliq.',
-      reload: 'the circular reload arrow on the AppliCliq card',
-    },
-  };
-  const d = $derived(details[selected]);
-
-  // Tabs: arrow keys move between them (WAI-ARIA tabs pattern, automatic activation).
-  let tabButtons: HTMLButtonElement[] = $state([]);
-  async function onTabKey(event: KeyboardEvent, index: number) {
-    const last = MANUAL_BROWSERS.length - 1;
-    const next =
-      event.key === 'ArrowRight'
-        ? index === last
-          ? 0
-          : index + 1
-        : event.key === 'ArrowLeft'
-          ? index === 0
-            ? last
-            : index - 1
-          : event.key === 'Home'
-            ? 0
-            : event.key === 'End'
-              ? last
-              : -1;
-    if (next < 0) return;
-    event.preventDefault();
-    selected = MANUAL_BROWSERS[next].id;
-    await tick();
-    tabButtons[next]?.focus();
-  }
+  /** Firefox and Safari visitors see their own card first; the Chromium guide follows. */
+  const onFirefox = $derived(detected === 'firefox' || detected === 'firefox-android');
+  const onSafari = $derived(detected === 'safari');
 
   const faq = [
     {
@@ -114,89 +59,104 @@
 
   const primaryBtn =
     'bg-accent text-accent-ink focus-visible:ring-accent inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none';
+  const secondaryBtn =
+    'border-line text-ink hover:bg-surface-muted focus-visible:ring-accent inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition focus-visible:ring-2 focus-visible:outline-none';
 </script>
 
 <Seo
-  title="Install AppliCliq manually · Chrome, Brave, Edge, Opera"
-  description="Install the AppliCliq extension by hand in Chrome, Brave, Edge or Opera from the latest GitHub release, and keep it up to date."
+  title="Install AppliCliq · Chrome, Brave, Edge, Opera, Vivaldi, Arc"
+  description="Install the AppliCliq extension in Chrome, Brave, Edge, Opera, Vivaldi, Arc or any Chromium browser from the latest release, or get it from Firefox Add-ons."
   path="/install"
 />
 
-{#snippet shot(caption: string)}
-  <!-- Placeholder until a screenshot for this step is added. -->
-  <div
-    class="border-line text-ink-muted mt-3 flex aspect-[16/7] max-w-md items-center justify-center rounded-lg border border-dashed p-4 text-center text-xs"
-    role="img"
-    aria-label="Screenshot: {caption}"
+{#snippet firefoxCard(mine: boolean)}
+  <section
+    aria-labelledby="firefox-title"
+    class="flex flex-col gap-3 rounded-xl border p-4 {mine
+      ? 'border-accent ring-accent ring-1'
+      : 'border-line'}"
   >
-    <span>Screenshot: {caption}</span>
-  </div>
+    <div class="flex items-center gap-3">
+      <img src={firefox.icon} alt="" width="32" height="32" class="size-8 shrink-0" />
+      <div>
+        <h2 id="firefox-title" class="font-semibold">
+          Firefox
+          {#if mine}<span class="text-accent ml-1 text-xs font-medium">Your browser</span>{/if}
+        </h2>
+        <p class="text-ink-muted text-sm">Desktop and Android.</p>
+      </div>
+    </div>
+    <p class="text-ink-muted text-sm">
+      Firefox only allows signed add-ons, so the store is the way to install. It updates itself.
+    </p>
+    <a
+      href={firefox.url}
+      target="_blank"
+      rel="external noopener"
+      class="{mine ? primaryBtn : secondaryBtn} self-start"
+    >
+      Install from Firefox Add-ons
+      <span aria-hidden="true">↗</span>
+      <span class="sr-only">(opens in a new tab)</span>
+    </a>
+  </section>
+{/snippet}
+
+{#snippet safariCard(mine: boolean)}
+  <section
+    aria-labelledby="safari-title"
+    class="flex flex-col gap-3 rounded-xl border p-4 {mine
+      ? 'border-accent ring-accent ring-1'
+      : 'border-line'}"
+  >
+    <div class="flex items-center gap-3">
+      <img src={safari.icon} alt="" width="32" height="32" class="size-8 shrink-0" />
+      <div>
+        <h2 id="safari-title" class="font-semibold">
+          Safari
+          {#if mine}<span class="text-accent ml-1 text-xs font-medium">Your browser</span>{/if}
+        </h2>
+        <p class="text-ink-muted text-sm">Not available yet.</p>
+      </div>
+    </div>
+    <p class="text-ink-muted text-sm">
+      Safari needs an App Store release. Until then, the
+      <a href={resolve('/app')} class="text-accent hover:underline">web dashboard</a> works in Safari.
+    </p>
+  </section>
 {/snippet}
 
 <main class="mx-auto max-w-3xl px-4 pt-12 pb-24 sm:pt-16">
-  <h1 class="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-    Install AppliCliq manually
-  </h1>
+  <h1 class="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">Install AppliCliq</h1>
   <p class="text-ink-muted mt-3 text-balance">
-    Until AppliCliq is in the Chrome, Edge and Opera stores, you can load it by hand from the latest
-    release. It takes about two minutes.
+    Until AppliCliq is in the Chrome Web Store, load it by hand from the latest release. It takes
+    about two minutes.
   </p>
 
-  <aside
-    class="mt-6 flex items-start gap-3 rounded-xl border p-4 text-sm {onFirefox
-      ? 'border-accent bg-accent/5'
-      : 'border-line'}"
-  >
-    <img src={firefox.icon} alt="" width="24" height="24" class="mt-0.5 size-6 shrink-0" />
-    <p>
-      <span class="font-medium">Using Firefox?</span>
-      <span class="text-ink-muted">
-        No manual steps needed:
-        <a
-          href={firefox.url}
-          target="_blank"
-          rel="external noopener"
-          class="text-accent font-medium hover:underline"
-        >
-          get it from Firefox Add-ons
-        </a>. It updates itself, on desktop and Android.
+  {#if onFirefox || onSafari}
+    <div class="mt-8">
+      {#if onFirefox}{@render firefoxCard(true)}{:else}{@render safariCard(true)}{/if}
+    </div>
+  {/if}
+
+  <section aria-labelledby="chromium-title" class="mt-10">
+    <h2 id="chromium-title" class="text-xl font-semibold tracking-tight">Chromium browsers</h2>
+    <p class="text-ink-muted mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+      <span class="flex items-center gap-1" aria-hidden="true">
+        {#each MANUAL_BROWSERS as b (b.id)}
+          <img src={b.icon} alt="" width="18" height="18" class="size-[18px]" />
+        {/each}
+      </span>
+      <span>
+        Works in Chrome, Brave, Edge, Opera, Vivaldi, Arc and other Chromium-based browsers.
       </span>
     </p>
-  </aside>
 
-  <div
-    role="tablist"
-    aria-label="Browser"
-    class="border-line mt-10 grid grid-cols-4 border-b sm:flex sm:gap-1"
-  >
-    {#each MANUAL_BROWSERS as b, i (b.id)}
-      <button
-        bind:this={tabButtons[i]}
-        type="button"
-        role="tab"
-        id="tab-{b.id}"
-        aria-selected={selected === b.id}
-        aria-controls="panel"
-        tabindex={selected === b.id ? 0 : -1}
-        onclick={() => (selected = b.id)}
-        onkeydown={(e) => onTabKey(e, i)}
-        class="focus-visible:ring-accent -mb-px flex items-center justify-center gap-1.5 border-b-2 px-1 py-2.5 text-sm font-medium transition focus-visible:ring-2 focus-visible:outline-none sm:gap-2 sm:px-3 {selected ===
-        b.id
-          ? 'border-accent text-ink'
-          : 'text-ink-muted hover:text-ink border-transparent'}"
-      >
-        <img src={b.icon} alt="" width="18" height="18" class="size-[18px]" />
-        {b.name}
-      </button>
-    {/each}
-  </div>
-
-  <div id="panel" role="tabpanel" aria-labelledby="tab-{selected}" tabindex="-1" class="pt-8">
-    <ol class="space-y-8">
+    <ol class="mt-8 space-y-8">
       <li class="step">
-        <h2 class="font-semibold">Download the extension</h2>
+        <h3 class="font-semibold">Download applicliq-chromium.zip</h3>
         <p class="text-ink-muted mt-1 text-sm">
-          The newest build for Chromium browsers, from the
+          The newest build, from the
           <a href="{GITHUB_URL}/releases/latest" rel="external" class="text-accent hover:underline">
             latest GitHub release
           </a>.
@@ -216,60 +176,95 @@
           </svg>
           Download the zip
         </a>
-        <p class="text-ink-muted mt-2 text-xs">applicliq-chromium.zip</p>
       </li>
 
       <li class="step">
-        <h2 class="font-semibold">Unzip it into a folder you'll keep</h2>
+        <h3 class="font-semibold">Unzip it</h3>
         <p class="text-ink-muted mt-1 text-sm">
-          Double-click the zip on a Mac, or right-click it and choose Extract All on Windows. Move
-          the folder somewhere permanent, like Documents: {browser.name} runs the extension from it.
+          Double-click it on a Mac, or right-click it and choose Extract All on Windows. Keep the
+          folder somewhere permanent, like Documents: the browser runs AppliCliq from it.
         </p>
       </li>
 
       <li class="step">
-        <h2 class="font-semibold">Open the extensions page</h2>
+        <h3 class="font-semibold">Open your browser's extensions page</h3>
         <p class="text-ink-muted mt-1 text-sm">
-          Copy this address into the address bar and press Enter (websites can't link to it).
+          Copy the address for your browser into the address bar and press Enter (websites can't
+          link to it).
         </p>
-        <div class="mt-3 flex max-w-md items-center gap-2">
-          <code class="bg-surface-muted flex-1 rounded-md px-3 py-1.5 text-sm">{browser.page}</code>
-          <CopyButton text={browser.page} />
+        <!-- On the narrowest phones the table scrolls on its own; the page never does. -->
+        <div class="relative mt-3 max-w-md overflow-x-auto">
+          <table class="w-full text-sm">
+            <caption class="sr-only">Extensions page address for each browser</caption>
+            <tbody>
+              {#each ADDRESSES as a (a.id)}
+                {@const mine = a.id === highlighted}
+                <tr
+                  class={mine
+                    ? 'bg-accent/10 outline-accent outline outline-1 -outline-offset-1'
+                    : ''}
+                >
+                  <th
+                    scope="row"
+                    class="rounded-l-md py-1.5 pr-2 pl-2 text-left font-medium sm:pr-3"
+                  >
+                    <span class="flex items-center gap-2 whitespace-nowrap">
+                      {#if a.icon}
+                        <img src={a.icon} alt="" width="16" height="16" class="size-4 shrink-0" />
+                      {:else}
+                        <span class="size-4 shrink-0" aria-hidden="true"></span>
+                      {/if}
+                      {a.name}
+                    </span>
+                    {#if mine}
+                      <span
+                        class="text-accent block pl-6 text-[11px] font-medium whitespace-nowrap"
+                      >
+                        Your browser
+                      </span>
+                    {/if}
+                  </th>
+                  <td class="py-1.5 pr-2">
+                    <code class="text-xs whitespace-nowrap sm:text-sm">{a.page}</code>
+                  </td>
+                  <td class="rounded-r-md py-1.5 pr-2 text-right">
+                    <CopyButton text={a.page} compact />
+                  </td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
         </div>
-        <p class="text-ink-muted mt-2 text-sm">{d.menu}</p>
-        {@render shot(`the ${browser.name} extensions page`)}
-      </li>
-
-      <li class="step">
-        <h2 class="font-semibold">Turn on Developer mode</h2>
-        <p class="text-ink-muted mt-1 text-sm">{d.devMode}</p>
-        {@render shot(`the Developer mode toggle in ${browser.name}`)}
-      </li>
-
-      <li class="step">
-        <h2 class="font-semibold">Click “Load unpacked”</h2>
-        <p class="text-ink-muted mt-1 text-sm">{d.loadUnpacked}</p>
-        {@render shot('the Load unpacked button')}
-      </li>
-
-      <li class="step">
-        <h2 class="font-semibold">Select the unzipped folder</h2>
-        <p class="text-ink-muted mt-1 text-sm">
-          Pick the folder that contains <code>manifest.json</code>, then click Select. AppliCliq
-          appears in the list.
+        <p class="text-ink-muted mt-2 text-xs">
+          Arc and other Chromium browsers: chrome://extensions
         </p>
-        {@render shot('choosing the unzipped folder')}
       </li>
 
       <li class="step">
-        <h2 class="font-semibold">Pin it to the toolbar</h2>
+        <h3 class="font-semibold">Turn on Developer mode</h3>
         <p class="text-ink-muted mt-1 text-sm">
-          {d.pin} Then open any job posting and click the AppliCliq icon to save it.
+          Switch on the Developer mode toggle, usually in the top-right corner (in Edge, in the left
+          sidebar).
         </p>
-        {@render shot(`pinning AppliCliq in ${browser.name}`)}
+      </li>
+
+      <li class="step">
+        <h3 class="font-semibold">Click “Load unpacked” and select the unzipped folder</h3>
+        <p class="text-ink-muted mt-1 text-sm">
+          Pick the folder that contains <code>manifest.json</code>. AppliCliq appears in the list.
+        </p>
+      </li>
+
+      <li class="step">
+        <h3 class="font-semibold">Pin AppliCliq to the toolbar</h3>
+        <p class="text-ink-muted mt-1 text-sm">
+          Click the extensions icon next to the address bar (a puzzle piece; a cube in Opera), then
+          the pin next to AppliCliq (the eye icon in Edge). Open any job posting and click the
+          AppliCliq icon to save it.
+        </p>
       </li>
     </ol>
-  </div>
+  </section>
 
   <section aria-labelledby="update-title" class="border-line mt-14 border-t pt-10">
     <h2 id="update-title" class="text-xl font-semibold tracking-tight">How to update</h2>
@@ -283,8 +278,8 @@
         Replace everything in your AppliCliq folder with the new files (same folder, same place).
       </li>
       <li>
-        Open <code class="text-ink">{browser.page}</code> and click {d.reload}. Your jobs and
-        settings stay as they were.
+        Open your browser's extensions page and click reload on the AppliCliq card (the circular
+        arrow; “Reload” in Edge). Your jobs and settings stay as they were.
       </li>
     </ol>
   </section>
@@ -314,6 +309,11 @@
       {/each}
     </div>
   </section>
+
+  <div class="border-line mt-14 grid gap-3 border-t pt-10 sm:grid-cols-2">
+    {#if !onFirefox}{@render firefoxCard(false)}{/if}
+    {#if !onSafari}{@render safariCard(false)}{/if}
+  </div>
 </main>
 
 <style>

@@ -61,7 +61,8 @@ redirect-site/          `_redirects` deployed to the old career-pocket Pages pro
     src/lib/config.ts   store list (live / coming soon), manual-install browsers, donation details
                         (SUPPORT: the landing page's Support section and the README's)
     src/lib/Screenshots.svelte  landing-page screenshot tabs (scroll-snap, swipe on phones)
-    src/routes/(site)/install/  manual install guide (Chrome, Brave, Edge, Opera)
+    src/routes/(site)/install/  install guide: one Chromium guide (addresses table, visitor's browser
+                        highlighted), Firefox and Safari cards (shown first on those browsers)
     src/lib/session.svelte.ts  sign-in / sign-out shared by /app and /app/settings
     src/lib/google-auth.ts  Google Identity Services token client (loaded only on /app)
     src/lib/sync.svelte.ts  IndexedDB repo, dashboard adapter, sync runner + triggers
