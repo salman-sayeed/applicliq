@@ -37,10 +37,16 @@ their data: everything stored in their browsers or Drive still uses the old iden
 - [x] `apps/web` built and deployed to https://applicliq.pages.dev. Checked: `/`, `/install`,
       `/app`, `/privacy`, favicons, `og-image.png`, `manifest.webmanifest`, `sitemap.xml`,
       `robots.txt` (all 200, new branding, no console errors).
-- [ ] Old project `career-pocket` (https://career-pocket.pages.dev) redirects every path with a
-      301 to the same path on https://applicliq.pages.dev. It is Git-connected, so its production
-      branch is the orphan branch `old-site-redirect` (only `_redirects`, no build command, output
-      directory `/`). Never delete the old project.
+- [x] Old project `career-pocket` (https://career-pocket.pages.dev) redirects every path with a
+      301 to the same path on https://applicliq.pages.dev (query strings kept). It is
+      Git-connected, so its production branch is the orphan branch `old-site-redirect` (only
+      `_redirects`, no build command, output directory `/`), deployed 2026-11-23. Checked with
+      `curl -I`: `/`, `/install`, `/app`, `/privacy`, `/app/settings` all 301 to the matching path.
+      Never delete the old project, and never merge `old-site-redirect` into `main`.
+      Its settings before the switch, to undo it: production branch `main`, build command
+      `pnpm install --frozen-lockfile && pnpm --filter @career-pocket/web build`, output directory
+      `apps/web/build`.
+- [x] Auto-deploy: the Deploy web workflow published `bc033c1` to the `applicliq` project.
 
 ### Kept on purpose (never rename)
 
