@@ -140,7 +140,7 @@ pnpm icons          # regenerate icons and images from brand/ (commit the output
    (`career-pocket`), the Drive file (`career-pocket.json`, legacy `pocket-career.json`),
    `career-pocket:*` storage keys, notification IDs, the Web Lock name, the ICS UID suffix, the
    Firefox add-on ID (`career-pocket@career-pocket`), the Chrome `key` and the OAuth client IDs.
-   The AMO listing slug and the GitHub repo URL also still use the old name for now.
+   The AMO listing slug also still uses the old name for now.
 
 ## Job data model
 

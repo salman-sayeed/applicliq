@@ -12,16 +12,20 @@
 
 ## Get it
 
-<a href="https://addons.mozilla.org/en-US/firefox/addon/career-pocket/"><img src="apps/web/src/lib/assets/stores/firefoxbrowser.svg" alt="" width="18" /> Firefox</a> ·
-<a href="https://addons.mozilla.org/en-US/firefox/addon/career-pocket/"><img src="apps/web/src/lib/assets/stores/firefoxbrowser.svg" alt="" width="18" /> Firefox for Android</a> ·
-<img src="docs/stores/googlechrome-soon.svg" alt="" width="18" /> Chrome (soon) ·
-<img src="docs/stores/microsoftedge-soon.svg" alt="" width="18" /> Edge (soon) ·
-<img src="docs/stores/opera-soon.svg" alt="" width="18" /> Opera (soon) ·
-<img src="docs/stores/safari-soon.svg" alt="" width="18" /> Safari (soon)
+<p align="center">
+  <a href="https://addons.mozilla.org/en-US/firefox/addon/career-pocket/"><img src="https://img.shields.io/badge/Firefox%20Add--ons-Available-15803d?style=for-the-badge&labelColor=c2410c&logo=firefoxbrowser&logoColor=white" alt="Get AppliCliq on Firefox Add-ons" height="28" /></a>
+  <a href="https://addons.mozilla.org/en-US/firefox/addon/career-pocket/"><img src="https://img.shields.io/badge/Firefox%20for%20Android-Available-15803d?style=for-the-badge&labelColor=c2410c&logo=firefoxbrowser&logoColor=white" alt="Get AppliCliq on Firefox for Android" height="28" /></a>
+  <br />
+  <img src="https://img.shields.io/badge/Chrome%20Web%20Store-Coming%20soon-71717a?style=for-the-badge&labelColor=52525b&logo=googlechrome&logoColor=white" alt="Chrome Web Store: coming soon" height="28" />
+  <img src="https://img.shields.io/badge/Edge%20Add--ons-Coming%20soon-71717a?style=for-the-badge&labelColor=52525b&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI%2BPHBhdGggZmlsbD0iI2ZmZmZmZiIgZD0iTTIxLjg2IDE3Ljg2cS4xNCAwIC4yNS4xMi4xLjEzLjEuMjV0LS4xMS4zM2wtLjMyLjQ2LS40My41My0uNDQuNXEtLjIxLjI1LS4zOC40MmwtLjIyLjIzcS0uNTguNTMtMS4zNCAxLjA0LS43Ni41MS0xLjYuOTEtLjg2LjQtMS43NC42NHQtMS42Ny4yNHEtLjkgMC0xLjY5LS4yOC0uOC0uMjgtMS40OC0uNzgtLjY4LS41LTEuMjItMS4xNy0uNTMtLjY2LS45Mi0xLjQ0LS4zOC0uNzctLjU4LTEuNi0uMi0uODMtLjItMS42NyAwLTEgLjMyLTEuOTYuMzMtLjk3Ljg3LTEuOC4xNC45NS41NSAxLjc3LjQxLjgyIDEuMDIgMS41LjYuNjggMS4zOCAxLjIxLjc4LjU0IDEuNjQuOS44Ni4zNiAxLjc3LjU2LjkyLjIgMS44LjIgMS4xMiAwIDIuMTgtLjI0IDEuMDYtLjIzIDIuMDYtLjcybC4yLS4xLjItLjA1em0tMTUuNS0xLjI3cTAgMS4xLjI3IDIuMTUuMjcgMS4wNi43OCAyLjAzLjUxLjk2IDEuMjQgMS43Ny43NC44MiAxLjY2IDEuNC0xLjQ3LS4yLTIuOC0uNzQtMS4zMy0uNTUtMi40OC0xLjM3LTEuMTUtLjgzLTIuMDgtMS45LS45Mi0xLjA3LTEuNTgtMi4zM1QuMzYgMTQuOTRRMCAxMy41NCAwIDEyLjA2cTAtLjgxLjMyLTEuNDkuMzEtLjY4LjgzLTEuMjMuNTMtLjU1IDEuMi0uOTYuNjYtLjQgMS4zNS0uNjYuNzQtLjI3IDEuNS0uMzkuNzgtLjEyIDEuNTUtLjEyLjcgMCAxLjQyLjEuNzIuMTIgMS40LjM1LjY4LjIzIDEuMzIuNTcuNjMuMzUgMS4xNi44My0uMzUgMC0uNy4wNy0uMzMuMDctLjY1LjIzdi0uMDJxLS42My4yOC0xLjIuNzQtLjU3LjQ2LTEuMDUgMS4wNC0uNDguNTgtLjg3IDEuMjYtLjM4LjY3LS42NSAxLjM5LS4yNy43MS0uNDIgMS40NC0uMTUuNzItLjE1IDEuMzh6TTExLjk2LjA2cTEuNyAwIDMuMzMuMzkgMS42My4zOCAzLjA3IDEuMTUgMS40My43NyAyLjYyIDEuOTMgMS4xOCAxLjE2IDEuOTggMi43LjQ5Ljk0Ljc2IDEuOTYuMjggMSAuMjggMi4wOCAwIC44OS0uMjMgMS43LS4yNC44LS42OSAxLjQ4LS40NS42OC0xLjEgMS4yMi0uNjQuNTMtMS40NS44OC0uNTQuMjQtMS4xMS4zNi0uNTguMTMtMS4xNi4xMy0uNDIgMC0uOTctLjAzLS41NC0uMDMtMS4xLS4xMi0uNTUtLjEtMS4wNS0uMjgtLjUtLjE5LS44NC0uNS0uMTItLjA5LS4yMy0uMjQtLjEtLjE2LS4xLS4zMyAwLS4xNS4xNi0uMzUuMTYtLjIuMzUtLjUuMi0uMjguMzYtLjY4LjE2LS40LjE2LS45NSAwLTEuMDYtLjQtMS45Ni0uNC0uOTEtMS4wNi0xLjY0LS42Ni0uNzQtMS41Mi0xLjI4LS44Ni0uNTUtMS43OS0uODktLjg0LS4zLTEuNzItLjQ0LS44Ny0uMTQtMS43Ni0uMTQtMS41NSAwLTMuMDYuNDVULjk0IDcuNTVxLjcxLTEuNzQgMS44MS0zLjEzIDEuMS0xLjM4IDIuNTItMi4zNVE2LjY4IDEuMSA4LjM3LjU4cTEuNy0uNTIgMy41OC0uNTJaIi8%2BPC9zdmc%2BCg%3D%3D&logoColor=white" alt="Microsoft Edge Add-ons: coming soon" height="28" />
+  <img src="https://img.shields.io/badge/Opera%20Add--ons-Coming%20soon-71717a?style=for-the-badge&labelColor=52525b&logo=opera&logoColor=white" alt="Opera Add-ons: coming soon" height="28" />
+  <img src="https://img.shields.io/badge/Safari-Coming%20soon-71717a?style=for-the-badge&labelColor=52525b&logo=safari&logoColor=white" alt="Safari: coming soon" height="28" />
+</p>
 
-Chrome, Brave, Edge or Opera today: follow the
-[manual install guide](https://applicliq.pages.dev/install). No install needed for the
-[web dashboard](https://applicliq.pages.dev/app).
+<p align="center">
+  <a href="https://applicliq.pages.dev/install"><img src="https://img.shields.io/badge/Install%20manually-Chrome%20%C2%B7%20Brave%20%C2%B7%20Edge%20%C2%B7%20Opera-2b4d86?style=for-the-badge&labelColor=406DB5" alt="Install manually in Chrome, Brave, Edge or Opera" height="28" /></a>
+  <a href="https://applicliq.pages.dev/app"><img src="https://img.shields.io/badge/Web%20dashboard-Open-8f3347?style=for-the-badge&labelColor=BD4961" alt="Open the web dashboard" height="28" /></a>
+</p>
 
 ## Features
 
@@ -52,8 +56,8 @@ Chrome, Brave, Edge or Opera today: follow the
 Requires Node 22+ and pnpm 10.
 
 ```bash
-git clone https://github.com/salman-sayeed/careerpocket.git
-cd careerpocket
+git clone https://github.com/salman-sayeed/applicliq.git
+cd applicliq
 pnpm install
 pnpm dev:ext   # extension with hot reload (opens Chrome)
 pnpm dev:web   # website and web dashboard on http://localhost:5173

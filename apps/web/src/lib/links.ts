@@ -3,8 +3,7 @@
 /** The site's public origin: canonical links, Open Graph tags, the sitemap. No trailing slash. */
 export const SITE_URL = 'https://applicliq.pages.dev';
 
-// Still the old repo name until it is renamed to applicliq on GitHub (old links then redirect).
-export const GITHUB_URL = 'https://github.com/salman-sayeed/careerpocket';
+export const GITHUB_URL = 'https://github.com/salman-sayeed/applicliq';
 export const ISSUES_URL = `${GITHUB_URL}/issues/new`;
 
 /** The author's profiles, shown in the site footer. */
