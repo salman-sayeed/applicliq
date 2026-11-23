@@ -49,6 +49,8 @@ docs/store-listing.md   Chrome Web Store / Edge / AMO listing text, permission j
 brand/                  source logo (applicliq-logo.png; an .svg is used instead if added)
 scripts/generate-icons.ts  `pnpm icons`: extension icons, favicons, PWA icons, web manifest,
                         og-image and logo images, all generated from brand/ with sharp
+scripts/generate-readme-cards.ts  `pnpm readme:cards`: the README's store cards as light/dark SVGs
+                        (docs/readme/), styled like apps/web/src/lib/StoreGrid.svelte
 redirect-site/          `_redirects` deployed to the old career-pocket Pages project (301 to the
                         new site); not part of any build
     wxt.config.ts       manifest + Vite plugins (Tailwind)
@@ -115,6 +117,7 @@ pnpm typecheck      # tsc -b (core) + svelte-check (ui, extension, web)
 pnpm lint           # ESLint
 pnpm format         # Prettier
 pnpm icons          # regenerate icons and images from brand/ (commit the output)
+pnpm readme:cards   # regenerate the README store cards (docs/readme/*.svg) after a store change
 ```
 
 ## Rules
