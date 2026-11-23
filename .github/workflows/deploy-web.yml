@@ -54,6 +54,10 @@ jobs:
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
+          # Use the workspace's pinned wrangler (root devDependency). Without a matching version the
+          # action runs `pnpm add wrangler`, which pnpm refuses at a workspace root. Keep it in sync
+          # with package.json.
+          wranglerVersion: '4.166.0'
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy apps/web/build --project-name=applicliq --branch=main

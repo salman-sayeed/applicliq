@@ -47,9 +47,10 @@ says you probably shouldn't.
 VITE_GOOGLE_CLIENT_ID=1234-def.apps.googleusercontent.com pnpm deploy:web
 ```
 
-This builds the site and uploads `apps/web/build` with Wrangler (`pnpm dlx`, nothing installed in
-the repo). The first run asks you to log in to Cloudflare and creates the `applicliq` project
-(`apps/web/wrangler.toml`). With `apps/web/.env` filled in, the variable is picked up from there.
+This builds the site and uploads `apps/web/build` with Wrangler (a pinned root devDependency, also used by
+`.github/workflows/deploy-web.yml`). The first run asks you to log in to Cloudflare (`pnpm exec
+wrangler login`). The `applicliq` project already exists (`apps/web/wrangler.toml`); pushes to
+`main` that touch the site deploy it automatically. With `apps/web/.env` filled in, the variable is picked up from there.
 
 ## After the first deploy
 

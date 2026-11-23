@@ -14,7 +14,7 @@
     "dev:web": "pnpm --filter @applicliq/web dev",
     "build": "pnpm -r --filter \"./apps/*\" build",
     "build:ext": "pnpm --filter @applicliq/extension build:all",
-    "deploy:web": "pnpm --filter @applicliq/web build && pnpm dlx wrangler@4 pages deploy apps/web/build --project-name applicliq",
+    "deploy:web": "pnpm --filter @applicliq/web build && wrangler pages deploy apps/web/build --project-name applicliq",
     "icons": "node --experimental-strip-types scripts/generate-icons.ts",
     "test": "pnpm -r --if-present test",
     "typecheck": "tsc -b && pnpm -r --if-present check",
@@ -35,6 +35,7 @@
     "sharp": "^0.34.5",
     "svelte": "^5.58.0",
     "typescript": "~6.0.3",
-    "typescript-eslint": "^8.73.0"
+    "typescript-eslint": "^8.73.0",
+    "wrangler": "4.166.0"
   }
 }
