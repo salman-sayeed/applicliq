@@ -10,6 +10,7 @@ import type { JobRecord } from '../types';
  * extension, Google Identity Services on the web), so callers inject `getToken`.
  */
 export const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
+// Kept from the Career Pocket days: renaming it would split existing users' data from what is already in their Drive.
 export const SYNC_FILE_NAME = 'career-pocket.json';
 /** The file's name before the app was renamed; such a file is adopted and renamed on sync. */
 export const LEGACY_SYNC_FILE_NAME = 'pocket-career.json';

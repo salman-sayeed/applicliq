@@ -1,5 +1,5 @@
 # Cloudflare Pages project for the static dashboard (`pnpm deploy:web`).
 # Git-connected builds use the dashboard settings in docs/deploy-web.md instead.
-name = "career-pocket"
+name = "applicliq"
 pages_build_output_dir = "./build"
 compatibility_date = "2026-11-01"

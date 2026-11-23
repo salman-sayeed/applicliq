@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Goals } from '@career-pocket/core';
+  import type { Goals } from '@applicliq/core';
 
   let {
     goals,

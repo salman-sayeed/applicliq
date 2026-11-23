@@ -1,4 +1,4 @@
-import type { SyncErrorKind } from '@career-pocket/core';
+import type { SyncErrorKind } from '@applicliq/core';
 
 export type ToastMessage = {
   id: number;

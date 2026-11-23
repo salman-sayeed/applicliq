@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { SYNC_INTERVALS } from '@career-pocket/core';
+  import { SYNC_INTERVALS } from '@applicliq/core';
   import { downloadFile } from '../../dashboard/format';
   import Field from '../Field.svelte';
   import { button, danger, input, primary } from '../styles';
@@ -41,17 +41,13 @@
 
   const exportJSON = () =>
     run('export-json', async () => {
-      downloadFile(
-        `career-pocket-${stamp()}.json`,
-        await platform.exportJSON(),
-        'application/json',
-      );
+      downloadFile(`applicliq-${stamp()}.json`, await platform.exportJSON(), 'application/json');
     });
 
   const exportCSV = () =>
     run('export-csv', async () => {
       downloadFile(
-        `career-pocket-${stamp()}.csv`,
+        `applicliq-${stamp()}.csv`,
         await platform.exportCSV(),
         'text/csv;charset=utf-8',
       );
@@ -80,14 +76,14 @@
     run('delete-drive', async () => {
       await platform.deleteDriveData();
       deleteText = '';
-      notify('Your Career Pocket data was deleted from Google Drive');
+      notify('Your AppliCliq data was deleted from Google Drive');
     });
 </script>
 
 <section class="py-4" aria-labelledby="drive-heading">
   <h3 id="drive-heading" class="text-sm font-medium">Google Drive</h3>
   <p class="text-ink-muted mt-0.5 mb-3 text-xs">
-    Syncs through a hidden app folder in your own Drive. Career Pocket can't see your other files.
+    Syncs through a hidden app folder in your own Drive. AppliCliq can't see your other files.
   </p>
   {#if !sync.configured}
     <p class="bg-surface-muted rounded-md px-3 py-2 text-xs">
@@ -149,7 +145,7 @@
   <Field
     label="Sync every"
     id="sync-interval"
-    hint="Career Pocket also syncs a few seconds after each change."
+    hint="AppliCliq also syncs a few seconds after each change."
   >
     <select
       id="sync-interval"
@@ -179,7 +175,7 @@
 
   <Field
     label="Import"
-    hint="Merges a Career Pocket JSON export: newer versions of each job win, nothing here is lost."
+    hint="Merges a AppliCliq JSON export: newer versions of each job win, nothing here is lost."
   >
     <input
       bind:this={fileInput}
@@ -222,8 +218,8 @@
     label="Delete Drive data"
     id="delete-drive"
     hint={platform.kind === 'web'
-      ? `Deletes the Career Pocket file from your Google Drive, then signs out and clears this browser. Other devices still signed in upload their copy again. Type “${CONFIRM_WORD}” to confirm.`
-      : `Deletes the Career Pocket file from your Google Drive and signs this device out of sync. Your jobs stay here. Other devices still signed in upload their copy again. Type “${CONFIRM_WORD}” to confirm.`}
+      ? `Deletes the AppliCliq file from your Google Drive, then signs out and clears this browser. Other devices still signed in upload their copy again. Type “${CONFIRM_WORD}” to confirm.`
+      : `Deletes the AppliCliq file from your Google Drive and signs this device out of sync. Your jobs stay here. Other devices still signed in upload their copy again. Type “${CONFIRM_WORD}” to confirm.`}
   >
     <input
       id="delete-drive"

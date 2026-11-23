@@ -1,5 +1,5 @@
 {
-  "name": "career-pocket",
+  "name": "applicliq",
   "version": "0.0.0",
   "private": true,
   "description": "Free, open-source, lightweight job application tracker: browser extension + static dashboard. Your data stays local and in your own Google Drive.",
@@ -10,11 +10,12 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev:ext": "pnpm --filter @career-pocket/extension dev",
-    "dev:web": "pnpm --filter @career-pocket/web dev",
+    "dev:ext": "pnpm --filter @applicliq/extension dev",
+    "dev:web": "pnpm --filter @applicliq/web dev",
     "build": "pnpm -r --filter \"./apps/*\" build",
-    "build:ext": "pnpm --filter @career-pocket/extension build:all",
-    "deploy:web": "pnpm --filter @career-pocket/web build && pnpm dlx wrangler@4 pages deploy apps/web/build --project-name career-pocket",
+    "build:ext": "pnpm --filter @applicliq/extension build:all",
+    "deploy:web": "pnpm --filter @applicliq/web build && pnpm dlx wrangler@4 pages deploy apps/web/build --project-name applicliq",
+    "icons": "node --experimental-strip-types scripts/generate-icons.ts",
     "test": "pnpm -r --if-present test",
     "typecheck": "tsc -b && pnpm -r --if-present check",
     "lint": "eslint .",
@@ -31,6 +32,7 @@
     "prettier": "^3.10.1",
     "prettier-plugin-svelte": "^4.2.0",
     "prettier-plugin-tailwindcss": "^0.8.1",
+    "sharp": "^0.34.5",
     "svelte": "^5.58.0",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.73.0"

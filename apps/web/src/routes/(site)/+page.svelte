@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Seo from '#lib/Seo.svelte';
   import { resolve } from '$app/paths';
   import { GITHUB_URL } from '#lib/links.ts';
   import { MANUAL_BROWSERS, STORES, storeById, type StoreId } from '#lib/config.ts';
@@ -94,7 +95,7 @@
       id: 'sidebar',
       label: 'Save a job',
       src: sidebarShot,
-      alt: 'A job posting with the Career Pocket sidebar next to it: title, company, location, work type and salary already filled in from the page, and a note added.',
+      alt: 'A job posting with the AppliCliq sidebar next to it: title, company, location, work type and salary already filled in from the page, and a note added.',
       caption:
         'Open the sidebar on any posting: the details fill themselves in, and your draft is kept',
     },
@@ -110,14 +111,14 @@
       id: 'menu',
       label: 'Right-click',
       src: menuShot,
-      alt: 'The salary selected on a Data Engineer posting, with the right-click menu open at Career Pocket, then Set as Salary.',
+      alt: 'The salary selected on a Data Engineer posting, with the right-click menu open at AppliCliq, then Set as Salary.',
       caption: 'Or select text, right-click and choose Set as Title, Company, Location or Salary',
     },
     {
       id: 'list',
       label: 'List',
       src: listShot,
-      alt: 'The Career Pocket dashboard: a list of job applications with their status, location and salary, and the details of one job open in a side panel.',
+      alt: 'The AppliCliq dashboard: a list of job applications with their status, location and salary, and the details of one job open in a side panel.',
       caption: 'Every application in one list, with the details a click away',
     },
     {
@@ -160,13 +161,11 @@
   ];
 </script>
 
-<svelte:head>
-  <title>Career Pocket: a private, free job application tracker</title>
-  <meta
-    name="description"
-    content="Save job postings from any site and track every application from saved to offer. Free and open source. Your data stays in your browser and your own Google Drive."
-  />
-</svelte:head>
+<Seo
+  title="AppliCliq: a private, free job application tracker"
+  description="Save job postings from any site and track every application from saved to offer. Free and open source. Your data stays in your browser and your own Google Drive."
+  path="/"
+/>
 
 <main>
   <section class="mx-auto max-w-5xl px-4 pt-16 pb-12 text-center sm:pt-24">
@@ -214,7 +213,7 @@
           preload="metadata"
           onplay={() => (playing = true)}
           onpause={() => (playing = false)}
-          aria-label="Saving a job: on a job posting, the Career Pocket popup opens with the title, company, location and salary already filled in; a note is added and the job is saved."
+          aria-label="Saving a job: on a job posting, the AppliCliq popup opens with the title, company, location and salary already filled in; a note is added and the job is saved."
           class="border-line bg-surface-muted h-auto w-full rounded-xl border shadow-sm"
         ></video>
         <button
@@ -296,8 +295,8 @@
     <div class="border-line rounded-2xl border p-8 sm:p-10">
       <h2 class="text-2xl font-semibold tracking-tight">Private by design</h2>
       <p class="text-ink-muted mt-3 max-w-2xl">
-        There is no Career Pocket server. Your jobs live in your browser's storage and sync through
-        a hidden app folder in your own Google Drive, which Career Pocket can't see outside of. No
+        There is no AppliCliq server. Your jobs live in your browser's storage and sync through a
+        hidden app folder in your own Google Drive, which AppliCliq can't see outside of. No
         analytics, no tracking, no third parties.
       </p>
       <a

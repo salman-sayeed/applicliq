@@ -1,8 +1,8 @@
 {
-  "name": "@career-pocket/core",
+  "name": "@applicliq/core",
   "version": "0.0.0",
   "private": true,
-  "description": "Career Pocket domain logic: types, local storage, merge, Drive sync, scrapers. No UI.",
+  "description": "AppliCliq domain logic: types, local storage, merge, Drive sync, scrapers. No UI.",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,

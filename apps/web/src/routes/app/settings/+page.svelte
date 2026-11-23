@@ -3,7 +3,7 @@
   import { resolve } from '$app/paths';
   import { page } from '$app/state';
   import { onMount } from 'svelte';
-  import { jobsToCsv, statusLabel } from '@career-pocket/core';
+  import { jobsToCsv, statusLabel } from '@applicliq/core';
   import {
     SETTINGS_PAGES,
     STATUS_LABELS,
@@ -11,10 +11,10 @@
     type SettingsPageId,
     type SettingsPlatform,
     type SettingsSync,
-  } from '@career-pocket/ui';
+  } from '@applicliq/ui';
   import logo from '#lib/assets/logo.png';
   import { isSyncConfigured, loadGis } from '#lib/google-auth.ts';
-  import { GITHUB_URL, ISSUES_URL } from '#lib/links.ts';
+  import { GITHUB_URL, ISSUES_URL, SITE_URL } from '#lib/links.ts';
   import { session, startSignIn, startSignOut, syncNow } from '#lib/session.svelte.ts';
   import {
     clearLocalData,
@@ -65,6 +65,7 @@
   const platform: SettingsPlatform = {
     kind: 'web',
     version: __APP_VERSION__,
+    siteUrl: SITE_URL,
     githubUrl: GITHUB_URL,
     issuesUrl: ISSUES_URL,
     exportJSON: () => repo.exportJSON(),
@@ -89,7 +90,7 @@
 </script>
 
 <svelte:head>
-  <title>Settings · Career Pocket</title>
+  <title>Settings · AppliCliq</title>
   <meta name="robots" content="noindex" />
 </svelte:head>
 
@@ -101,7 +102,7 @@
         class="focus-visible:ring-accent flex items-center gap-2 rounded focus-visible:ring-2 focus-visible:outline-none"
       >
         <img src={logo} alt="" class="size-6" />
-        <span class="text-base font-semibold">Career Pocket</span>
+        <span class="text-base font-semibold">AppliCliq</span>
       </a>
       <span class="text-ink-muted text-base">/ Settings</span>
       <a

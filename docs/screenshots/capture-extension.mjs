@@ -2,7 +2,7 @@
 // "pick from page", and the right-click menu for selected text. Each uses its own fictional
 // posting, filled into demo-job.html and served on localhost.
 //
-//   pnpm --filter @career-pocket/extension build
+//   pnpm --filter @applicliq/extension build
 //   CHROME="/path/to/chrome" node docs/screenshots/capture-extension.mjs
 //
 // Loads a copy of .output/chrome-mv3 into a headless Chrome over the DevTools pipe (no
@@ -391,7 +391,7 @@ try {
         <div><span class="pad"></span>Copy</div>
         <div><span class="pad"></span>Print…</div>
         <hr>
-        <div class="on"><img src="${menuIcon}" alt="">Career Pocket<span class="arrow">▸</span></div>
+        <div class="on"><img src="${menuIcon}" alt="">AppliCliq<span class="arrow">▸</span></div>
         <hr>
         <div><span class="pad"></span>Inspect</div>
       </div>

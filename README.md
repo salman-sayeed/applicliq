@@ -1,11 +1,13 @@
 <p align="center"><img src="docs/logo.png" alt="" width="80" /></p>
 
-<h1 align="center">Career Pocket</h1>
+<h1 align="center">AppliCliq</h1>
 
 <p align="center">A free, open-source job application tracker that lives in your browser.</p>
 
+<p align="center"><sub>Formerly Career Pocket. Your saved jobs and sync carry over as they are.</sub></p>
+
 <p align="center">
-  <img src="docs/screenshots/store/dashboard-list.png" alt="The Career Pocket dashboard: a list of job applications with status, location and salary, and one job's details open in a side panel." width="800" />
+  <img src="docs/screenshots/store/dashboard-list.png" alt="The AppliCliq dashboard: a list of job applications with status, location and salary, and one job's details open in a side panel." width="800" />
 </p>
 
 ## Get it
@@ -18,8 +20,8 @@
 <img src="docs/stores/safari-soon.svg" alt="" width="18" /> Safari (soon)
 
 Chrome, Brave, Edge or Opera today: follow the
-[manual install guide](https://career-pocket.pages.dev/install). No install needed for the
-[web dashboard](https://career-pocket.pages.dev/app).
+[manual install guide](https://applicliq.pages.dev/install). No install needed for the
+[web dashboard](https://applicliq.pages.dev/app).
 
 ## Features
 
@@ -32,18 +34,18 @@ Chrome, Brave, Edge or Opera today: follow the
 
 ## Privacy
 
-- Your jobs are stored in your browser. There is no Career Pocket server or account.
-- Sync is optional: it uses a hidden app folder in your own Google Drive, which Career Pocket can't
+- Your jobs are stored in your browser. There is no AppliCliq server or account.
+- Sync is optional: it uses a hidden app folder in your own Google Drive, which AppliCliq can't
   see outside of.
-- No analytics, no tracking, no ads. See the [privacy policy](https://career-pocket.pages.dev/privacy).
+- No analytics, no tracking, no ads. See the [privacy policy](https://applicliq.pages.dev/privacy).
 
 ## How to use
 
 1. Install the extension and pin it to the toolbar.
-2. Open a job posting and click the Career Pocket icon. Check the details and save.
+2. Open a job posting and click the AppliCliq icon. Check the details and save.
 3. Open the dashboard to update statuses, add notes and set reminders.
 4. Optional: turn on Google Drive sync in Settings to see your jobs in other browsers and on
-   [the website](https://career-pocket.pages.dev/app).
+   [the website](https://applicliq.pages.dev/app).
 
 ## Development
 
@@ -88,7 +90,7 @@ Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Support
 
-Career Pocket is free. If it helped you, you can buy me a coffee ☕
+AppliCliq is free. If it helped you, you can buy me a coffee ☕
 
 - Buy me a coffee: _link coming soon_
 - Crypto: _wallet address coming soon_

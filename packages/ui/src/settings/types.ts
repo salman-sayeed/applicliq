@@ -1,10 +1,12 @@
-import type { ImportResult, Settings, SettingsPatch } from '@career-pocket/core';
+import type { ImportResult, Settings, SettingsPatch } from '@applicliq/core';
 import type { SyncMenuStatus } from '../dashboard/types';
 
 /** What the settings page needs from the app it runs in (extension page or web app). */
 export type SettingsPlatform = {
   kind: 'extension' | 'web';
   version: string;
+  /** The website (web dashboard, install guide, privacy policy). */
+  siteUrl: string;
   githubUrl: string;
   issuesUrl: string;
   exportJSON(): Promise<string>;
@@ -12,7 +14,7 @@ export type SettingsPlatform = {
   importJSON(json: string): Promise<ImportResult>;
   /** Empties this browser's copy (jobs and settings). */
   clearLocalData(): Promise<void>;
-  /** Deletes the Career Pocket file from Drive and stops syncing on this device. */
+  /** Deletes the AppliCliq file from Drive and stops syncing on this device. */
   deleteDriveData(): Promise<void>;
   /** Shows the first-run introduction again. */
   replayOnboarding(): void;

@@ -4,7 +4,7 @@
  * closed shadow root, so the page's CSS can't reach it.
  */
 export function showPageToast(text: string, ok = true): void {
-  const TAG = 'career-pocket-toast';
+  const TAG = 'applicliq-toast';
   document.querySelectorAll(TAG).forEach((el) => el.remove());
   const host = document.createElement(TAG);
   host.style.cssText =
@@ -32,7 +32,7 @@ export function showPageToast(text: string, ok = true): void {
   mark.className = 'mark';
   mark.setAttribute('aria-hidden', 'true');
   mark.textContent = ok ? '✓' : '!';
-  toast.append(`Career Pocket · ${text}`, mark);
+  toast.append(`AppliCliq · ${text}`, mark);
   root.append(style, toast);
   document.documentElement.append(host);
   setTimeout(() => host.remove(), 2200);

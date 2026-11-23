@@ -1,4 +1,4 @@
-import type { OpenInMode } from '@career-pocket/core';
+import type { OpenInMode } from '@applicliq/core';
 import { actionApi } from './tabs';
 
 /** Firefox's `sidebarAction` (not in the Chromium-based types). */
@@ -15,7 +15,7 @@ const POPUP_PATH =
   manifest.action?.default_popup ?? manifest.browser_action?.default_popup ?? 'popup.html';
 
 /**
- * Makes the toolbar button open the popup or the sidebar (the "Open Career Pocket in" setting).
+ * Makes the toolbar button open the popup or the sidebar (the "Open AppliCliq in" setting).
  * The button state isn't kept across restarts everywhere, so the background calls this on
  * every start and whenever settings change.
  */

@@ -4,11 +4,11 @@ import {
   WEEK_START_INDEX,
   goalProgress,
   toolbarBadgeText,
-} from '@career-pocket/core';
+} from '@applicliq/core';
 import { repo } from './db';
 import { actionApi } from './tabs';
 
-const DEFAULT_COLOR = '#4f46e5';
+const DEFAULT_COLOR = '#406db5';
 const MET_COLOR = '#16a34a';
 
 /** Today's applications against the daily goal, as the goal settings count them. */
@@ -38,10 +38,10 @@ export async function showGoalBadge(jobs?: readonly Job[], settings?: Settings):
   await actionApi.setTitle({
     title:
       mode === 'off'
-        ? 'Career Pocket'
+        ? 'AppliCliq'
         : goal > 0
-          ? `Career Pocket: ${count} of ${goal} applications today`
-          : `Career Pocket: ${count} applications today`,
+          ? `AppliCliq: ${count} of ${goal} applications today`
+          : `AppliCliq: ${count} applications today`,
   });
 }
 

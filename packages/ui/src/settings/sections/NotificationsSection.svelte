@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { INTERVIEW_REMINDER_OFFSETS } from '@career-pocket/core';
+  import { INTERVIEW_REMINDER_OFFSETS } from '@applicliq/core';
   import Field from '../Field.svelte';
   import Toggle from '../Toggle.svelte';
   import { input } from '../styles';

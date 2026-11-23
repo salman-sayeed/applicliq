@@ -70,10 +70,11 @@ export function interviewIcs(job: Job, options: InterviewIcsOptions = {}): strin
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Career Pocket//Job tracker//EN',
+    'PRODID:-//AppliCliq//Job tracker//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     'BEGIN:VEVENT',
+    // Kept from the Career Pocket days: renaming it would add a duplicate event when a job is exported again.
     `UID:${job.id}-interview@career-pocket`,
     `DTSTAMP:${icsDate(now)}`,
     `DTSTART:${icsDate(job.interviewAt)}`,

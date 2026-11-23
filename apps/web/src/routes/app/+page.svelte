@@ -3,7 +3,7 @@
   import { resolve } from '$app/paths';
   import { page } from '$app/state';
   import { onMount } from 'svelte';
-  import { Dashboard, SyncMenu } from '@career-pocket/ui';
+  import { Dashboard, SyncMenu } from '@applicliq/ui';
   import logo from '#lib/assets/logo.png';
   import { isSyncConfigured, loadGis } from '#lib/google-auth.ts';
   import { GITHUB_URL } from '#lib/links.ts';
@@ -30,7 +30,7 @@
 </script>
 
 <svelte:head>
-  <title>Dashboard · Career Pocket</title>
+  <title>Dashboard · AppliCliq</title>
   <meta name="robots" content="noindex" />
 </svelte:head>
 
@@ -40,7 +40,7 @@
     class="focus-visible:ring-accent flex items-center gap-2 rounded focus-visible:ring-2 focus-visible:outline-none"
   >
     <img src={logo} alt="" class="size-6" />
-    <span class="text-base font-semibold">Career Pocket</span>
+    <span class="text-base font-semibold">AppliCliq</span>
   </a>
 {/snippet}
 
@@ -88,7 +88,7 @@
         <p>
           Save jobs with the
           <a href={resolve('/(site)')} class="text-accent underline-offset-2 hover:underline">
-            Career Pocket extension
+            AppliCliq extension
           </a>, signed in with the same Google account, and they show up here.
         </p>
       {/if}
@@ -101,7 +101,7 @@
       <div>
         <h1 class="text-xl font-semibold tracking-tight">Your job search, from any browser</h1>
         <p class="text-ink-muted mt-2 text-sm">
-          Sign in with Google to load the jobs you saved with the extension. Career Pocket only gets
+          Sign in with Google to load the jobs you saved with the extension. AppliCliq only gets
           access to its own hidden folder in your Drive, never your other files.
         </p>
       </div>

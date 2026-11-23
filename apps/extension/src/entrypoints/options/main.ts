@@ -1,4 +1,4 @@
-import { SETTINGS_PAGES, type SettingsPageId, applyCachedAppearance } from '@career-pocket/ui';
+import { SETTINGS_PAGES, type SettingsPageId, applyCachedAppearance } from '@applicliq/ui';
 import { mount } from 'svelte';
 import App from './App.svelte';
 import './app.css';

@@ -1,8 +1,8 @@
 /*
- * Career Pocket theme for Tailwind v4.
+ * AppliCliq theme for Tailwind v4.
  * Usage in an app stylesheet:
  *   @import 'tailwindcss';
- *   @import '@career-pocket/ui/theme.css';
+ *   @import '@applicliq/ui/theme.css';
  */
 
 /* Let Tailwind see the classes used by shared components. */
@@ -37,6 +37,10 @@
   --color-accent: var(--pc-accent);
   --color-accent-ink: var(--pc-accent-ink);
 
+  /* The logo's colours (brand/applicliq-logo.png), for brand marks; UI uses the accent. */
+  --color-brand-blue: #406db5;
+  --color-brand-crimson: #bd4961;
+
   /* Job status colours */
   --color-status-saved: #64748b;
   --color-status-applied: #2563eb;
@@ -52,11 +56,18 @@
   --default-transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
 }
 
-/* Accent presets: a shade for light mode (white text on it) and one for dark (dark text). */
+/*
+ * Accent presets: a shade for light mode (white text on it) and one for dark (dark text). Every
+ * pair keeps at least 4.5:1 (WCAG AA) for text on the accent and for accent text on the surfaces.
+ *
+ * The preset keys are stored in settings (`appearance.accentColor`), so they never change. The
+ * default key 'indigo' now holds the AppliCliq blue from the logo, and 'rose' the logo's crimson
+ * (one shade deeper in light mode to stay above 4.5:1 on muted surfaces).
+ */
 :root,
 :root[data-accent='indigo'] {
-  --pc-accent-light: #4f46e5;
-  --pc-accent-dark: #818cf8;
+  --pc-accent-light: #406db5; /* 5.2:1 with white, 4.7:1 on surface-muted */
+  --pc-accent-dark: #7b9dd6; /* 6.4:1 on the dark surface, 5.4:1 on dark surface-muted */
 }
 :root[data-accent='blue'] {
   --pc-accent-light: #2563eb;
@@ -75,8 +86,8 @@
   --pc-accent-dark: #fbbf24;
 }
 :root[data-accent='rose'] {
-  --pc-accent-light: #e11d48;
-  --pc-accent-dark: #fb7185;
+  --pc-accent-light: #b23f58; /* 5.6:1 with white, 5.1:1 on surface-muted */
+  --pc-accent-dark: #e07a91; /* 6.2:1 on the dark surface, 5.2:1 on dark surface-muted */
 }
 
 :root {

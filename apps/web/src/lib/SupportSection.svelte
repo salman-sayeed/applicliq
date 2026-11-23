@@ -11,9 +11,9 @@
 <section id="support" aria-labelledby="support-title" class="mx-auto max-w-5xl px-4 pb-20">
   <div class="border-line flex flex-col gap-6 rounded-2xl border p-6 sm:flex-row sm:items-center">
     <div class="min-w-0 flex-1">
-      <h2 id="support-title" class="font-semibold">Support Career Pocket</h2>
+      <h2 id="support-title" class="font-semibold">Support AppliCliq</h2>
       <p class="text-ink-muted mt-1 text-sm">
-        Career Pocket is free. If it helped you, you can buy me a coffee ☕
+        AppliCliq is free. If it helped you, you can buy me a coffee ☕
       </p>
       {#if donationUrl}
         <a

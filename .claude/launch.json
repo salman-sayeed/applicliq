@@ -17,7 +17,7 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": [
         "--filter",
-        "@career-pocket/web",
+        "@applicliq/web",
         "preview",
         "--port",
         "4173",

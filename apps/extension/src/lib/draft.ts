@@ -1,4 +1,4 @@
-import { type DraftStorageArea, createDraftStore } from '@career-pocket/core';
+import { type DraftStorageArea, createDraftStore } from '@applicliq/core';
 import { actionApi } from './tabs';
 
 export {
@@ -9,7 +9,7 @@ export {
   isDraftValid,
   setDraftField,
   toNewJob,
-} from '@career-pocket/core';
+} from '@applicliq/core';
 
 /**
  * Unsaved save-form state per page, so picking text on the page (which closes the popup) loses

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { JOB_STATUSES, TAG_COLORS, type JobStatus, type TagColor } from '@career-pocket/core';
+  import { JOB_STATUSES, TAG_COLORS, type JobStatus, type TagColor } from '@applicliq/core';
   import { STATUS_DOT, STATUS_LABELS, TAG_CLASSES, TAG_SWATCH } from '../../status';
   import { button, input } from '../styles';
   import type { SectionProps } from '../types';

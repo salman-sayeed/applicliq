@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { JOB_STATUSES, type JobStatus, type WeekStartDay } from '@career-pocket/core';
+  import { JOB_STATUSES, type JobStatus, type WeekStartDay } from '@applicliq/core';
   import { getPrefs } from '../../prefs.svelte';
   import Choice from '../Choice.svelte';
   import CountInput from '../CountInput.svelte';

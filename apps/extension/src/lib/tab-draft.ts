@@ -1,4 +1,4 @@
-import { DRAFT_FIELD_LABELS, type DraftField, draftFrom, setDraftField } from '@career-pocket/core';
+import { DRAFT_FIELD_LABELS, type DraftField, draftFrom, setDraftField } from '@applicliq/core';
 import { repo } from './db';
 import { drafts, showDraftBadge } from './draft';
 import { extractFromTab, showToastInTab } from './tabs';

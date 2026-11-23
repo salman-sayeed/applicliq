@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { JobStatus } from '@career-pocket/core';
-  import { Button, getPrefs } from '@career-pocket/ui';
+  import type { JobStatus } from '@applicliq/core';
+  import { Button, getPrefs } from '@applicliq/ui';
   import { onMount } from 'svelte';
   import { DRAFT_FIELD_LABELS, type Draft, type DraftField, isDraftValid } from '@/lib/draft';
   import DuplicateWarning from './DuplicateWarning.svelte';

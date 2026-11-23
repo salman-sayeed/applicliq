@@ -5,12 +5,12 @@ import type {
   Settings,
   SettingsPatch,
   SettingsSection,
-} from '@career-pocket/core';
+} from '@applicliq/core';
 
 /**
  * Everything the dashboard and the settings page need from storage. They never touch extension
  * or platform APIs: the extension page and the web app each pass their own implementation (both
- * wrap `createJobRepository` from `@career-pocket/core`).
+ * wrap `createJobRepository` from `@applicliq/core`).
  */
 export type DashboardAdapter = {
   /** Calls `listener` with all live jobs now and after every change; returns an unsubscribe. */

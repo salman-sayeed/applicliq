@@ -4,8 +4,8 @@
     type DashboardViewSetting,
     type Density,
     type Theme,
-  } from '@career-pocket/core';
-  import { ACCENT_SWATCH } from '../../status';
+  } from '@applicliq/core';
+  import { ACCENT_LABEL, ACCENT_SWATCH } from '../../status';
   import Choice from '../Choice.svelte';
   import Field from '../Field.svelte';
   import Toggle from '../Toggle.svelte';
@@ -47,8 +47,8 @@
         type="button"
         role="radio"
         aria-checked={a.accentColor === color}
-        aria-label={color}
-        title={color[0]!.toUpperCase() + color.slice(1)}
+        aria-label={ACCENT_LABEL[color]}
+        title={ACCENT_LABEL[color]}
         onclick={() => a.accentColor !== color && save({ appearance: { accentColor: color } })}
         style:background-color={ACCENT_SWATCH[color]}
         class="ring-offset-surface focus-visible:ring-ink size-7 rounded-full ring-offset-2 transition focus-visible:ring-2 focus-visible:outline-none {a.accentColor ===
@@ -62,7 +62,7 @@
 
 <Field
   label="Reduce motion"
-  hint="Turns off animations. Career Pocket already follows your system's reduced-motion setting."
+  hint="Turns off animations. AppliCliq already follows your system's reduced-motion setting."
 >
   <Toggle
     label="Reduce motion"

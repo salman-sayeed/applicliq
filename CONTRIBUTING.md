@@ -1,10 +1,10 @@
-# Contributing to Career Pocket
+# Contributing to AppliCliq
 
 Thanks for helping! Bug reports, site support for new job boards, fixes and docs are all welcome.
 
 ## Ground rules
 
-Career Pocket stays small, private and offline-first. Before you start, read the **Rules** in
+AppliCliq stays small, private and offline-first. Before you start, read the **Rules** in
 [CLAUDE.md](CLAUDE.md#rules). In short:
 
 - **Privacy:** user data goes nowhere except the user's own Google Drive. No telemetry,
@@ -33,7 +33,7 @@ pnpm dev:ext      # extension in a fresh Chrome profile, with hot reload
 pnpm dev:web      # web dashboard on http://localhost:5173
 ```
 
-Firefox: `pnpm --filter @career-pocket/extension dev:firefox` (needs Firefox installed).
+Firefox: `pnpm --filter @applicliq/extension dev:firefox` (needs Firefox installed).
 
 Google Drive sync is optional for development. To try it, create your own OAuth client as described
 in [docs/google-setup.md](docs/google-setup.md) and put its ID in `apps/extension/.env` and
@@ -80,8 +80,8 @@ Maintainers only.
    ```
 
 3. The **Release** workflow checks the code, builds the Chrome, Edge and Firefox zips (plus the
-   Firefox sources zip, and the Chrome zip again as `career-pocket-chromium.zip`, which the
-   website's manual install guide links to) and attaches them to a new GitHub Release with generated notes.
+   Firefox sources zip, the Chrome zip again as `applicliq-chromium.zip`, which the
+   website's manual install guide links to, and the Firefox zip as `applicliq-firefox.zip`) and attaches them to a new GitHub Release with generated notes.
 4. Upload the zips to the stores using [docs/store-listing.md](docs/store-listing.md).
 
 The workflow reads the optional repository secrets `WXT_GOOGLE_CLIENT_ID_WEB` and

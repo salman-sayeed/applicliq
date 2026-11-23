@@ -1,16 +1,15 @@
 <script lang="ts">
+  import Seo from '#lib/Seo.svelte';
   import { GITHUB_URL } from '#lib/links.ts';
 
   const EFFECTIVE = 'November 19, 2026';
 </script>
 
-<svelte:head>
-  <title>Privacy policy · Career Pocket</title>
-  <meta
-    name="description"
-    content="Career Pocket has no server. Your job data stays in your browser and in a hidden app folder in your own Google Drive."
-  />
-</svelte:head>
+<Seo
+  title="Privacy policy · AppliCliq"
+  description="AppliCliq has no server. Your job data stays in your browser and in a hidden app folder in your own Google Drive."
+  path="/privacy"
+/>
 
 <main
   class="[&_a]:text-accent mx-auto max-w-3xl px-4 py-14 text-[15px] leading-relaxed [&_a:hover]:underline [&_h2]:mt-10 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:tracking-tight [&_li]:mt-1.5 [&_p]:mt-3 [&_ul]:mt-3 [&_ul]:list-disc [&_ul]:pl-5"
@@ -22,7 +21,7 @@
     <p class="mt-0! font-medium">In short</p>
     <ul>
       <li>
-        Career Pocket has <strong>no server and no database</strong>. We never receive, store or see
+        AppliCliq has <strong>no server and no database</strong>. We never receive, store or see
         your data.
       </li>
       <li>
@@ -35,13 +34,13 @@
 
   <h2>Who we are</h2>
   <p>
-    Career Pocket is a free, open-source job application tracker made up of a browser extension
-    (Chrome, Edge, Firefox) and this website. Its full source code is public on
+    AppliCliq is a free, open-source job application tracker made up of a browser extension (Chrome,
+    Edge, Firefox) and this website. Its full source code is public on
     <a href={GITHUB_URL} rel="external">GitHub</a>, so anyone can check that it does what this
     policy says.
   </p>
 
-  <h2>What data Career Pocket handles</h2>
+  <h2>What data AppliCliq handles</h2>
   <p>Only what you choose to save about your job search:</p>
   <ul>
     <li>
@@ -73,17 +72,17 @@
     </li>
   </ul>
   <p>
-    Data travels only between your browser and Google, over HTTPS. Career Pocket has no servers it
-    could send it to.
+    Data travels only between your browser and Google, over HTTPS. AppliCliq has no servers it could
+    send it to.
   </p>
 
   <h2>Google user data</h2>
   <p>
-    When you sign in with Google, Career Pocket asks for one permission:
+    When you sign in with Google, AppliCliq asks for one permission:
     <code>https://www.googleapis.com/auth/drive.appdata</code> ("See, create, and delete its own
-    configuration data in your Google Drive"). With it, Career Pocket can only see the files it
-    created in its own hidden folder. It <strong>cannot</strong> see, read or change any other file in
-    your Drive, and it does not ask for your name, email address, contacts or anything else.
+    configuration data in your Google Drive"). With it, AppliCliq can only see the files it created
+    in its own hidden folder. It <strong>cannot</strong> see, read or change any other file in your Drive,
+    and it does not ask for your name, email address, contacts or anything else.
   </p>
   <ul>
     <li>
@@ -101,7 +100,7 @@
     </li>
   </ul>
   <p>
-    Career Pocket's use and transfer of information received from Google APIs adheres to the
+    AppliCliq's use and transfer of information received from Google APIs adheres to the
     <a href="https://developers.google.com/terms/api-services-user-data-policy">
       Google API Services User Data Policy
     </a>, including the Limited Use requirements.
@@ -141,7 +140,7 @@
       <a href="https://myaccount.google.com/connections">Google Account connections</a>.
     </li>
     <li>
-      <strong>Delete the Drive copy:</strong> in Google Drive, open Settings → Manage apps → Career Pocket
+      <strong>Delete the Drive copy:</strong> in Google Drive, open Settings → Manage apps → AppliCliq
       → Options → Delete hidden app data.
     </li>
     <li>
@@ -155,7 +154,7 @@
   </p>
 
   <h2>Children</h2>
-  <p>Career Pocket is not directed at children under 13 and doesn't knowingly handle their data.</p>
+  <p>AppliCliq is not directed at children under 13 and doesn't knowingly handle their data.</p>
 
   <h2>Changes to this policy</h2>
   <p>

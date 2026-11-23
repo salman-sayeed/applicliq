@@ -11,7 +11,7 @@
     filterJobs,
     jobFacets,
     sortJobs,
-  } from '@career-pocket/core';
+  } from '@applicliq/core';
   import type { Snippet } from 'svelte';
   import { applyAppearance } from '../appearance';
   import { Prefs, setPrefs } from '../prefs.svelte';

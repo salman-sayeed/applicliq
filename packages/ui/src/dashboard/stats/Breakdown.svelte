@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { BreakdownRow } from '@career-pocket/core';
+  import type { BreakdownRow } from '@applicliq/core';
   import { percent } from './percent';
 
   let {

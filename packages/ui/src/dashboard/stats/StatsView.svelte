@@ -9,7 +9,7 @@
     applicationStreak,
     breakdownBy,
     goalProgress,
-  } from '@career-pocket/core';
+  } from '@applicliq/core';
   import { slide } from '../../motion';
   import { WORK_TYPE_LABELS } from '../../status';
   import Breakdown from './Breakdown.svelte';

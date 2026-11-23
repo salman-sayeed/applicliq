@@ -1,4 +1,4 @@
-// Writes docs/screenshots/demo-data.json: a Career Pocket export with fictional jobs for
+// Writes docs/screenshots/demo-data.json: a AppliCliq export with fictional jobs for
 // screenshots and demos. Dates are relative to today, so re-run it before taking new shots:
 //   node docs/screenshots/make-demo-data.mjs
 // Then import the file in Settings → Data. All companies, people and URLs are made up.

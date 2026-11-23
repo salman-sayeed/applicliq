@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Seo from '#lib/Seo.svelte';
   import { onMount, tick } from 'svelte';
   import {
     CHROMIUM_ZIP_URL,
@@ -35,30 +36,30 @@
       menu: 'Or open the ⋮ menu, then Extensions → Manage Extensions.',
       devMode: 'Switch on the Developer mode toggle in the top-right corner.',
       loadUnpacked: 'A new bar appears at the top. Click Load unpacked.',
-      pin: 'Click the puzzle-piece icon next to the address bar, then the pin next to Career Pocket.',
-      reload: 'the circular reload arrow on the Career Pocket card',
+      pin: 'Click the puzzle-piece icon next to the address bar, then the pin next to AppliCliq.',
+      reload: 'the circular reload arrow on the AppliCliq card',
     },
     brave: {
       menu: 'Or open the ☰ menu, then Extensions.',
       devMode: 'Switch on the Developer mode toggle in the top-right corner.',
       loadUnpacked: 'A new bar appears at the top. Click Load unpacked.',
-      pin: 'Click the puzzle-piece icon next to the address bar, then the pin next to Career Pocket.',
-      reload: 'the circular reload arrow on the Career Pocket card',
+      pin: 'Click the puzzle-piece icon next to the address bar, then the pin next to AppliCliq.',
+      reload: 'the circular reload arrow on the AppliCliq card',
     },
     edge: {
       menu: 'Or open the ⋯ menu, then Extensions → Manage extensions.',
       devMode:
         'Switch on Developer mode in the left sidebar (on a narrow window, open the ☰ menu at the top left first).',
       loadUnpacked: 'Buttons appear above the list. Click Load unpacked.',
-      pin: 'Click the puzzle-piece icon next to the address bar, then the eye icon next to Career Pocket (Show in toolbar).',
-      reload: 'Reload under the Career Pocket card',
+      pin: 'Click the puzzle-piece icon next to the address bar, then the eye icon next to AppliCliq (Show in toolbar).',
+      reload: 'Reload under the AppliCliq card',
     },
     opera: {
       menu: 'Or press Ctrl+Shift+E (⌘+Shift+E on a Mac), or open the menu, then Extensions → Extensions.',
       devMode: 'Switch on the Developer mode toggle in the top-right corner.',
       loadUnpacked: 'A new bar appears at the top. Click Load unpacked.',
-      pin: 'Click the cube icon next to the address bar, then the pin next to Career Pocket.',
-      reload: 'the circular reload arrow on the Career Pocket card',
+      pin: 'Click the cube icon next to the address bar, then the pin next to AppliCliq.',
+      reload: 'the circular reload arrow on the AppliCliq card',
     },
   };
   const d = $derived(details[selected]);
@@ -91,7 +92,7 @@
   const faq = [
     {
       q: 'The browser warns about developer-mode extensions. Is that a problem?',
-      a: 'No, that is normal for any extension loaded by hand rather than from a store. Close the message or choose to keep the extension; don’t turn developer mode off, or the browser disables Career Pocket.',
+      a: 'No, that is normal for any extension loaded by hand rather than from a store. Close the message or choose to keep the extension; don’t turn developer mode off, or the browser disables AppliCliq.',
     },
     {
       q: 'Does it update by itself?',
@@ -115,13 +116,11 @@
     'bg-accent text-accent-ink focus-visible:ring-accent inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none';
 </script>
 
-<svelte:head>
-  <title>Install Career Pocket manually · Chrome, Brave, Edge, Opera</title>
-  <meta
-    name="description"
-    content="Install the Career Pocket extension by hand in Chrome, Brave, Edge or Opera from the latest GitHub release, and keep it up to date."
-  />
-</svelte:head>
+<Seo
+  title="Install AppliCliq manually · Chrome, Brave, Edge, Opera"
+  description="Install the AppliCliq extension by hand in Chrome, Brave, Edge or Opera from the latest GitHub release, and keep it up to date."
+  path="/install"
+/>
 
 {#snippet shot(caption: string)}
   <!-- Placeholder until a screenshot for this step is added. -->
@@ -136,11 +135,11 @@
 
 <main class="mx-auto max-w-3xl px-4 pt-12 pb-24 sm:pt-16">
   <h1 class="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-    Install Career Pocket manually
+    Install AppliCliq manually
   </h1>
   <p class="text-ink-muted mt-3 text-balance">
-    Until Career Pocket is in the Chrome, Edge and Opera stores, you can load it by hand from the
-    latest release. It takes about two minutes.
+    Until AppliCliq is in the Chrome, Edge and Opera stores, you can load it by hand from the latest
+    release. It takes about two minutes.
   </p>
 
   <aside
@@ -217,7 +216,7 @@
           </svg>
           Download the zip
         </a>
-        <p class="text-ink-muted mt-2 text-xs">career-pocket-chromium.zip</p>
+        <p class="text-ink-muted mt-2 text-xs">applicliq-chromium.zip</p>
       </li>
 
       <li class="step">
@@ -256,7 +255,7 @@
       <li class="step">
         <h2 class="font-semibold">Select the unzipped folder</h2>
         <p class="text-ink-muted mt-1 text-sm">
-          Pick the folder that contains <code>manifest.json</code>, then click Select. Career Pocket
+          Pick the folder that contains <code>manifest.json</code>, then click Select. AppliCliq
           appears in the list.
         </p>
         {@render shot('choosing the unzipped folder')}
@@ -265,9 +264,9 @@
       <li class="step">
         <h2 class="font-semibold">Pin it to the toolbar</h2>
         <p class="text-ink-muted mt-1 text-sm">
-          {d.pin} Then open any job posting and click the Career Pocket icon to save it.
+          {d.pin} Then open any job posting and click the AppliCliq icon to save it.
         </p>
-        {@render shot(`pinning Career Pocket in ${browser.name}`)}
+        {@render shot(`pinning AppliCliq in ${browser.name}`)}
       </li>
     </ol>
   </div>
@@ -281,8 +280,7 @@
         </a> and unzip it.
       </li>
       <li>
-        Replace everything in your Career Pocket folder with the new files (same folder, same
-        place).
+        Replace everything in your AppliCliq folder with the new files (same folder, same place).
       </li>
       <li>
         Open <code class="text-ink">{browser.page}</code> and click {d.reload}. Your jobs and

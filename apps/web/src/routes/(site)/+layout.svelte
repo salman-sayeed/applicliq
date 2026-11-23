@@ -19,7 +19,7 @@
     <nav class="mx-auto flex max-w-5xl items-center gap-4 px-4 py-3 text-sm sm:gap-6">
       <a href={resolve('/(site)')} class="flex items-center gap-2 font-semibold {link}">
         <img src={logo} alt="" class="size-7" />
-        Career Pocket
+        AppliCliq
       </a>
       <div class="text-ink-muted ml-auto flex items-center gap-4 sm:gap-6">
         <a href={resolve('/(site)/privacy')} class="hidden sm:inline {link}">Privacy</a>
@@ -43,7 +43,10 @@
       class="mx-auto flex max-w-5xl flex-col items-center gap-5 px-4 py-8 sm:flex-row sm:justify-between"
     >
       <div class="flex flex-col items-center gap-2 sm:items-start">
-        <p>Career Pocket · free and open source (MIT)</p>
+        <p class="flex items-center gap-2">
+          <img src={logo} alt="" class="size-5" />
+          AppliCliq · free and open source (MIT)
+        </p>
         <div class="flex gap-6">
           <a href={resolve('/(site)/install')} class={link}>Manual install</a>
           <a href={resolve('/(site)/privacy')} class={link}>Privacy policy</a>

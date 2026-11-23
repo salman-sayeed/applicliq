@@ -20,7 +20,16 @@
   <span class="text-sm tabular-nums">{platform.version}</span>
 </Field>
 
-<Field label="Source code" hint="Career Pocket is free and open source (MIT).">
+<Field
+  label="Website"
+  hint="Your jobs in any browser (with sync on), the install guide and the privacy policy."
+>
+  <a href={platform.siteUrl} target="_blank" rel="noreferrer" class="{link} text-sm">
+    {platform.siteUrl.replace(/^https:\/\//, '')} ↗
+  </a>
+</Field>
+
+<Field label="Source code" hint="AppliCliq is free and open source (MIT).">
   <a href={platform.githubUrl} target="_blank" rel="noreferrer" class="{link} text-sm">
     GitHub ↗
   </a>

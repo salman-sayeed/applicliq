@@ -11,7 +11,7 @@ import type { PickedMessage, StartPickerMessage } from '@/lib/messages';
 export default defineContentScript({
   registration: 'runtime',
   main() {
-    const flag = '__careerPocketPicker';
+    const flag = '__appliCliqPicker';
     const scope = globalThis as unknown as Record<string, boolean>;
     if (scope[flag]) return;
     scope[flag] = true;
@@ -20,13 +20,13 @@ export default defineContentScript({
 
     browser.runtime.onMessage.addListener((message: unknown) => {
       const m = message as StartPickerMessage | undefined;
-      if (m?.type !== 'career-pocket:start-picker') return;
+      if (m?.type !== 'applicliq:start-picker') return;
       stop?.();
       stop = start(m.field, m.label);
     });
 
     function start(field: StartPickerMessage['field'], label: string) {
-      const host = document.createElement('career-pocket-picker');
+      const host = document.createElement('applicliq-picker');
       host.style.cssText =
         'all:initial;position:fixed;inset:0;z-index:2147483647;display:block;pointer-events:none';
       const root = host.attachShadow({ mode: 'closed' });
@@ -68,7 +68,7 @@ export default defineContentScript({
         const text = (el instanceof HTMLElement ? el.innerText : el?.textContent)?.trim() ?? '';
         end();
         if (!text) return;
-        const message: PickedMessage = { type: 'career-pocket:picked', field, text };
+        const message: PickedMessage = { type: 'applicliq:picked', field, text };
         browser.runtime.sendMessage(message).catch(() => {});
       };
 
@@ -102,7 +102,7 @@ export default defineContentScript({
 const CSS = `
   .box {
     display: none; position: fixed; box-sizing: border-box;
-    border: 2px solid #4f46e5; border-radius: 4px;
+    border: 2px solid #406db5; border-radius: 4px;
     background: rgb(79 70 229 / 0.12);
     transition: all 80ms ease-out;
   }

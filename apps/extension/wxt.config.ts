@@ -2,6 +2,14 @@ import tailwindcss from '@tailwindcss/vite';
 import { loadEnv } from 'vite';
 import { defineConfig } from 'wxt';
 
+const ICONS = {
+  16: '/icon/16.png',
+  32: '/icon/32.png',
+  48: '/icon/48.png',
+  96: '/icon/96.png',
+  128: '/icon/128.png',
+};
+
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
 
 // Public half of the project's extension key. With it in the manifest, every unpacked install
@@ -16,8 +24,8 @@ export default defineConfig({
   srcDir: 'src',
   modules: ['@wxt-dev/module-svelte'],
   zip: {
-    artifactTemplate: 'career-pocket-{{version}}-{{browser}}.zip',
-    sourcesTemplate: 'career-pocket-{{version}}-sources.zip',
+    artifactTemplate: 'applicliq-{{version}}-{{browser}}.zip',
+    sourcesTemplate: 'applicliq-{{version}}-sources.zip',
     // addons.mozilla.org reviewers rebuild the add-on from this zip, so it holds the whole
     // monorepo (shared packages, lockfile), minus build output and local secrets.
     sourcesRoot: '../..',
@@ -52,7 +60,8 @@ export default defineConfig({
     // docs/google-setup.md). Without them the extension builds fine and sync stays off.
     const env = loadEnv(mode, process.cwd(), 'WXT_');
     return {
-      name: 'Career Pocket',
+      name: 'AppliCliq',
+      short_name: 'AppliCliq',
       description:
         'Track job applications from any job posting. Local-first, synced to your own Google Drive.',
       // Minimal permissions: no host access. `activeTab` grants the current tab only when the user
@@ -89,6 +98,8 @@ export default defineConfig({
         ? {
             browser_specific_settings: {
               gecko: {
+                // Kept from the Career Pocket days: renaming it would make Firefox treat it as a new add-on and change the
+                // Google redirect URL.
                 id: 'career-pocket@career-pocket',
                 data_collection_permissions: { required: ['none'] },
               },
@@ -101,6 +112,10 @@ export default defineConfig({
       ...(manifestVersion === 3
         ? { optional_host_permissions: ['<all_urls>'] }
         : { optional_permissions: ['<all_urls>'] }),
+      // Generated from brand/ by scripts/generate-icons.ts (`pnpm icons`). The toolbar icon is set
+      // on the popup entrypoint (popup/index.html), which WXT writes to `action` (MV3) or
+      // `browser_action` (Firefox MV2).
+      icons: ICONS,
       commands: {
         'save-job': {
           suggested_key: { default: 'Alt+Shift+S' },

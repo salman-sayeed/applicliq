@@ -1,0 +1,59 @@
+name: Deploy web
+
+# Builds apps/web and deploys it to the `applicliq` Cloudflare Pages project
+# (https://applicliq.pages.dev) whenever main changes the site or the packages it is built from.
+#
+# Repository secrets (Settings → Secrets and variables → Actions):
+# - CLOUDFLARE_API_TOKEN: an API token with only Account → Cloudflare Pages → Edit
+# - CLOUDFLARE_ACCOUNT_ID: the Cloudflare account that owns the project
+# - VITE_GOOGLE_CLIENT_ID (optional): the Web OAuth client ID for sync on /app. Falls back to
+#   WXT_GOOGLE_CLIENT_ID_WEB (the same Web client the extension uses). Without either, the site
+#   builds and /app says sync isn't set up.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/web/**'
+      - 'packages/ui/**'
+      - 'packages/core/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/deploy-web.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-web
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Build and deploy to Cloudflare Pages
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      # pnpm version comes from "packageManager" in package.json.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build apps/web
+        run: pnpm --filter @applicliq/web build
+        env:
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID || secrets.WXT_GOOGLE_CLIENT_ID_WEB }}
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy apps/web/build --project-name=applicliq --branch=main

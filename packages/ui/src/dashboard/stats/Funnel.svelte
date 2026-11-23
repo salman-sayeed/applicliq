@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Funnel } from '@career-pocket/core';
+  import type { Funnel } from '@applicliq/core';
   import { percent } from './percent';
 
   let { funnel }: { funnel: Funnel } = $props();

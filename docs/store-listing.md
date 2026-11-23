@@ -6,15 +6,15 @@ Release (see [Releasing](../CONTRIBUTING.md#releasing)).
 
 Links used below:
 
-- Website: https://career-pocket.pages.dev
-- Privacy policy: https://career-pocket.pages.dev/privacy
+- Website: https://applicliq.pages.dev
+- Privacy policy: https://applicliq.pages.dev/privacy
 - Source code / support: https://github.com/salman-sayeed/careerpocket (issues for support)
 
 ---
 
 ## Shared text
 
-**Name:** Career Pocket
+**Name:** AppliCliq
 
 **Short description** (Chrome: max 132 characters; this is 115):
 
@@ -26,10 +26,10 @@ Links used below:
 **Full description:**
 
 ```text
-Career Pocket is a free, open-source job application tracker that lives in your browser.
+AppliCliq is a free, open-source job application tracker that lives in your browser.
 
 SAVE JOBS FROM ANY SITE
-Open a job posting and click the Career Pocket icon (or press Alt+Shift+S). The title, company,
+Open a job posting and click the AppliCliq icon (or press Alt+Shift+S). The title, company,
 location, salary and work type are filled in from the page, with special support for LinkedIn,
 Indeed, Glassdoor, Greenhouse, Lever, Workday, Wellfound and BDJobs. Already saved it? Career
 Pocket tells you, so you never apply twice.
@@ -45,8 +45,8 @@ PRIVATE BY DESIGN
 • No account, no server, no ads, no tracking or analytics
 • Your jobs are stored in your browser
 • Optional: sign in with Google to back up and sync through a hidden folder in your own Google
-  Drive. Career Pocket can only see that folder, never your other files.
-• Use the same data on any computer at https://career-pocket.pages.dev
+  Drive. AppliCliq can only see that folder, never your other files.
+• Use the same data on any computer at https://applicliq.pages.dev
 
 YOURS TO KEEP
 Export everything as JSON (a full backup you can import again) or CSV for spreadsheets.
@@ -86,7 +86,7 @@ made with [screenshots/capture.mjs](screenshots/capture.mjs)). Suggested order:
 | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `activeTab`                           | Reads the job posting on the current tab only when the user opens the popup, presses the save shortcut or uses the right-click menu.                                         |
 | `scripting`                           | Injects the job-details extractor, the "pick from page" helper and a short confirmation into that tab (granted through `activeTab`), and the optional "already saved" badge. |
-| `contextMenus`                        | Adds "Save job to Career Pocket" to links, and "Set as Title / Company / …" to selected text to fix a detail the page didn't give correctly.                                 |
+| `contextMenus`                        | Adds "Save job to AppliCliq" to links, and "Set as Title / Company / …" to selected text to fix a detail the page didn't give correctly.                                     |
 | `storage`                             | Keeps the sign-in state, sync status, which reminders were already shown, and unsaved form drafts (in session storage, deleted after 24 hours).                              |
 | `sidePanel`                           | Shows the same save-job form in the browser's side panel when the user chooses it, so it stays open beside the posting.                                                      |
 | `alarms`                              | Runs the periodic ghosted-job check, reminders and background sync.                                                                                                          |
@@ -106,7 +106,7 @@ made with [screenshots/capture.mjs](screenshots/capture.mjs)). Suggested order:
 Certify all three disclosures (not sold, not used for unrelated purposes, not used for
 creditworthiness).
 
-**Privacy policy URL:** https://career-pocket.pages.dev/privacy
+**Privacy policy URL:** https://applicliq.pages.dev/privacy
 
 ### Before the first upload
 
@@ -139,7 +139,7 @@ Same text and answers. Upload the `-edge-store.zip`. After the first upload, add
 
 **License:** MIT License.
 
-**Privacy policy:** paste the text of https://career-pocket.pages.dev/privacy (AMO wants the text,
+**Privacy policy:** paste the text of https://applicliq.pages.dev/privacy (AMO wants the text,
 not a link).
 
 **Data collection:** the manifest declares `data_collection_permissions: { required: ["none"] }`:
@@ -148,7 +148,7 @@ Google Drive after they sign in.
 
 ### Source code for reviewers
 
-AMO asks for source code because the add-on is bundled. Upload the `career-pocket-<version>-sources.zip`
+AMO asks for source code because the add-on is bundled. Upload the `applicliq-<version>-sources.zip`
 from the release and paste these notes:
 
 ```text
@@ -157,7 +157,7 @@ Build environment: Node.js 22 (see .node-version), pnpm 10.28.2 (corepack or
 
 Build steps, from the root of the sources zip:
   pnpm install --frozen-lockfile
-  WXT_GOOGLE_CLIENT_ID_WEB=<client id> pnpm --filter @career-pocket/extension build:firefox
+  WXT_GOOGLE_CLIENT_ID_WEB=<client id> pnpm --filter @applicliq/extension build:firefox
 
 The add-on is in apps/extension/.output/firefox-mv2. WXT_GOOGLE_CLIENT_ID_WEB is our public
 Google OAuth client ID (it appears in the built background.js); with it set to the same value

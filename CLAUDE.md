@@ -1,4 +1,4 @@
-# Career Pocket
+# AppliCliq
 
 ## Goal
 
@@ -43,7 +43,14 @@ docs/google-setup.md    creating the OAuth client IDs (env vars in apps/extensio
 docs/store-listing.md   Chrome Web Store / Edge / AMO listing text, permission justifications
 .github/workflows/      ci.yml (format, lint, typecheck, test, build on PRs and main);
                         release.yml (on a v* tag: zips for Chrome, Edge, Firefox + sources zip,
-                        attached to a GitHub Release)
+                        plus applicliq-chromium.zip / applicliq-firefox.zip, attached to a GitHub
+                        Release); deploy-web.yml (web app to the `applicliq` Cloudflare Pages
+                        project on pushes to main touching apps/web or packages/ui|core)
+brand/                  source logo (applicliq-logo.png; an .svg is used instead if added)
+scripts/generate-icons.ts  `pnpm icons`: extension icons, favicons, PWA icons, web manifest,
+                        og-image and logo images, all generated from brand/ with sharp
+redirect-site/          `_redirects` deployed to the old career-pocket Pages project (301 to the
+                        new site); not part of any build
     wxt.config.ts       manifest + Vite plugins (Tailwind)
   web/                  SvelteKit static site (Cloudflare Pages: docs/deploy-web.md)
     src/routes/         +layout.ts sets `prerender = true`; (site)/ landing + privacy (site.css),
@@ -107,6 +114,7 @@ pnpm test           # Vitest (packages/core)
 pnpm typecheck      # tsc -b (core) + svelte-check (ui, extension, web)
 pnpm lint           # ESLint
 pnpm format         # Prettier
+pnpm icons          # regenerate icons and images from brand/ (commit the output)
 ```
 
 ## Rules
@@ -127,6 +135,12 @@ pnpm format         # Prettier
 6. `packages/core` contains no UI code and no framework imports (no Svelte, no DOM rendering).
    Platform-specific bits (e.g. getting an OAuth token) are injected by the apps.
 7. Request the minimum extension permissions; add one only when a feature needs it.
+8. **The app was renamed from Career Pocket to AppliCliq.** Identifiers that persist in users'
+   browsers or Drive keep the old name and must never change: the IndexedDB name
+   (`career-pocket`), the Drive file (`career-pocket.json`, legacy `pocket-career.json`),
+   `career-pocket:*` storage keys, notification IDs, the Web Lock name, the ICS UID suffix, the
+   Firefox add-on ID (`career-pocket@career-pocket`), the Chrome `key` and the OAuth client IDs.
+   The AMO listing slug and the GitHub repo URL also still use the old name for now.
 
 ## Job data model
 

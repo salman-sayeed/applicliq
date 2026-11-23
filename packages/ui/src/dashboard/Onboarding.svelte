@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Goals } from '@career-pocket/core';
+  import type { Goals } from '@applicliq/core';
   import { onMount, type Snippet } from 'svelte';
   import { fade, fly } from '../motion';
   import { rememberFocus, trapTab } from '../a11y/focus';
@@ -23,7 +23,7 @@
     {
       id: 'save',
       title: 'Save jobs from any site',
-      body: 'Open a job posting and click the Career Pocket icon in your toolbar, or press the save shortcut. Title, company and salary are filled in from the page.',
+      body: 'Open a job posting and click the AppliCliq icon in your toolbar, or press the save shortcut. Title, company and salary are filled in from the page.',
     },
     {
       id: 'track',
@@ -125,7 +125,7 @@
     class="bg-surface border-line w-full max-w-md rounded-xl border p-6 shadow-2xl outline-none"
   >
     <p class="text-ink-muted text-xs font-medium" aria-live="polite">
-      Welcome to Career Pocket · Step {step + 1} of {steps.length}
+      Welcome to AppliCliq · Step {step + 1} of {steps.length}
     </p>
     {#key step}
       <div in:fade={{ duration: 120 }}>
