@@ -40,6 +40,10 @@
   reminder before each deadline.
 - Insights: response, interview and offer rates and reply times by source and work type, a weekly
   recap notification, and a share card of your numbers (never company names) as a PNG.
+- Resume match: paste your resumes (Settings → Resumes) and see which skills from a job
+  description are on your resume and which are missing, required vs nice-to-have, in the popup,
+  the sidebar and each job's details. Plain keyword matching against a dictionary of about 1,000
+  skills, on your device: no AI, nothing sent anywhere, no made-up "ATS score".
 - Import your history: LinkedIn applications (from LinkedIn's data export) or any CSV from a
   spreadsheet, Notion, Huntr or Teal, with column matching, duplicate checks and undo.
 - Encrypted sync (optional): your data is encrypted with a passphrase on your device before it
@@ -54,6 +58,8 @@
 - Sync is optional: it uses a hidden app folder in your own Google Drive, which AppliCliq can't
   see outside of. Turn on encrypted sync and the copy in Drive is unreadable without your
   passphrase.
+- Resumes stay in your browser unless you turn on "Sync resumes to Google Drive" (on by default
+  only with encrypted sync).
 - No analytics, no tracking, no ads. See the [privacy policy](https://applicliq.pages.dev/privacy).
 
 ## How to use

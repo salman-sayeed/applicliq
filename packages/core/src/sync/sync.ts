@@ -6,7 +6,8 @@ import {
   sealFile,
 } from '../crypto/envelope';
 import { isFeatureEnabled } from '../features';
-import { canonical, mergeJobs } from '../merge';
+import { type SyncRecord, canonical, mergeJobs, mergeRecords } from '../merge';
+import { resumeSyncEnabled, sanitizeResumeRecords } from '../resumes';
 import {
   type SyncedSettings,
   isNewerSettings,
@@ -14,7 +15,7 @@ import {
   sanitizeSyncedSettings,
 } from '../settings';
 import type { JobRepository } from '../storage';
-import type { JobRecord } from '../types';
+import type { JobRecord, ResumeRecord } from '../types';
 import { sanitizeRecords } from '../validate';
 import {
   type DriveClient,
@@ -104,12 +105,15 @@ export function parseSnapshot(data: unknown): {
   skipped: number;
   /** As found in the file (unchecked); undefined when it has none. */
   settings: unknown;
+  /** Resume records (checked); empty when the file has none. */
+  resumes: ResumeRecord[];
 } {
   const file = data as {
     schemaVersion?: unknown;
     version?: unknown;
     records?: unknown;
     settings?: unknown;
+    resumes?: unknown;
   } | null;
   if (!file || typeof file !== 'object') {
     throw new SyncError('invalid-remote', INVALID_REMOTE_MESSAGE);
@@ -128,11 +132,19 @@ export function parseSnapshot(data: unknown): {
     throw new SyncError('invalid-remote', INVALID_REMOTE_MESSAGE);
   }
   // Drive content is untrusted input: drop malformed records instead of storing them.
-  return { ...sanitizeRecords(file.records), settings: file.settings };
+  const jobs = sanitizeRecords(file.records);
+  const resumes = sanitizeResumeRecords(file.resumes);
+  const badResumes = Array.isArray(file.resumes) ? file.resumes.length - resumes.length : 0;
+  return {
+    records: jobs.records,
+    skipped: jobs.skipped + badResumes,
+    settings: file.settings,
+    resumes,
+  };
 }
 
 /** Whether two record sets hold exactly the same records (any order). */
-export function sameRecords(a: readonly JobRecord[], b: readonly JobRecord[]): boolean {
+export function sameRecords(a: readonly SyncRecord[], b: readonly SyncRecord[]): boolean {
   if (a.length !== b.length) return false;
   const byId = new Map(b.map((r) => [r.id, r]));
   return a.every((r) => {
@@ -162,11 +174,16 @@ export async function syncWithDrive(
   drive: DriveClient,
   { now = Date.now, maxAttempts = 3, encryption }: SyncOptions = {},
 ): Promise<SyncResult> {
-  const snapshot = (records: JobRecord[], settings: unknown): SyncSnapshot => ({
+  const snapshot = (
+    records: JobRecord[],
+    settings: unknown,
+    resumes?: ResumeRecord[],
+  ): SyncSnapshot => ({
     schemaVersion: SCHEMA_VERSION,
     updatedAt: now(),
     records,
     settings: settings as SyncedSettings,
+    ...(resumes?.length ? { resumes } : {}),
   });
 
   for (let attempt = 1; ; attempt++) {
@@ -203,8 +220,9 @@ export async function syncWithDrive(
     if (!primaryFile) {
       const merged = await repo.mergeIntoLocal([]);
       const settings = await repo.getSyncedSettings();
+      const resumes = await syncedResumes(repo, []);
       // Nothing to keep yet: don't create a file for an untouched install.
-      if (merged.length === 0 && settings.updatedAt === 0) {
+      if (merged.length === 0 && settings.updatedAt === 0 && !resumes?.length) {
         return { records: 0, uploaded: false, settingsChanged: false, encrypted: false };
       }
       // Encrypted sync is on here but Drive is empty (its data was deleted): never fall back
@@ -215,11 +233,16 @@ export async function syncWithDrive(
           'Encrypted sync is on, but your Drive has no AppliCliq data. Turn encryption off, or set it up again, in Settings → Sync & data.',
         );
       }
-      await drive.create(snapshot(merged, settings));
+      await drive.create(snapshot(merged, settings, resumes));
       return { records: merged.length, uploaded: true, settingsChanged: false, encrypted: false };
     }
 
-    const { records: remote, skipped, settings: remoteSettings } = parseSnapshot(primary!.data);
+    const {
+      records: remote,
+      skipped,
+      settings: remoteSettings,
+      resumes: remoteResumes,
+    } = parseSnapshot(primary!.data);
     // Duplicates come from two devices creating the file at once: fold them in, then delete.
     const folded = await foldExtras(drive, extraFiles, now);
     const incoming = mergeJobs(remote, folded.records, now());
@@ -232,6 +255,9 @@ export async function syncWithDrive(
       ? incomingSettings
       : settingsMerge.settings;
     const settingsInSync = canonical(outSettings) === canonical(remoteSettings);
+    // After the settings merge, so a switch turned off elsewhere applies here this round.
+    const resumes = await syncedResumes(repo, mergeRecords(remoteResumes, folded.resumes, now()));
+    const resumesInSync = sameRecords(resumes ?? [], remoteResumes);
     const result = {
       records: merged.length,
       settingsChanged: settingsMerge.changed,
@@ -240,12 +266,18 @@ export async function syncWithDrive(
     // A file from before the app's rename keeps its data and gets the current name.
     if (primaryFile.name !== drive.fileName) await drive.rename(primaryFile.id).catch(() => {});
     // Malformed records in Drive (skipped) are cleaned out by uploading the merged set.
-    if (folded.ids.length === 0 && skipped === 0 && settingsInSync && sameRecords(merged, remote)) {
+    if (
+      folded.ids.length === 0 &&
+      skipped === 0 &&
+      settingsInSync &&
+      resumesInSync &&
+      sameRecords(merged, remote)
+    ) {
       return { ...result, uploaded: false };
     }
 
     try {
-      await drive.update(primaryFile.id, snapshot(merged, outSettings), primary!.etag);
+      await drive.update(primaryFile.id, snapshot(merged, outSettings, resumes), primary!.etag);
     } catch (error) {
       if (error instanceof DriveError && error.status === 412) {
         if (attempt < maxAttempts) continue;
@@ -260,22 +292,37 @@ export async function syncWithDrive(
   }
 }
 
+/**
+ * Resumes after a sync round: with resume sync on, `incoming` merged into the local store (the
+ * set to upload); off, undefined: nothing is read from Drive and none are uploaded (resumes
+ * already there are removed by the upload).
+ */
+async function syncedResumes(
+  repo: JobRepository,
+  incoming: ResumeRecord[],
+): Promise<ResumeRecord[] | undefined> {
+  if (!resumeSyncEnabled(await repo.getSettings())) return undefined;
+  return repo.mergeResumesIntoLocal(incoming);
+}
+
 /** Reads duplicate plain files; the ones this version can't read are skipped (and kept). */
 async function foldExtras(drive: DriveClient, files: DriveFile[], now: () => number) {
   let records: JobRecord[] = [];
+  let resumes: ResumeRecord[] = [];
   const settings: unknown[] = [];
   const ids: string[] = [];
   for (const { id } of files) {
     try {
       const extra = parseSnapshot((await drive.download(id)).data);
       records = mergeJobs(records, extra.records, now());
+      resumes = mergeRecords(resumes, extra.resumes, now());
       settings.push(extra.settings);
       ids.push(id);
     } catch {
       // Unreadable (or the encrypted-sync marker): the primary file stays the source of truth.
     }
   }
-  return { records, settings, ids };
+  return { records, resumes, settings, ids };
 }
 
 /** Turns an encrypted-file problem into a sync error the UI can show. */
@@ -319,7 +366,7 @@ async function encryptedRound(
     primary?: DriveDownload;
     extraFiles: DriveFile[];
     encryptedFiles: DriveFile[];
-    snapshot: (records: JobRecord[], settings: unknown) => SyncSnapshot;
+    snapshot: (records: JobRecord[], settings: unknown, resumes?: ResumeRecord[]) => SyncSnapshot;
     now: () => number;
   },
 ): Promise<SyncResult | undefined> {
@@ -348,7 +395,12 @@ async function encryptedRound(
   } catch {
     throw new SyncError('invalid-remote', INVALID_REMOTE_MESSAGE);
   }
-  const { records: remote, skipped, settings: remoteSettings } = parseSnapshot(parsedPayload);
+  const {
+    records: remote,
+    skipped,
+    settings: remoteSettings,
+    resumes: remoteResumes,
+  } = parseSnapshot(parsedPayload);
 
   // Plain copies of career-pocket.json (e.g. written by an older version) are folded in and
   // replaced by the marker; encrypted duplicates are folded in if this key opens them.
@@ -356,6 +408,7 @@ async function encryptedRound(
   const plainPrimary = primaryFile && markerMissing ? [primaryFile] : [];
   const plain = await foldExtras(drive, [...plainPrimary, ...extraFiles], now);
   let incoming = mergeJobs(remote, plain.records, now());
+  let incomingResumes = mergeRecords(remoteResumes, plain.resumes, now());
   const settingsList = [...plain.settings];
   const encIds: string[] = [];
   for (const extra of encExtras) {
@@ -363,6 +416,7 @@ async function encryptedRound(
       const other = await downloadEncrypted(encryption.drive, extra.id);
       const parsed = parseSnapshot(JSON.parse(await openFile(other.file, key)));
       incoming = mergeJobs(incoming, parsed.records, now());
+      incomingResumes = mergeRecords(incomingResumes, parsed.resumes, now());
       settingsList.push(parsed.settings);
       encIds.push(extra.id);
     } catch {
@@ -380,6 +434,8 @@ async function encryptedRound(
     encrypted: true,
   };
   const settingsInSync = canonical(outSettings) === canonical(remoteSettings);
+  const resumes = await syncedResumes(repo, incomingResumes);
+  const resumesInSync = sameRecords(resumes ?? [], remoteResumes);
   const tidy = plain.ids.length > 0 || encIds.length > 0;
 
   /** Puts the marker in place (old versions then stop instead of syncing in plain text). */
@@ -389,13 +445,13 @@ async function encryptedRound(
       await drive.update(primaryFile.id, encryptedMarker(now()), primary?.etag);
   };
 
-  if (!tidy && skipped === 0 && settingsInSync && sameRecords(merged, remote)) {
+  if (!tidy && skipped === 0 && settingsInSync && resumesInSync && sameRecords(merged, remote)) {
     await writeMarker();
     return { ...result, uploaded: false };
   }
 
   // A fresh IV on every upload (sealFile); the header (wrapped keys) is kept as it is.
-  const sealed = await sealFile(file, key, JSON.stringify(snapshot(merged, outSettings)));
+  const sealed = await sealFile(file, key, JSON.stringify(snapshot(merged, outSettings, resumes)));
   try {
     await encryption.drive.update(encFile.id, sealed, etag);
   } catch (error) {

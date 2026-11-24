@@ -3,6 +3,8 @@ import type {
   Job,
   JobPatch,
   LocalState,
+  Resume,
+  ResumePatch,
   Settings,
   SettingsPatch,
   SettingsSection,
@@ -34,6 +36,14 @@ export type DashboardAdapter = {
   mergeDuplicates(keepId: string, otherId: string): Promise<Job>;
   /** Remembers that two jobs are not duplicates. */
   markNotDuplicate(a: string, b: string): Promise<void>;
+  /** Live resumes now and after every change (Settings → Resumes, Resume match). */
+  watchResumes(listener: (resumes: Resume[]) => void, onError?: (e: unknown) => void): () => void;
+  addResume(input: { name: string; text?: string }): Promise<Resume>;
+  updateResume(id: string, patch: ResumePatch): Promise<Resume>;
+  duplicateResume(id: string): Promise<Resume>;
+  deleteResume(id: string): Promise<boolean>;
+  /** Undo for `deleteResume`. */
+  restoreResume(resume: Resume): Promise<Resume>;
   getLocalState(): Promise<LocalState>;
   setLocalState(patch: LocalState): Promise<void>;
 };

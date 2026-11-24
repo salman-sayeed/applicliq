@@ -25,6 +25,12 @@ export const dashboardAdapter: DashboardAdapter = {
   undoImport: notifying(repo.undoImport),
   mergeDuplicates: notifying(repo.mergeDuplicates),
   markNotDuplicate: notifying(repo.markNotDuplicate),
+  watchResumes: repo.watchResumes,
+  addResume: notifying(repo.addResume),
+  updateResume: notifying(repo.updateResume),
+  duplicateResume: notifying(repo.duplicateResume),
+  deleteResume: notifying(repo.deleteResume),
+  restoreResume: notifying(repo.restoreResume),
   getLocalState: repo.getLocalState,
   setLocalState: repo.setLocalState,
 };

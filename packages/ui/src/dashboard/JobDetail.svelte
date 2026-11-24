@@ -4,6 +4,7 @@
     type Job,
     type JobPatch,
     type JobStatus,
+    type Resume,
     type Salary,
     type SalaryPeriod,
     type WorkType,
@@ -33,6 +34,9 @@
     onclose,
     onfollowup,
     oncompare,
+    resumes = [],
+    onignore,
+    onresumes,
   }: {
     job: Job;
     facets: { tags: string[]; resumeVersions: string[] };
@@ -43,6 +47,12 @@
     onfollowup?: () => void;
     /** Opens the offer comparison (Smart helpers). */
     oncompare?: () => void;
+    /** The user's resumes (Resume match, the job's resume picker). */
+    resumes?: Resume[];
+    /** Resume match → "Ignore this skill". */
+    onignore?: (skill: string) => void;
+    /** Opens Settings → Resumes. */
+    onresumes?: () => void;
   } = $props();
 
   type Draft = {
@@ -58,7 +68,7 @@
     currency: string;
     period: SalaryPeriod | '';
     tags: string[];
-    resumeVersion: string;
+    resumeId: string;
     contactName: string;
     contactEmail: string;
     interviewAt: string;
@@ -80,7 +90,7 @@
       currency: j.salary?.currency ?? '',
       period: j.salary?.period ?? '',
       tags: [...(j.tags ?? [])],
-      resumeVersion: j.resumeVersion ?? '',
+      resumeId: j.resumeId ?? '',
       contactName: j.contact?.name ?? '',
       contactEmail: j.contact?.email ?? '',
       interviewAt: toDateTimeInput(j.interviewAt),
@@ -101,10 +111,8 @@
 
   const prefs = getPrefs();
   const regional = $derived(prefs.settings.regional);
-  /** Saved resume versions first, then any others used on jobs. */
-  const resumeVersions = $derived([
-    ...new Set([...prefs.settings.labels.resumeVersions, ...facets.resumeVersions]),
-  ]);
+  /** The job's resume, when it was deleted (or not synced to this device). */
+  const resumeMissing = $derived(!!job.resumeId && !resumes.some((r) => r.id === job.resumeId));
   /** Tags from settings (they have colours) and from jobs. */
   const tagSuggestions = $derived([
     ...new Set([...prefs.settings.labels.tags.map((t) => t.name), ...facets.tags]),
@@ -154,7 +162,12 @@
     if (value !== job[field]) void commit({ [field]: value });
   }
 
-  function commitOptional(field: 'location' | 'source' | 'resumeVersion' | 'notes') {
+  function commitResume() {
+    const resumeId = draft.resumeId || undefined;
+    if (resumeId !== job.resumeId) void commit({ resumeId });
+  }
+
+  function commitOptional(field: 'location' | 'source' | 'notes') {
     const value = draft[field].trim();
     if (value !== (job[field] ?? '')) void commit({ [field]: value || undefined });
   }
@@ -419,20 +432,40 @@
         />
       </div>
       <div>
-        <label class={labelClass} for="d-resume">Resume version</label>
-        <input
+        <label class={labelClass} for="d-resume">Resume</label>
+        <select
           id="d-resume"
           class={inputClass}
-          bind:value={draft.resumeVersion}
-          onchange={() => commitOptional('resumeVersion')}
-          list="d-resume-versions"
-          placeholder="e.g. frontend-v3"
-        />
-        <datalist id="d-resume-versions">
-          {#each resumeVersions as version (version)}
-            <option value={version}></option>
+          bind:value={draft.resumeId}
+          onchange={commitResume}
+        >
+          <option value="">—</option>
+          {#each resumes as resume (resume.id)}
+            <option value={resume.id}>{resume.name}</option>
           {/each}
-        </datalist>
+          {#if resumeMissing}
+            <option value={job.resumeId}>(not on this device)</option>
+          {/if}
+        </select>
+        {#if job.resumeVersion && !job.resumeId}
+          <p class="text-ink-muted mt-1 text-xs">
+            Label from before: “{job.resumeVersion}”
+            {#if onresumes}
+              ·
+              <button type="button" class="text-accent hover:underline" onclick={onresumes}>
+                Add it as a resume
+              </button>
+            {/if}
+          </p>
+        {/if}
+        {#if !resumes.length && onresumes && prefs.feature('resumeMatch')}
+          <p class="text-ink-muted mt-1 text-xs">
+            <button type="button" class="text-accent hover:underline" onclick={onresumes}>
+              Add your resumes
+            </button>
+            to link them to jobs.
+          </p>
+        {/if}
       </div>
       <div class="grid grid-cols-2 gap-2">
         <div>
@@ -512,6 +545,24 @@
       <h3 class={sectionTitle}>Timeline</h3>
       <Timeline history={job.history} />
     </section>
+
+    {#if prefs.feature('resumeMatch')}
+      <section>
+        <!-- Loaded on demand: the matcher and its skills dictionary stay out of the dashboard. -->
+        {#await import('../match/ResumeMatch.svelte') then { default: ResumeMatch }}
+          <ResumeMatch
+            description={job.descriptionSnapshot}
+            {resumes}
+            jobResumeId={job.resumeId}
+            defaultResumeId={prefs.settings.resumes.defaultResumeId}
+            ignored={prefs.settings.resumes.ignoredSkills}
+            onignore={(skill) => onignore?.(skill)}
+            onaddresume={() => onresumes?.()}
+            emptyText="No job description was saved for this job, so there is nothing to compare."
+          />
+        {/await}
+      </section>
+    {/if}
 
     <section>
       <h3 class={sectionTitle}>Saved description</h3>

@@ -1,0 +1,28 @@
+Data Scientist, Growth
+Lumen Health · New York, NY (Hybrid)
+
+About us
+Lumen Health helps patients find the right care faster. Our Growth team uses data to understand patient behaviour and to improve the patient experience.
+
+What you will do
+- Design and analyze A/B tests to measure the impact of product changes
+- Build predictive models for patient retention using Python and scikit-learn
+- Write complex SQL in Snowflake and build data pipelines with dbt and Airflow
+- Create dashboards in Tableau for product and marketing stakeholders
+- Communicate results clearly to non-technical partners
+
+Minimum qualifications
+- MS or PhD in Statistics, Computer Science or a related quantitative field
+- 3+ years of experience in data science or analytics
+- Strong skills in Python (Pandas, NumPy) and SQL
+- Solid grounding in statistics, hypothesis testing and experiment design
+- Experience with machine learning and regression analysis
+
+Preferred qualifications
+- Experience with causal inference
+- Familiarity with R
+- Experience with Spark or Databricks
+- Healthcare experience
+
+Benefits
+Medical, dental and vision insurance; 401(k) match; patient experience is our north star and patient experience drives every decision.

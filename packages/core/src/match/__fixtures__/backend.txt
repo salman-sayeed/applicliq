@@ -1,0 +1,29 @@
+Backend Engineer (Go)
+Harbor Payments — Berlin or Remote
+
+The opportunity
+Harbor Payments processes millions of transactions a day. As a Backend Engineer on the Ledger team you'll design and run the services that move money reliably.
+
+Responsibilities
+- Design, build and operate microservices in Go
+- Own PostgreSQL schemas, query optimization and migrations
+- Build event-driven systems with Kafka
+- Run services on Kubernetes in AWS, managed with Terraform
+- Take part in the on-call rotation and incident response
+
+Qualifications:
+- 4+ years of backend development experience
+- Strong experience with Go (Golang) or another compiled language such as Java or C++
+- Solid knowledge of PostgreSQL and SQL
+- Experience with distributed systems and microservices
+- Experience with Docker and Kubernetes
+- Familiarity with gRPC and REST API design
+
+Bonus points:
+- Experience with Redis
+- Experience in payments or fintech
+- Prometheus and Grafana for observability
+- Rust is a plus
+
+Why join us
+Competitive salary, equity and 30 days of paid vacation.

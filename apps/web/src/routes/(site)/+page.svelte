@@ -82,6 +82,11 @@
       icon: 'M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z',
     },
     {
+      title: 'Resume match',
+      text: 'See which skills a job asks for that are on your resume, and which are missing, required or nice to have. Worked out on your device: no AI, no score, nothing uploaded.',
+      icon: 'M9 12l2 2 4-4M7 3h7l5 5v13H7zM14 3v5h5',
+    },
+    {
       title: 'Follow-ups and offers',
       text: 'Follow-up messages from templates, a list of applications waiting on one, and offers compared side by side with deadline reminders.',
       icon: 'M4 6h16v12H4zM4 7l8 6 8-6',

@@ -15,6 +15,11 @@
       "svelte": "./src/index.ts",
       "default": "./src/index.ts"
     },
+    "./resume-match": {
+      "types": "./src/match/ResumeMatch.svelte",
+      "svelte": "./src/match/ResumeMatch.svelte",
+      "default": "./src/match/ResumeMatch.svelte"
+    },
     "./theme.css": "./src/theme.css"
   },
   "scripts": {

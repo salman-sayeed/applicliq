@@ -49,6 +49,9 @@ SMART HELPERS AND INSIGHTS (worked out on your device)
 • Offers side by side, with a reminder the day before each deadline
 • Response rates and reply times by source and work type, a weekly recap, and a shareable card
   of your numbers (never company names)
+• Resume match: paste your resume and see which skills a job asks for are on it and which are
+  missing, required or nice to have. No AI, nothing uploaded; resumes stay in your browser unless
+  you choose to sync them
 
 PRIVATE BY DESIGN
 • No account, no server, no ads, no tracking or analytics

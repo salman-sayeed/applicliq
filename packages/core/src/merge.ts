@@ -1,4 +1,10 @@
-import { type JobRecord, TOMBSTONE_TTL_MS, isTombstone, recordTimestamp } from './types';
+import { type JobRecord, TOMBSTONE_TTL_MS } from './types';
+
+/** Anything synced record by record: a live version (`updatedAt`) or a tombstone (`deletedAt`). */
+export type SyncRecord = { id: string; updatedAt?: number; deletedAt?: number };
+
+const isDeleted = (r: SyncRecord) => r.deletedAt !== undefined;
+const stamp = (r: SyncRecord) => r.deletedAt ?? r.updatedAt ?? 0;
 
 /** JSON with object keys sorted, so equal content always serializes the same way. */
 export function canonical(value: unknown): string {
@@ -20,29 +26,31 @@ export function canonical(value: unknown): string {
  * 3. Two different live versions with the same `updatedAt` are ordered by content, so
  *    every device picks the same one whatever order it sees them in (no ping-pong).
  */
-export function pickWinner(a: JobRecord, b: JobRecord): JobRecord {
-  const ta = recordTimestamp(a);
-  const tb = recordTimestamp(b);
+export function pickWinner(a: JobRecord, b: JobRecord): JobRecord;
+export function pickWinner<R extends SyncRecord>(a: R, b: R): R;
+export function pickWinner<R extends SyncRecord>(a: R, b: R): R {
+  const ta = stamp(a);
+  const tb = stamp(b);
   if (ta !== tb) return ta > tb ? a : b;
-  if (isTombstone(a) !== isTombstone(b)) return isTombstone(a) ? a : b;
+  if (isDeleted(a) !== isDeleted(b)) return isDeleted(a) ? a : b;
   return canonical(a) >= canonical(b) ? a : b;
 }
 
 /** Whether a tombstone is old enough to be dropped. Live jobs are never expired. */
 export function isExpiredTombstone(
-  record: JobRecord,
+  record: SyncRecord,
   now: number = Date.now(),
   ttl: number = TOMBSTONE_TTL_MS,
 ): boolean {
-  return isTombstone(record) && now - record.deletedAt >= ttl;
+  return record.deletedAt !== undefined && now - record.deletedAt >= ttl;
 }
 
 /** Drops tombstones that are at least `ttl` old. */
-export function purgeTombstones(
-  records: JobRecord[],
+export function purgeTombstones<R extends SyncRecord>(
+  records: R[],
   now: number = Date.now(),
   ttl: number = TOMBSTONE_TTL_MS,
-): JobRecord[] {
+): R[] {
   return records.filter((r) => !isExpiredTombstone(r, now, ttl));
 }
 
@@ -57,13 +65,25 @@ export function mergeJobs(
   remote: readonly JobRecord[],
   now: number = Date.now(),
 ): JobRecord[] {
-  const byId = new Map<string, JobRecord>();
+  return mergeRecords(local, remote, now);
+}
+
+/**
+ * `mergeJobs` for any record type (resumes use it too): per id, last write wins, tombstones win
+ * ties and are reduced to `{ id, deletedAt }`, expired tombstones are dropped.
+ */
+export function mergeRecords<R extends SyncRecord>(
+  local: readonly R[],
+  remote: readonly R[],
+  now: number = Date.now(),
+): R[] {
+  const byId = new Map<string, R>();
   for (const record of [...local, ...remote]) {
     const existing = byId.get(record.id);
     byId.set(record.id, existing ? pickWinner(existing, record) : record);
   }
   const merged = [...byId.values()].map((r) =>
-    isTombstone(r) ? { id: r.id, deletedAt: r.deletedAt } : r,
+    isDeleted(r) ? ({ id: r.id, deletedAt: r.deletedAt } as R) : r,
   );
   return purgeTombstones(merged, now);
 }

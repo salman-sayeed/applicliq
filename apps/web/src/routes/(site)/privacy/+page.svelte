@@ -2,7 +2,7 @@
   import Seo from '#lib/Seo.svelte';
   import { GITHUB_URL } from '#lib/links.ts';
 
-  const EFFECTIVE = 'November 19, 2026';
+  const EFFECTIVE = 'November 24, 2026';
 </script>
 
 <Seo
@@ -48,8 +48,11 @@
       description;
     </li>
     <li>
-      what you add yourself: status and its history, notes, tags, resume version, contact name and
-      email, interview and follow-up dates;
+      what you add yourself: status and its history, notes, tags, which resume you sent, contact
+      name and email, interview and follow-up dates;
+    </li>
+    <li>
+      resumes you paste in Settings → Resumes (for Resume match), and skills you chose to ignore;
     </li>
     <li>your settings: application goals, when to mark a job ghosted, and theme.</li>
   </ul>
@@ -77,6 +80,26 @@
     Data travels only between your browser and Google, over HTTPS. AppliCliq has no servers it could
     send it to.
   </p>
+
+  <h2>Resumes and Resume match</h2>
+  <p>
+    Resume match compares a job description with a resume you pasted, entirely in your browser: it
+    looks for skills from a word list that ships with AppliCliq. No AI service is used, and neither
+    the description nor your resume is sent anywhere to be analysed.
+  </p>
+  <ul>
+    <li>
+      Your resumes stay in your browser. They go to your Google Drive only if you turn on
+      <strong>Sync resumes to Google Drive</strong> (Settings → Resumes). That switch is on by default
+      only when encrypted sync is on, so resumes synced by default are always encrypted.
+    </li>
+    <li>
+      If you turn resume sync on without encryption, your resume text is stored in the sync file in
+      your Drive's hidden app folder, like your jobs. Turning it off removes them from Drive on the
+      next sync; the copy in your browser stays.
+    </li>
+    <li>A JSON export (your backup file) includes your resumes.</li>
+  </ul>
 
   <h2>Encrypted sync (optional)</h2>
   <p>

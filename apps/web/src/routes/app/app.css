@@ -3,6 +3,7 @@
 
 /* The shared dashboard's and settings page's classes; only /app renders them. */
 @source '../../../../../packages/ui/src/dashboard';
+@source '../../../../../packages/ui/src/match';
 @source '../../../../../packages/ui/src/settings';
 @source '../../../../../packages/ui/src/import';
 @source '../../../../../packages/ui/src/encryption';

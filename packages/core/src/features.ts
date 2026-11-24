@@ -161,13 +161,14 @@ export const FEATURES: readonly FeatureDefinition[] = [
   {
     id: 'resumeMatch',
     name: 'Resume match',
-    description: 'Compare a job description with your resume, on this device.',
-    defaultEnabled: false,
+    description:
+      'See which skills from a job description are on your resume and which are missing. Worked out on this device: no AI, nothing sent anywhere.',
+    defaultEnabled: true,
     permissions: {},
     permissionNotes: [],
     syncScope: 'synced',
     platforms: BOTH,
-    implemented: false,
+    implemented: true,
   },
   {
     id: 'autofill',

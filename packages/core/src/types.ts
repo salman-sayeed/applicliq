@@ -57,6 +57,12 @@ export type Job = {
   history: StatusChange[];
   notes?: string;
   tags?: string[];
+  /** The resume sent for this job (`Resume.id`). */
+  resumeId?: string;
+  /**
+   * Free-text resume label from before resumes existed (and from imports). Kept as a label; when
+   * a resume of the same name exists, the job is linked to it instead (`linkResumeLabels`).
+   */
   resumeVersion?: string;
   contact?: { name?: string; email?: string };
   interviewAt?: number;
@@ -103,4 +109,25 @@ export function isLiveJob(record: JobRecord): record is Job {
 /** Timestamp used to decide which version of a record wins a merge. */
 export function recordTimestamp(record: JobRecord): number {
   return isTombstone(record) ? record.deletedAt : record.updatedAt;
+}
+
+/**
+ * A resume the user pasted (Settings → Resumes), for Resume match. Stored locally; synced to
+ * Drive only when `settings.resumes.sync` says so. Deleting one leaves a tombstone, as for jobs.
+ */
+export type Resume = {
+  id: string;
+  name: string;
+  text: string;
+  createdAt: number;
+  updatedAt: number;
+  deletedAt?: undefined;
+};
+
+export type ResumeTombstone = { id: string; deletedAt: number };
+
+export type ResumeRecord = Resume | ResumeTombstone;
+
+export function isLiveResume(record: ResumeRecord): record is Resume {
+  return record.deletedAt === undefined;
 }

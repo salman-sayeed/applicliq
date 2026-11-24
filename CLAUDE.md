@@ -82,6 +82,14 @@ packages/
                         (company/title normalizing, Dice similarity, mergeDuplicateJobs), templates
                         (follow-up templates, placeholders, mailto, needs-follow-up), offers
                         (pay per month/year, compareOffers with a user-typed rate)
+    src/resumes.ts      resume records (sanitize, word count), resumeSyncEnabled, linkResumeLabels
+                        (resumeVersion → resumeId migration), pickResume, copyName
+    src/match/          Resume match, pure, imported as `@applicliq/core/match` (lazy, not in the
+                        main index): skills.json (~1,090 skills with aliases and a category, `!` =
+                        strict: capitalized and in context), text (tokens keep C++/C#/.NET/Node.js),
+                        dictionary (index, findSkills), sections (required vs nice-to-have per line),
+                        keywords ("other keywords", 2–3 word phrases), match (analyzeJob,
+                        matchResume, summary). __fixtures__: 5 job descriptions with expected results
     src/insights.ts     response rates, reply times (median), period stats, weekly recap, share
                         card data and post text
     src/import/         job import: csv-parse (delimiter / header detection), fields (column
@@ -120,6 +128,10 @@ packages/
                         sub-toggles; sections/HelpersSection: Smart helpers options and templates
     src/import/         Settings → Import (LinkedIn, CSV mapping, review, undo, history); loaded
                         with a dynamic import. Pages that render settings add `@source` for it
+    src/match/          ResumeMatch.svelte (the "Resume match" section: popup, sidebar, job panel;
+                        exported as `@applicliq/ui/resume-match`, always loaded with import()),
+                        run-match.ts + match.worker.ts (long texts in a web worker). Pages that render
+                        it add `@source` for it. sections/ResumesSection: Settings → Resumes
     src/encryption/     Settings → Sync & data → Encryption (EncryptionPanel, lazy), UnlockForm,
                         UnlockDialog (web /app), passphrase fields, recovery code step. Pages that
                         render settings add `@source` for it
@@ -208,7 +220,8 @@ type Job = {
   history: { status: JobStatus; at: number }[];
   notes?: string;
   tags?: string[];
-  resumeVersion?: string;
+  resumeId?: string; // Resume.id (Settings → Resumes)
+  resumeVersion?: string; // legacy free-text label, kept when no resume of that name exists
   contact?: { name?: string; email?: string };
   interviewAt?: number;
   followUpAt?: number;
@@ -262,7 +275,7 @@ with dates within 3 days. LinkedIn imports use source `linkedin` (the scraper's 
 
 `Settings` (`packages/core/src/settings.ts`) is one typed object with a `version` and an
 `updatedAt`, grouped in sections (goals, automation, notifications, jobPages, appearance, regional,
-labels, sync, helpers, insights, features). It is stored in the `settings` table as two rows: `app` (synced keys) and `device`
+labels, sync, helpers, insights, resumes, features). It is stored in the `settings` table as two rows: `app` (synced keys) and `device`
 (`DEVICE_KEYS`: notification settings, the weekly recap's switch/day/time, the page badge's
 on/position/sites and device-scoped feature switches, which never leave the
 browser). `helpers` holds the Smart helpers' sub-toggles and options, `notDuplicatePairs` (`idA|idB`,
@@ -335,6 +348,33 @@ kdf: { name: 'PBKDF2', hash: 'SHA-256', iterations: 600000, salt }, wrappedKeys:
   writes a plain `career-pocket.json` over the marker, deletes the encrypted file. Every Drive
   write is conditional on the ETag just downloaded. Manual test plan:
   [docs/encryption-testing.md](docs/encryption-testing.md).
+
+### Resumes and Resume match
+
+Feature `resumeMatch` (default on, synced, no permissions). Settings saved before it existed
+(no `resumes` section) read it as on: the stored `false` was the planned feature's placeholder.
+
+- **Resumes**: Dexie table `resumes` (version 4) `{ id, name, text, createdAt, updatedAt,
+deletedAt? }`, tombstones and merge exactly like jobs (`mergeRecords`). Repo: add / update
+  (rename, text) / duplicate / delete / restore (undo), `watchResumes`. Settings → Resumes edits
+  them; `settings.resumes` = `{ sync: boolean | null, defaultResumeId, ignoredSkills }`, all synced.
+- **Sync**: `resumes` in the Drive snapshot (and in the encrypted payload) only when
+  `resumeSyncEnabled(settings)`: `resumes.sync`, or when null, whether encrypted sync is on. Off:
+  nothing is read from Drive and the next upload leaves them out (removing them). Decided after
+  the settings merge. `schemaVersion` stays 2: older versions drop the field when they upload, and
+  the next sync from a device with resume sync on puts it back. Exports always include resumes.
+- **Migration**: `Job.resumeId` replaces the free-text `resumeVersion`. When a resume is added or
+  renamed (or jobs are imported), jobs whose label names it (case-insensitive) are linked and lose
+  the label (`linkResumeVersions`); others keep it, shown as "Label from before".
+  `labels.resumeVersions` is no longer edited anywhere.
+- **Matching** (`@applicliq/core/match`): whole-token matching against the dictionary, longest
+  spelling first; strict terms ("Go", "R", "Excel", "Spring") need a capital and context (mid
+  sentence, in a list of skills, or before "developer"/"language"…). Headings and inline cues
+  ("is a plus", "ideally") mark skills nice-to-have; unclear = required; required anywhere wins.
+  Result: required/nice matched and missing, other keywords found/missing, the ignored ones and a
+  summary ("Matches 12 of 16 required skills"), never a score. The UI loads the component, the
+  matcher and the dictionary lazily; texts over 40k characters go to a web worker
+  (`worker.format: 'es'` in both Vite configs).
 
 ### Smart helpers and Insights
 
