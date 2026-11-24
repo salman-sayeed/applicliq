@@ -20,6 +20,7 @@
     clearLocalData,
     dashboardAdapter,
     deleteRemoteData,
+    encryption,
     repo,
     scheduleSync,
     startAutoSync,
@@ -86,6 +87,7 @@
     },
     // eslint-disable-next-line svelte/no-navigation-without-resolve -- a resolved path plus a hash
     replayOnboarding: () => void goto(`${resolve('/app')}#onboarding`),
+    encryption,
   };
 </script>
 

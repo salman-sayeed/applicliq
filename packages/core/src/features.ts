@@ -147,13 +147,16 @@ export const FEATURES: readonly FeatureDefinition[] = [
   {
     id: 'encryptedSync',
     name: 'Encrypted sync',
-    description: 'Encrypt the Drive file with a passphrase only you know.',
+    description:
+      'Encrypt your synced data with a passphrase only you know, so the copy in your Google Drive can only be read on your devices.',
     defaultEnabled: false,
     permissions: {},
     permissionNotes: [],
+    // Follows the user: every device must know Drive is encrypted. Turned on and off only
+    // through Settings → Sync & data (it needs a passphrase), never by the plain switch.
     syncScope: 'synced',
     platforms: BOTH,
-    implemented: false,
+    implemented: true,
   },
   {
     id: 'resumeMatch',

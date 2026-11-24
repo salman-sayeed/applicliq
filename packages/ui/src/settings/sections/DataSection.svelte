@@ -112,7 +112,8 @@
     {#if error}
       <p
         role="alert"
-        class="mb-3 rounded-md px-2.5 py-2 text-xs {error.kind === 'offline'
+        class="mb-3 rounded-md px-2.5 py-2 text-xs {error.kind === 'offline' ||
+        error.kind === 'locked'
           ? 'bg-surface-muted'
           : 'bg-status-rejected/10 text-status-rejected'}"
       >
@@ -123,6 +124,14 @@
       {#if error?.kind === 'auth'}
         <button type="button" class={primary} disabled={sync.busy} onclick={sync.onSignIn}>
           Sign in again
+        </button>
+      {:else if error?.kind === 'locked'}
+        <button
+          type="button"
+          class={primary}
+          onclick={() => document.getElementById('encryption')?.scrollIntoView({ block: 'start' })}
+        >
+          Sync paused · Unlock
         </button>
       {:else}
         <button
@@ -143,6 +152,23 @@
     <p role="alert" class="text-status-rejected mt-2 text-xs">{sync.actionError}</p>
   {/if}
 </section>
+
+{#if sync.signedIn && platform.encryption}
+  {@const controls = platform.encryption}
+  <section class="border-line border-t py-4" id="encryption" aria-labelledby="encryption-heading">
+    <h3 id="encryption-heading" class="text-sm font-medium">Encryption</h3>
+    <!-- Loaded on demand: the forms stay out of the other settings pages. -->
+    {#await import('../../encryption/EncryptionPanel.svelte')}
+      <div class="bg-surface-muted my-2 h-16 animate-pulse rounded-md"></div>
+    {:then { default: EncryptionPanel }}
+      <EncryptionPanel {controls} status={sync.status} onchanged={sync.onSyncNow} {notify} />
+    {:catch}
+      <p role="alert" class="text-status-rejected py-2 text-xs">
+        Could not load the encryption settings. Reload and try again.
+      </p>
+    {/await}
+  </section>
+{/if}
 
 <div class="border-line border-t">
   <Field

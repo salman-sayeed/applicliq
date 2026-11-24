@@ -13,5 +13,7 @@ export type DashboardView = 'list' | 'board' | 'stats' | 'insights';
 export type SyncMenuStatus = {
   syncing: boolean;
   lastSyncedAt?: number;
+  /** Whether Drive holds the data encrypted, as of the last sync (undefined: not known). */
+  encrypted?: boolean;
   error?: { kind: SyncErrorKind; message: string };
 };

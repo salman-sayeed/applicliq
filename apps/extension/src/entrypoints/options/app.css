@@ -4,4 +4,5 @@
 /* The settings page's classes (it also uses the dashboard's toast). */
 @source '../../../../../packages/ui/src/settings';
 @source '../../../../../packages/ui/src/import';
+@source '../../../../../packages/ui/src/encryption';
 @source '../../../../../packages/ui/src/dashboard';

@@ -1,35 +1,27 @@
 import {
-  type SyncErrorKind,
+  ENCRYPTED_SYNC_FILE_NAME,
+  type SessionKeyStorage,
   createDriveClient,
+  createEncryptionController,
+  createKeyStore,
   deleteDriveData,
   syncWithDrive,
   toSyncError,
 } from '@applicliq/core';
 import { repo } from './db';
 import { NotSignedInError, dropToken, getToken, isSignedIn, signOut } from './google-auth';
+import { SYNC_STATUS_KEY, type SyncStatus, readSyncStatus } from './sync-status';
+
+export { SYNC_STATUS_KEY, type SyncStatus, readSyncStatus } from './sync-status';
 
 /**
  * Drive sync as run by the background (the one place that syncs, so two pages can't race).
- * Pages read the status from extension storage and ask for a sync with a message.
+ * Pages read the status from extension storage and ask for a sync with a message. The
+ * encryption flows (settings page) use the same Drive clients and key store; every Drive write
+ * is conditional, so they can't overwrite a sync running at the same moment.
  */
 
-export const SYNC_STATUS_KEY = 'syncStatus';
 export const SYNC_DEBOUNCE_MS = 3000;
-
-export type SyncStatus = {
-  syncing: boolean;
-  lastSyncedAt?: number;
-  /** The Google account's email, fetched once after sign-in for the settings page. */
-  account?: string;
-  error?: { kind: SyncErrorKind; message: string; at: number };
-};
-
-export async function readSyncStatus(): Promise<SyncStatus> {
-  const stored = (await browser.storage.local.get(SYNC_STATUS_KEY)) as {
-    [SYNC_STATUS_KEY]?: SyncStatus;
-  };
-  return stored[SYNC_STATUS_KEY] ?? { syncing: false };
-}
 
 async function writeSyncStatus(patch: Partial<SyncStatus>): Promise<SyncStatus> {
   const next = { ...(await readSyncStatus()), ...patch };
@@ -48,6 +40,40 @@ export async function resetSyncStatus(): Promise<void> {
 }
 
 const drive = createDriveClient({ getToken: () => getToken(), onUnauthorized: dropToken });
+const encryptedDrive = createDriveClient({
+  getToken: () => getToken(),
+  onUnauthorized: dropToken,
+  fileName: ENCRYPTED_SYNC_FILE_NAME,
+});
+
+// Kept from the Career Pocket days like the other storage keys.
+const SESSION_KEY = 'career-pocket:encryption-key';
+
+/**
+ * "Remember on this device" off: the key's bytes stay in `storage.session`, which the browser
+ * keeps in memory only (never on disk), clears when it closes, and doesn't share with content
+ * scripts.
+ */
+const sessionKeyStorage: SessionKeyStorage = {
+  async get() {
+    const stored = (await browser.storage.session.get(SESSION_KEY)) as Record<string, unknown>;
+    const value = stored[SESSION_KEY];
+    return typeof value === 'string' ? value : undefined;
+  },
+  set: (raw) => browser.storage.session.set({ [SESSION_KEY]: raw }),
+  remove: () => browser.storage.session.remove(SESSION_KEY),
+};
+
+export const keys = createKeyStore({ session: sessionKeyStorage });
+
+/** Encrypted sync flows for the settings page; call `requestSync()` after each. */
+export const encryption = createEncryptionController({ repo, drive, encryptedDrive, keys });
+
+const syncEncryption = {
+  drive: encryptedDrive,
+  getKey: () => keys.load(),
+  forgetKey: () => keys.clear(),
+};
 
 let running: Promise<boolean> | undefined;
 let again = false;
@@ -87,11 +113,12 @@ async function syncOnce(): Promise<boolean> {
   }
   await writeSyncStatus({ syncing: true });
   try {
-    await syncWithDrive(repo, drive);
+    const result = await syncWithDrive(repo, drive, { encryption: syncEncryption });
     const { account } = await readSyncStatus();
     await writeSyncStatus({
       syncing: false,
       lastSyncedAt: Date.now(),
+      encrypted: result.encrypted,
       error: undefined,
       account: account ?? (await drive.accountEmail().catch(() => undefined)),
     });
@@ -103,6 +130,7 @@ async function syncOnce(): Promise<boolean> {
         : toSyncError(cause);
     await writeSyncStatus({
       syncing: false,
+      ...(error.kind === 'locked' ? { encrypted: true } : {}),
       error: { kind: error.kind, message: error.message, at: Date.now() },
     });
     return false;
@@ -114,8 +142,14 @@ async function syncOnce(): Promise<boolean> {
  * doesn't upload it again. Local jobs are kept.
  */
 export async function deleteDriveDataAndSignOut(): Promise<void> {
-  await deleteDriveData(drive);
+  await deleteDriveData(drive, encryptedDrive);
+  await signOutOfSync();
+}
+
+/** Signs out of sync: forgets the token, the encryption key and the status. */
+export async function signOutOfSync(): Promise<void> {
   await signOut();
+  await keys.clear().catch(() => {});
   await resetSyncStatus();
 }
 

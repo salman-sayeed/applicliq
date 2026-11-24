@@ -97,6 +97,7 @@ describe('syncWithDrive', () => {
       records: 0,
       uploaded: false,
       settingsChanged: false,
+      encrypted: false,
     });
     expect(empty.calls.creates).toBe(0);
 
@@ -105,6 +106,7 @@ describe('syncWithDrive', () => {
       records: 1,
       uploaded: true,
       settingsChanged: false,
+      encrypted: false,
     });
     expect(empty.files.size).toBe(1);
     expect(empty.records()).toEqual([job]);
@@ -208,6 +210,38 @@ describe('syncWithDrive', () => {
     });
     expect(newer.calls.updates + foreign.calls.updates).toBe(0);
     expect(await repo.getJobs()).toHaveLength(1);
+  });
+
+  it.each([
+    ['not JSON', undefined],
+    ['an array', []],
+    ['no schema version', { records: [] }],
+    ['a string schema version', { schemaVersion: '2', records: [] }],
+    ['records not a list', { schemaVersion: 2, records: {} }],
+    ['an older unknown version', { schemaVersion: 0, records: [] }],
+    ['a newer version in another shape', { schemaVersion: 7, data: 'x' }],
+    ['the encrypted-sync marker', { schemaVersion: 3, encrypted: true, records: [] }],
+  ])('stops on a file with %s, says to update and writes nothing', async (_, data) => {
+    const repo = createJobRepository(db, clock);
+    const job = await repo.addJob({ url: 'https://a.test', title: 't', company: 'c' });
+    const remote = fakeDrive([data]);
+    const error = await syncWithDrive(repo, remote.drive, { now: clock }).catch((e) => e);
+    expect(error).toBeInstanceOf(SyncError);
+    expect(['newer-schema', 'invalid-remote']).toContain(error.kind);
+    expect(error.message).toContain('Update AppliCliq to keep syncing');
+    expect(remote.calls).toEqual({ updates: 0, creates: 0, removes: 0 });
+    expect(remote.files.get('f0')!.data).toEqual(data);
+    expect(await repo.getJobs()).toEqual([job]);
+  });
+
+  it('keeps a duplicate file it cannot read instead of deleting it', async () => {
+    const repo = createJobRepository(db, clock);
+    await repo.addJob({ url: 'https://a.test', title: 't', company: 'c' });
+    const future = { schemaVersion: 9, records: [] };
+    const remote = fakeDrive([snapshot([]), future]);
+    await syncWithDrive(repo, remote.drive, { now: clock });
+    expect(remote.calls.removes).toBe(0);
+    expect(remote.files.get('f1')!.data).toEqual(future);
   });
 });
 

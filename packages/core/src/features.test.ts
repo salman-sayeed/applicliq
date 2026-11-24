@@ -18,6 +18,17 @@ describe('feature registry', () => {
     expect(FEATURES.map((f) => f.id)).toEqual([...FEATURE_IDS]);
   });
 
+  it('registers encrypted sync: off by default, synced, no permissions', () => {
+    const feature = FEATURES.find((f) => f.id === 'encryptedSync')!;
+    expect(feature).toMatchObject({
+      defaultEnabled: false,
+      syncScope: 'synced',
+      implemented: true,
+    });
+    expect(needsPermissions(feature)).toBe(false);
+    expect(isFeatureEnabled(DEFAULT_SETTINGS, 'encryptedSync')).toBe(false);
+  });
+
   it('keeps features that need permissions on the device', () => {
     for (const feature of FEATURES.filter(needsPermissions)) {
       expect(feature.syncScope, feature.id).toBe('device');
@@ -25,8 +36,13 @@ describe('feature registry', () => {
   });
 
   it('shows only implemented features, and planned ones are always off', () => {
-    expect(visibleFeatures().map((f) => f.id)).toEqual(['import', 'smartHelpers', 'insights']);
-    expect(isFeatureEnabled(withFeatures({ encryptedSync: true }), 'encryptedSync')).toBe(false);
+    expect(visibleFeatures().map((f) => f.id)).toEqual([
+      'import',
+      'smartHelpers',
+      'insights',
+      'encryptedSync',
+    ]);
+    expect(isFeatureEnabled(withFeatures({ resumeMatch: true }), 'resumeMatch')).toBe(false);
     expect(isFeatureEnabled(DEFAULT_SETTINGS, 'import')).toBe(true);
     expect(isFeatureEnabled(withFeatures({ import: false }), 'import')).toBe(false);
   });
