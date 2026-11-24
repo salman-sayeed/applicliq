@@ -18,7 +18,8 @@ export function jobsToGhost(jobs: readonly Job[], afterDays: number | null, now:
   const cutoff = now - afterDays * DAY_MS;
   return jobs.filter((job) => {
     if (job.status !== 'applied') return false;
-    const since = lastAppliedAt(job) ?? job.updatedAt;
+    // Imported applications get the full wait from the import, not from when they were sent.
+    const since = Math.max(lastAppliedAt(job) ?? job.updatedAt, job.importedAt ?? 0);
     return since < cutoff;
   });
 }

@@ -11,10 +11,13 @@
     sync,
     platform,
     notify,
+    openImport,
   }: SectionProps & {
     sync: SettingsSync;
     platform: SettingsPlatform;
     notify: (message: string, tone?: 'info' | 'error') => void;
+    /** Opens Settings → Import (LinkedIn, CSV); absent when the feature is off. */
+    openImport?: () => void;
   } = $props();
 
   const dateTime = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
@@ -187,6 +190,9 @@
     <button type="button" class={button} disabled={!!working} onclick={() => fileInput?.click()}>
       {working === 'import' ? 'Importing…' : 'Import JSON'}
     </button>
+    {#if openImport}
+      <button type="button" class={button} onclick={openImport}>LinkedIn or CSV…</button>
+    {/if}
   </Field>
 </div>
 

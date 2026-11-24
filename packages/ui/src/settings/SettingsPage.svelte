@@ -7,6 +7,8 @@
     { id: 'appearance', label: 'Appearance', reset: 'appearance' },
     { id: 'regional', label: 'Regional', reset: 'regional' },
     { id: 'statuses', label: 'Statuses & tags', reset: 'labels' },
+    { id: 'features', label: 'Features' },
+    { id: 'import', label: 'Import', feature: 'import' },
     { id: 'data', label: 'Sync & data', reset: 'sync' },
     { id: 'about', label: 'About' },
   ] as const;
@@ -32,6 +34,7 @@
   import AppearanceSection from './sections/AppearanceSection.svelte';
   import AutomationSection from './sections/AutomationSection.svelte';
   import DataSection from './sections/DataSection.svelte';
+  import FeaturesSection from './sections/FeaturesSection.svelte';
   import GoalsSection from './sections/GoalsSection.svelte';
   import JobPagesSection from './sections/JobPagesSection.svelte';
   import LabelsSection from './sections/LabelsSection.svelte';
@@ -63,7 +66,14 @@
   let toast = $state<ToastMessage>();
   let toastTimer: ReturnType<typeof setTimeout> | undefined;
 
+  /** Pages of features that are off are left out of the nav. */
+  const pages = $derived(
+    SETTINGS_PAGES.filter((p) => !('feature' in p) || !settings || prefs.feature(p.feature)),
+  );
   const current = $derived(SETTINGS_PAGES.find((p) => p.id === section) ?? SETTINGS_PAGES[0]);
+  const featureOff = $derived(
+    !!settings && 'feature' in current && !prefs.feature(current.feature),
+  );
   const unavailable = $derived(
     platform.kind === 'web' && 'extensionOnly' in current && current.extensionOnly,
   );
@@ -125,8 +135,8 @@
     if (!['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(event.key)) return;
     event.preventDefault();
     const step = event.key === 'ArrowDown' || event.key === 'ArrowRight' ? 1 : -1;
-    const index = SETTINGS_PAGES.findIndex((p) => p.id === section);
-    const next = SETTINGS_PAGES[(index + step + SETTINGS_PAGES.length) % SETTINGS_PAGES.length]!;
+    const index = pages.findIndex((p) => p.id === section);
+    const next = pages[(index + step + pages.length) % pages.length]!;
     section = next.id;
     document.getElementById(`settings-tab-${next.id}`)?.focus();
   }
@@ -150,7 +160,7 @@
         onkeydown={onNavKey}
         class="flex gap-1 overflow-x-auto px-4 py-2 [scrollbar-width:none] md:flex-col md:overflow-visible md:p-0"
       >
-        {#each SETTINGS_PAGES as page (page.id)}
+        {#each pages as page (page.id)}
           <li role="presentation" class="shrink-0">
             <button
               id="settings-tab-{page.id}"
@@ -228,8 +238,41 @@
             <RegionalSection {settings} {save} />
           {:else if section === 'statuses'}
             <LabelsSection {settings} {save} {usedTags} {renameTag} />
+          {:else if section === 'features'}
+            <FeaturesSection {settings} {save} {platform} {adapter} />
+          {:else if section === 'import'}
+            {#if featureOff}
+              <p class="bg-surface-muted my-3 rounded-md px-3 py-2 text-sm">
+                Import is turned off.
+                <button
+                  type="button"
+                  class="text-accent font-medium hover:underline"
+                  onclick={() => (section = 'features')}
+                >
+                  Turn it on in Features
+                </button>
+              </p>
+            {:else}
+              <!-- Loaded on demand: the parsers (and the zip reader) stay out of other pages. -->
+              {#await import('../import/ImportPage.svelte')}
+                <div class="bg-surface-muted my-4 h-24 animate-pulse rounded-md"></div>
+              {:then { default: ImportPage }}
+                <div><ImportPage {adapter} {jobs} {notify} /></div>
+              {:catch}
+                <p role="alert" class="text-status-rejected py-4 text-sm">
+                  Could not load the import page. Reload and try again.
+                </p>
+              {/await}
+            {/if}
           {:else if section === 'data'}
-            <DataSection {settings} {save} {sync} {platform} {notify} />
+            <DataSection
+              {settings}
+              {save}
+              {sync}
+              {platform}
+              {notify}
+              openImport={prefs.feature('import') ? () => (section = 'import') : undefined}
+            />
           {:else}
             <AboutSection {platform} />
           {/if}

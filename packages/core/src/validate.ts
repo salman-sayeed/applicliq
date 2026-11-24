@@ -22,6 +22,8 @@ export function sanitizeRecord(value: unknown): JobRecord | undefined {
 
   const job = { ...value } as Job;
   delete job.deletedAt;
+  if (job.importedAt !== undefined && !isTime(job.importedAt)) delete job.importedAt;
+  if (job.importBatchId !== undefined && !isText(job.importBatchId)) delete job.importBatchId;
   job.history = history.filter(
     (h): h is StatusChange => isObject(h) && isStatus(h.status) && isTime(h.at),
   );

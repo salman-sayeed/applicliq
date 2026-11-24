@@ -58,7 +58,7 @@
   const features = [
     {
       title: 'Save from any job site',
-      text: 'One click or Alt+Shift+S saves title, company, location and salary from LinkedIn, Indeed, Greenhouse, Lever and most other boards.',
+      text: 'One click or Alt+Shift+S saves title, company, location and salary from LinkedIn, Indeed, Greenhouse, Lever and most other boards, and flags jobs you already saved.',
       icon: 'M12 5v14M5 12h14',
     },
     {
@@ -72,9 +72,9 @@
       icon: 'M12 8v4l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z',
     },
     {
-      title: 'Spot duplicates',
-      text: 'A badge on job pages you already saved, and a heads-up when you have applied to the same company before.',
-      icon: 'M9 12l2 2 4-4M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z',
+      title: 'Bring your history',
+      text: 'Import the jobs you applied to on LinkedIn, or any spreadsheet from Excel, Notion, Huntr or Teal. Duplicates are caught, and one click undoes it.',
+      icon: 'M12 4v11M8 11l4 4 4-4M5 20h14',
     },
     {
       title: 'Synced through your Drive',

@@ -1,4 +1,6 @@
 import { Dexie, type Table, liveQuery } from 'dexie';
+import { type FeatureId, isFeatureEnabled } from './features';
+import type { ImportDraft } from './import/review';
 import { mergeJobs } from './merge';
 import {
   DEFAULT_SETTINGS,
@@ -15,7 +17,14 @@ import {
   splitSettings,
 } from './settings';
 import { SCHEMA_VERSION, type SyncSnapshot } from './sync/drive';
-import { type Job, type JobRecord, type JobStatus, TOMBSTONE_TTL_MS, isLiveJob } from './types';
+import {
+  type Job,
+  type JobRecord,
+  type JobStatus,
+  type StatusChange,
+  TOMBSTONE_TTL_MS,
+  isLiveJob,
+} from './types';
 import { normalizeUrl } from './url';
 import { sanitizeRecords } from './validate';
 
@@ -32,6 +41,11 @@ type SettingsRow = { id: string } & Record<string, unknown>;
 export type LocalState = {
   /** The first-run introduction was shown (or skipped). */
   onboardingDone?: boolean;
+  /**
+   * Features turned off at start-up because the browser no longer grants their permissions;
+   * Settings → Features says so until dismissed.
+   */
+  featuresTurnedOff?: FeatureId[];
 };
 
 // Kept from the Career Pocket days: renaming it would hide every existing user's saved jobs.
@@ -356,8 +370,64 @@ export function createJobRepository(db: AppliCliqDB, now: () => number = Date.no
       return { imported: records.length, skipped, settingsApplied };
     },
 
+    /**
+     * Adds imported jobs in one transaction, all tagged with a new `importBatchId` and
+     * `importedAt`. The date applied becomes `createdAt` and the `applied` history entry; a later
+     * status (interview, rejected...) is recorded at the import, since the file doesn't say when
+     * it changed. Returns the batch id, for undo.
+     */
+    async importJobs(drafts: readonly ImportDraft[]): Promise<{ batchId: string; count: number }> {
+      const at = now();
+      const batchId = `${at.toString(36)}-${crypto.randomUUID().slice(0, 8)}`;
+      const { automation } = await getSettings();
+      const jobs = drafts.map((draft): Job => {
+        const { appliedAt, ...fields } = draft;
+        const created = appliedAt !== undefined && appliedAt <= at ? appliedAt : at;
+        const history: StatusChange[] =
+          fields.status === 'saved' || appliedAt === undefined
+            ? [{ status: fields.status, at: created }]
+            : [{ status: 'applied', at: created }];
+        if (history[0]!.status !== fields.status) history.push({ status: fields.status, at });
+        return {
+          ...fields,
+          url: automation.cleanUrls ? normalizeUrl(fields.url) : fields.url.trim(),
+          company: fields.company.trim(),
+          id: crypto.randomUUID(),
+          history,
+          createdAt: created,
+          updatedAt: at,
+          importedAt: at,
+          importBatchId: batchId,
+        };
+      });
+      await db.jobs.bulkAdd(jobs);
+      return { batchId, count: jobs.length };
+    },
+
+    /**
+     * Undoes an import: deletes the batch's jobs that are still here, as tombstones, so the
+     * deletion syncs like any other. Returns how many were deleted.
+     */
+    async undoImport(batchId: string): Promise<number> {
+      return db.transaction('rw', db.jobs, async () => {
+        const batch = (await db.jobs.toArray()).filter(
+          (r): r is Job => isLiveJob(r) && r.importBatchId === batchId,
+        );
+        const at = now();
+        await db.jobs.bulkPut(
+          batch.map((job) => ({ id: job.id, deletedAt: Math.max(at, job.updatedAt) })),
+        );
+        return batch.length;
+      });
+    },
+
     getSettings,
     updateSettings,
+
+    /** Whether a feature is on (Settings → Features). */
+    async isFeatureEnabled(id: FeatureId): Promise<boolean> {
+      return isFeatureEnabled(await getSettings(), id);
+    },
 
     /** Calls `listener` with the settings now and after every change; returns an unsubscribe. */
     watchSettings(listener: (settings: Settings) => void, onError?: (e: unknown) => void) {
@@ -429,7 +499,13 @@ export function createJobRepository(db: AppliCliqDB, now: () => number = Date.no
 
   async function getLocalState(): Promise<LocalState> {
     const row = await db.settings.get(LOCAL_STATE_ID);
-    return { onboardingDone: row?.onboardingDone === true };
+    const turnedOff = Array.isArray(row?.featuresTurnedOff)
+      ? (row.featuresTurnedOff as unknown[]).filter((id): id is FeatureId => typeof id === 'string')
+      : [];
+    return {
+      onboardingDone: row?.onboardingDone === true,
+      ...(turnedOff.length ? { featuresTurnedOff: turnedOff } : {}),
+    };
   }
 
   async function getSyncedSettings(): Promise<SyncedSettings> {

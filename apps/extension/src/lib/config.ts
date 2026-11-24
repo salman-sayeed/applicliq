@@ -15,9 +15,14 @@ export async function openDashboard(jobId?: string, { onboarding = false } = {})
   await browser.tabs.create({ url: `${url}${hash}` });
 }
 
-/** Opens the settings page (the extension's options page), reusing its tab if open. */
-export async function openSettings(): Promise<void> {
-  await browser.runtime.openOptionsPage();
+/**
+ * Opens the settings page (the extension's options page), reusing its tab if open. With a
+ * `section` (e.g. 'import'), opens a tab on that section.
+ */
+export async function openSettings(section?: string): Promise<void> {
+  if (!section) return browser.runtime.openOptionsPage();
+  const url = browser.runtime.getURL('/options.html');
+  await browser.tabs.create({ url: `${url}#${encodeURIComponent(section)}` });
 }
 
 /** The save shortcut as the browser shows it, e.g. "Alt+Shift+S"; undefined if unset. */

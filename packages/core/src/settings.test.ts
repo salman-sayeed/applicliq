@@ -137,8 +137,12 @@ describe('split / combine', () => {
         sitesWithBadgeOff: [],
         openIn: 'popup',
       },
+      // Features that need browser permissions stay on the device that granted them.
+      features: { autofill: false, gmailSuggestions: false },
     });
     expect(synced.jobPages).toEqual({ duplicateWarning: true, toolbarBadge: 'today' });
+    expect(synced.features).toMatchObject({ import: true });
+    expect(synced.features).not.toHaveProperty('autofill');
     expect(combineSettings(synced, device)).toEqual(settings);
   });
 
@@ -209,5 +213,15 @@ describe('helpers', () => {
     expect(siteHost('https://www.Greenhouse.io/x')).toBe('greenhouse.io');
     expect(siteHost('boards.greenhouse.io')).toBe('boards.greenhouse.io');
     expect(siteHost('not a site')).toBe('');
+  });
+});
+
+describe('features', () => {
+  it('defaults from the registry and ignores invalid values', () => {
+    expect(DEFAULT_SETTINGS.features.import).toBe(true);
+    expect(DEFAULT_SETTINGS.features.autofill).toBe(false);
+    const s = sanitizeSettings({ version: 1, features: { import: false, insights: 'yes' } });
+    expect(s.features.import).toBe(false);
+    expect(s.features.insights).toBe(false);
   });
 });

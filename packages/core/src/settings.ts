@@ -1,3 +1,10 @@
+import {
+  DEFAULT_FEATURES,
+  DEVICE_FEATURE_IDS,
+  FEATURE_IDS,
+  type FeatureId,
+  type FeatureSettings,
+} from './features';
 import { canonical } from './merge';
 import { APPLIED_STATUSES } from './stats';
 import { JOB_STATUSES, type JobStatus, type SalaryPeriod } from './types';
@@ -109,6 +116,8 @@ export type Settings = {
     resumeVersions: string[];
   };
   sync: { syncIntervalMinutes: number };
+  /** Feature switches (see `features.ts`); device-scoped ones are in `DEVICE_KEYS`. */
+  features: FeatureSettings;
 };
 
 export type SettingsSection = Exclude<keyof Settings, 'version' | 'updatedAt'>;
@@ -123,6 +132,7 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
   'regional',
   'labels',
   'sync',
+  'features',
 ];
 
 export const SYNC_INTERVALS = [5, 15, 30, 60] as const;
@@ -168,6 +178,7 @@ export const DEFAULT_SETTINGS: Settings = {
   regional: { currency: '', salaryPeriod: 'year', dateFormat: 'system' },
   labels: { statusLabels: {}, hiddenStatuses: [], tags: [], resumeVersions: [] },
   sync: { syncIntervalMinutes: 15 },
+  features: { ...DEFAULT_FEATURES },
 };
 
 /** Keys kept on this device only; everything else syncs through Drive. */
@@ -179,6 +190,7 @@ export const DEVICE_KEYS: { readonly [K in SettingsSection]?: readonly (keyof Se
     'quietHours',
   ],
   jobPages: ['showBadge', 'badgePosition', 'sitesWithBadgeOff', 'openIn'],
+  features: DEVICE_FEATURE_IDS,
 };
 
 export function isDeviceKey<K extends SettingsSection>(
@@ -357,6 +369,10 @@ export const SETTINGS_SCHEMA: {
     resumeVersions: textList(100, 60),
   },
   sync: { syncIntervalMinutes: int(5, 24 * 60) },
+  features: Object.fromEntries(FEATURE_IDS.map((id) => [id, bool])) as Record<
+    FeatureId,
+    Check<boolean>
+  >,
 };
 
 /**

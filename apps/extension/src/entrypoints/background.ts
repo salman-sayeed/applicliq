@@ -4,6 +4,7 @@ import { repo } from '@/lib/db';
 import type { BackgroundMessage } from '@/lib/messages';
 import { DRAFT_FIELDS, type DraftField, isDraftField } from '@applicliq/core';
 import { drafts } from '@/lib/draft';
+import { reconcileFeaturePermissions } from '@/lib/features';
 import { applyOpenIn, toggleSidebar } from '@/lib/open-in';
 import { setPendingLink } from '@/lib/pending-link';
 import { setTabDraftField } from '@/lib/tab-draft';
@@ -105,6 +106,7 @@ export default defineBackground(() => {
   const onStart = () => {
     void drafts.purgeExpired().catch(() => {});
     void reconcilePageBadge();
+    void reconcileFeaturePermissions().catch(() => {});
     void refresh({ ghost: true });
     void syncAndRefresh();
   };
@@ -157,7 +159,11 @@ export default defineBackground(() => {
 
   // The page badge setting follows the all-sites permission, which the browser can also change.
   browser.permissions.onAdded.addListener(() => void reconcilePageBadge());
-  browser.permissions.onRemoved.addListener(() => void reconcilePageBadge());
+  browser.permissions.onRemoved.addListener(() => {
+    void reconcilePageBadge();
+    // Features whose permissions were taken away in the browser's settings turn off too.
+    void reconcileFeaturePermissions().catch(() => {});
+  });
 
   // Tab URLs are only visible with the optional all-sites permission (the page badge setting),
   // so without it this returns at once. SPA navigations report a new `url` without a reload.

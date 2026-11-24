@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { replaceState } from '$app/navigation';
+  import { goto, replaceState } from '$app/navigation';
   import { resolve } from '$app/paths';
   import { page } from '$app/state';
   import { onMount } from 'svelte';
@@ -25,6 +25,8 @@
     if (sync.signedIn) return startAutoSync();
   });
 
+  // eslint-disable-next-line svelte/no-navigation-without-resolve -- a resolved path plus a hash
+  const openImport = () => void goto(`${resolve('/app/settings')}#import`);
   const onSignIn = () => void startSignIn();
   const onSignOut = () => void startSignOut();
 </script>
@@ -45,7 +47,7 @@
 {/snippet}
 
 {#if sync.signedIn}
-  <Dashboard adapter={dashboardAdapter} {onboarding}>
+  <Dashboard adapter={dashboardAdapter} {onboarding} onimport={openImport}>
     {#snippet header()}
       {@render brand()}
       <div class="ml-auto flex items-center gap-2">

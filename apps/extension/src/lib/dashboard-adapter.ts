@@ -21,6 +21,8 @@ export const dashboardAdapter: DashboardAdapter = {
   updateSettings: notifying(repo.updateSettings),
   resetSettingsSection: notifying(repo.resetSettingsSection),
   renameTag: notifying(repo.renameTag),
+  importJobs: notifying(repo.importJobs),
+  undoImport: notifying(repo.undoImport),
   getLocalState: repo.getLocalState,
   setLocalState: repo.setLocalState,
 };
