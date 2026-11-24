@@ -41,8 +41,10 @@ describe('feature registry', () => {
       'smartHelpers',
       'insights',
       'encryptedSync',
+      'resumeMatch',
     ]);
-    expect(isFeatureEnabled(withFeatures({ resumeMatch: true }), 'resumeMatch')).toBe(false);
+    expect(isFeatureEnabled(withFeatures({ autofill: true }), 'autofill')).toBe(false);
+    expect(isFeatureEnabled(DEFAULT_SETTINGS, 'resumeMatch')).toBe(true);
     expect(isFeatureEnabled(DEFAULT_SETTINGS, 'import')).toBe(true);
     expect(isFeatureEnabled(withFeatures({ import: false }), 'import')).toBe(false);
   });

@@ -19,8 +19,6 @@
   let statusError = $state<string>();
   let tagText = $state('');
   let tagError = $state<string>();
-  let resumeText = $state('');
-  let resumeError = $state<string>();
 
   /** Tags with a colour first (in their order), then other tags in use. */
   const tags = $derived.by(() => {
@@ -88,19 +86,6 @@
     tagText = '';
     if (tags.some((t) => t.name.toLowerCase() === name.toLowerCase())) return;
     void save({ labels: { tags: [...labels.tags, { name, color: 'blue' }] } });
-  }
-
-  function addResume(event: SubmitEvent) {
-    event.preventDefault();
-    const name = resumeText.trim();
-    if (!name || name.length > 60) {
-      resumeError = 'Resume names need 1 to 60 characters.';
-      return;
-    }
-    resumeError = undefined;
-    resumeText = '';
-    if (labels.resumeVersions.some((r) => r.toLowerCase() === name.toLowerCase())) return;
-    void save({ labels: { resumeVersions: [...labels.resumeVersions, name] } });
   }
 
   const sub = 'text-ink-muted mb-1 text-xs font-semibold tracking-wide uppercase';
@@ -194,42 +179,5 @@
   <form class="flex gap-2" onsubmit={addTag}>
     <input class="{input} w-48" placeholder="New tag" aria-label="New tag" bind:value={tagText} />
     <button type="submit" class={button} disabled={!tagText.trim()}>Add tag</button>
-  </form>
-</section>
-
-<section class="py-4" aria-labelledby="resumes-heading">
-  <h3 id="resumes-heading" class={sub}>Resume versions</h3>
-  <p class="text-ink-muted mb-3 text-xs">Offered when you pick a resume version on a job.</p>
-  {#if resumeError}<p role="alert" class="text-status-rejected mb-2 text-xs">{resumeError}</p>{/if}
-  {#if labels.resumeVersions.length}
-    <ul class="mb-3 flex flex-wrap gap-2">
-      {#each labels.resumeVersions as version (version)}
-        <li
-          class="border-line inline-flex items-center gap-1 rounded-md border py-0.5 pr-1 pl-2 text-sm"
-        >
-          {version}
-          <button
-            type="button"
-            aria-label="Remove {version}"
-            onclick={() =>
-              save({
-                labels: { resumeVersions: labels.resumeVersions.filter((r) => r !== version) },
-              })}
-            class="text-ink-muted hover:text-ink focus-visible:ring-accent rounded px-1 focus-visible:ring-2 focus-visible:outline-none"
-          >
-            ×
-          </button>
-        </li>
-      {/each}
-    </ul>
-  {/if}
-  <form class="flex gap-2" onsubmit={addResume}>
-    <input
-      class="{input} w-48"
-      placeholder="e.g. frontend-v3"
-      aria-label="New resume version"
-      bind:value={resumeText}
-    />
-    <button type="submit" class={button} disabled={!resumeText.trim()}>Add</button>
   </form>
 </section>

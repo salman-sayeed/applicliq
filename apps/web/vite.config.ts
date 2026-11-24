@@ -49,6 +49,8 @@ export default defineConfig({
       },
     }),
   ],
+  // Resume match's web worker loads the skills dictionary with a dynamic import.
+  worker: { format: 'es' },
   // Workspace packages ship TypeScript source, so Vite must transform them for SSR/prerender too.
   ssr: {
     noExternal: [/^@applicliq\//],

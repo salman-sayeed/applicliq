@@ -7,6 +7,7 @@ export * from './smart/red-flags';
 export * from './smart/templates';
 export * from './ics';
 export * from './merge';
+export * from './resumes';
 export * from './query';
 export * from './reminders';
 export * from './settings';

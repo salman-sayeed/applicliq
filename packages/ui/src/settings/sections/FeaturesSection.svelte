@@ -24,15 +24,17 @@
     platform: SettingsPlatform;
     adapter: DashboardAdapter;
     /** Opens a feature's own settings page. */
-    onoptions?: (page: 'helpers' | 'notifications' | 'data') => void;
+    onoptions?: (page: 'helpers' | 'notifications' | 'data' | 'resumes') => void;
   } = $props();
 
   /** Where a feature's options live, if it has a page of them. */
-  const OPTIONS: Partial<Record<FeatureId, { page: 'helpers' | 'notifications'; label: string }>> =
-    {
-      smartHelpers: { page: 'helpers', label: 'Options and templates' },
-      insights: { page: 'notifications', label: 'Weekly recap time' },
-    };
+  const OPTIONS: Partial<
+    Record<FeatureId, { page: 'helpers' | 'notifications' | 'resumes'; label: string }>
+  > = {
+    smartHelpers: { page: 'helpers', label: 'Options and templates' },
+    insights: { page: 'notifications', label: 'Weekly recap time' },
+    resumeMatch: { page: 'resumes', label: 'Your resumes and skills to ignore' },
+  };
 
   function subValue(sub: SubToggle): boolean {
     return (settings[sub.section] as Record<string, unknown>)[sub.key] === true;

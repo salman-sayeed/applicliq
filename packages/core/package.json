@@ -10,6 +10,10 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./match": {
+      "types": "./src/match/index.ts",
+      "default": "./src/match/index.ts"
     }
   },
   "scripts": {

@@ -333,6 +333,7 @@ describe('parseSnapshot', () => {
       records: [],
       skipped: 0,
       settings: undefined,
+      resumes: [],
     });
   });
 });

@@ -54,6 +54,8 @@ export default defineConfig({
   },
   vite: () => ({
     plugins: [tailwindcss()],
+    // Resume match's web worker loads the skills dictionary with a dynamic import.
+    worker: { format: 'es' },
   }),
   manifest: ({ browser, manifestVersion, mode }) => {
     // OAuth client IDs etc. come from apps/extension/.env (see .env.example and

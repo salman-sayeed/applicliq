@@ -2,6 +2,7 @@
   import {
     type Goals,
     type Job,
+    type Resume,
     type Settings,
     type JobFilter,
     type JobPatch,
@@ -67,6 +68,7 @@
   // Plain objects, not deep proxies: they are replaced wholesale on every change and are handed
   // back to the adapter (IndexedDB cannot store proxies).
   let jobs = $state.raw<Job[]>([]);
+  let resumes = $state.raw<Resume[]>([]);
   let loaded = $state(false);
   let loadError = $state<string>();
   let settings = $state.raw<Settings>();
@@ -113,6 +115,29 @@
       (error) => reportError('load your settings', error),
     ),
   );
+
+  $effect(() => adapter.watchResumes((next) => (resumes = next)));
+
+  /** Resume match → "Ignore this skill": added to the synced ignore list. */
+  function ignoreSkill(skill: string) {
+    const list = settings?.resumes.ignoredSkills ?? [];
+    if (list.some((s) => s.toLowerCase() === skill.toLowerCase())) return;
+    adapter
+      .updateSettings({ resumes: { ignoredSkills: [...list, skill] } })
+      .then(() =>
+        showToast({
+          message: `“${skill}” won't be flagged again.`,
+          action: {
+            label: 'Undo',
+            run: () =>
+              void adapter
+                .updateSettings({ resumes: { ignoredSkills: list } })
+                .catch((error: unknown) => reportError('update the ignore list', error)),
+          },
+        }),
+      )
+      .catch((error: unknown) => reportError('update the ignore list', error));
+  }
 
   // First run: introduce the app once, while there's nothing saved yet.
   $effect(() => {
@@ -335,6 +360,9 @@
       onclose={() => (selectedId = undefined)}
       onfollowup={() => (followUpId = selected.id)}
       oncompare={() => (comparing = [selected.id])}
+      {resumes}
+      onignore={ignoreSkill}
+      onresumes={onsettings && (() => onsettings('resumes'))}
     />
   {/key}
 {/if}

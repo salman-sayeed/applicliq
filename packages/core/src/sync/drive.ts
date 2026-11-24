@@ -1,5 +1,5 @@
 import type { SyncedSettings } from '../settings';
-import type { JobRecord } from '../types';
+import type { JobRecord, ResumeRecord } from '../types';
 
 /**
  * Minimal Google Drive v3 client for the hidden appDataFolder, over plain `fetch`.
@@ -76,6 +76,13 @@ export type SyncSnapshot = {
    * and older versions drop it when they upload; the next sync from a newer device adds it back.
    */
   settings?: SyncedSettings;
+  /**
+   * Resumes (Resume match), only when resume sync is on (`resumeSyncEnabled`); left out when
+   * there are none. Older versions drop it when they upload, like `settings`; the next sync from
+   * a device with resume sync on adds it back (its local copy still has every resume and
+   * tombstone).
+   */
+  resumes?: ResumeRecord[];
 };
 
 export type DriveClientOptions = {

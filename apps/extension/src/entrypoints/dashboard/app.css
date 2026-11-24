@@ -3,3 +3,4 @@
 
 /* The dashboard components' classes; only pages that render the dashboard need them. */
 @source '../../../../../packages/ui/src/dashboard';
+@source '../../../../../packages/ui/src/match';

@@ -148,6 +148,18 @@ export type Settings = {
     weeklyRecapDay: WeekDay;
     weeklyRecapTime: TimeOfDay;
   };
+  /** Resumes and Resume match (feature `resumeMatch`). */
+  resumes: {
+    /**
+     * Sync resume text to Google Drive. `null` = not chosen: on when encrypted sync is on, off
+     * otherwise (see `resumeSyncEnabled`).
+     */
+    sync: boolean | null;
+    /** The resume Resume match uses when a job has none linked; '' = none. */
+    defaultResumeId: string;
+    /** Skills never flagged as missing (lowercase matching), e.g. "communication". */
+    ignoredSkills: string[];
+  };
   /** Feature switches (see `features.ts`); device-scoped ones are in `DEVICE_KEYS`. */
   features: FeatureSettings;
 };
@@ -166,6 +178,7 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
   'sync',
   'helpers',
   'insights',
+  'resumes',
   'features',
 ];
 
@@ -225,6 +238,7 @@ export const DEFAULT_SETTINGS: Settings = {
     offers: true,
   },
   insights: { weeklyRecap: true, weeklyRecapDay: 'sun', weeklyRecapTime: '20:00' },
+  resumes: { sync: null, defaultResumeId: '', ignoredSkills: [] },
   features: { ...DEFAULT_FEATURES },
 };
 
@@ -452,6 +466,11 @@ export const SETTINGS_SCHEMA: {
     weeklyRecapDay: oneOf(WEEK_DAYS),
     weeklyRecapTime: time,
   },
+  resumes: {
+    sync: (v) => (v === null ? null : bool(v)),
+    defaultResumeId: text(100),
+    ignoredSkills: textList(500, 80),
+  },
   features: Object.fromEntries(FEATURE_IDS.map((id) => [id, bool])) as Record<
     FeatureId,
     Check<boolean>
@@ -509,6 +528,12 @@ export function sanitizeSettings(input: unknown, fallback: Settings = DEFAULT_SE
       clean[key] = value === undefined ? structuredClone(base[key]) : value;
     }
     (out as Record<string, unknown>)[section] = clean;
+  }
+  // Resume match was listed as a planned feature (always off, hidden) before it was built, and
+  // settings saved then hold its default `false`. Settings without a `resumes` section come from
+  // those versions, where that value was never the user's choice: use the current default.
+  if (isObject(input) && !isObject(raw.resumes) && isObject(raw.features)) {
+    out.features.resumeMatch = DEFAULT_FEATURES.resumeMatch;
   }
   return out;
 }

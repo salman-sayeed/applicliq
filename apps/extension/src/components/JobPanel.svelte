@@ -3,6 +3,7 @@
     type Job,
     type JobStatus,
     type PostingDates,
+    type Resume,
     draftKey,
     findDuplicates,
     isHelperEnabled,
@@ -73,6 +74,10 @@
   let windowId = $state<number>();
   /** Encrypted sync waits for this device to be unlocked. */
   let syncLocked = $state(false);
+  /** Resume match: the user's resumes, and the description read from this page. */
+  let resumes = $state.raw<Resume[]>([]);
+  let pageDescription = $state<string>();
+  let matchOpen = $state(false);
 
   /** The page the form belongs to: its URL keys the draft. */
   let page = $state.raw<{ url: string; tabId?: number }>();
@@ -181,6 +186,7 @@
     const existing = await repo.getJobByUrl(url);
     if (run !== loadRun) return;
     posting = stored?.posting ?? extracted?.posting;
+    pageDescription = stored?.descriptionSnapshot ?? extracted?.job.descriptionSnapshot;
     pageRead = !link && !!(stored || extracted);
     duplicate = undefined;
 
@@ -295,6 +301,29 @@
     if (surface === 'popup') window.close();
   }
 
+  /** Resume match → "Ignore this skill". */
+  async function ignoreSkill(skill: string) {
+    const list = prefs.settings.resumes.ignoredSkills;
+    if (list.some((s) => s.toLowerCase() === skill.toLowerCase())) return;
+    try {
+      prefs.settings = await repo.updateSettings({
+        resumes: { ignoredSkills: [...list, skill] },
+      });
+      notifyJobsChanged();
+    } catch {
+      error = 'Could not update the ignore list.';
+    }
+  }
+
+  /** The text Resume match compares: the form's, the saved job's, or the page's. */
+  const matchDescription = $derived(
+    view.kind === 'form'
+      ? draft.descriptionSnapshot || pageDescription
+      : view.kind === 'saved'
+        ? view.job.descriptionSnapshot || pageDescription
+        : undefined,
+  );
+
   function moveToSidebar() {
     // Open first: the browser allows it only inside the click. The draft write is already
     // queued before the sidebar reads it.
@@ -360,6 +389,7 @@
     // Opening the panel pulls changes from other devices (no-op when signed out).
     requestSync();
     void readSyncStatus().then((status) => (syncLocked = isLocked(status)));
+    const stopResumes = repo.watchResumes((next) => (resumes = next));
     void loadRecent();
     void load().catch(() => (view = { kind: 'unsupported' }));
     void getSaveShortcut().then((value) => (shortcut = value));
@@ -383,6 +413,7 @@
       browser.tabs.onUpdated.addListener(onUpdated);
     }
     return () => {
+      stopResumes();
       browser.storage.onChanged.removeListener(onStorageChanged);
       window.removeEventListener('blur', onBlur);
       browser.tabs.onActivated.removeListener(onActivated);
@@ -546,6 +577,25 @@
       {/if}
     </div>
   {/key}
+
+  {#if (view.kind === 'form' || view.kind === 'saved') && prefs.feature('resumeMatch')}
+    <!-- Loaded on demand: the matcher and its skills dictionary stay out of the popup bundle. -->
+    {#await import('@applicliq/ui/resume-match') then { default: ResumeMatch }}
+      <div class="border-line border-t pt-3">
+        <ResumeMatch
+          compact
+          bind:open={matchOpen}
+          description={matchDescription}
+          {resumes}
+          jobResumeId={view.kind === 'saved' ? view.job.resumeId : undefined}
+          defaultResumeId={prefs.settings.resumes.defaultResumeId}
+          ignored={prefs.settings.resumes.ignoredSkills}
+          onignore={ignoreSkill}
+          onaddresume={() => openSettings('resumes')}
+        />
+      </div>
+    {/await}
+  {/if}
 
   {#if error && view.kind !== 'form'}
     <p role="alert" class="text-status-rejected -mt-2 text-xs">{error}</p>

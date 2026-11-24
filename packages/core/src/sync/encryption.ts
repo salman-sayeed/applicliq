@@ -11,6 +11,7 @@ import {
   unwrapDataKey,
 } from '../crypto/envelope';
 import type { KeyStore } from '../crypto/key-store';
+import { resumeSyncEnabled } from '../resumes';
 import type { JobRepository } from '../storage';
 import {
   type DriveClient,
@@ -76,12 +77,17 @@ export function createEncryptionController(deps: EncryptionDeps) {
     return dek;
   }
 
+  /** This device's data as a Drive snapshot; resumes only when resume sync is on. */
   async function plainSnapshot(): Promise<SyncSnapshot> {
+    const resumes = resumeSyncEnabled(await repo.getSettings())
+      ? await repo.mergeResumesIntoLocal([])
+      : [];
     return {
       schemaVersion: SCHEMA_VERSION,
       updatedAt: now(),
       records: await repo.mergeIntoLocal([]),
       settings: await repo.getSyncedSettings(),
+      ...(resumes.length ? { resumes } : {}),
     };
   }
 
@@ -208,6 +214,9 @@ export function createEncryptionController(deps: EncryptionDeps) {
         const remote = parseSnapshot(JSON.parse(await openFile(file, dek)));
         await repo.mergeIntoLocal(remote.records);
         await repo.mergeSettingsIntoLocal(remote.settings);
+        // Resumes come down too; whether they go back up in plain text is the resume setting's
+        // call (by default: no, once encryption is off).
+        if (remote.resumes.length) await repo.mergeResumesIntoLocal(remote.resumes);
         await repo.updateSettings({ features: { encryptedSync: false } });
 
         const [primary, ...extras] = await drive.list();

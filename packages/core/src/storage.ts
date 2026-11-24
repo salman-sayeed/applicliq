@@ -1,7 +1,14 @@
 import { Dexie, type Table, liveQuery } from 'dexie';
 import { type FeatureId, isFeatureEnabled } from './features';
 import type { ImportDraft } from './import/review';
-import { mergeJobs } from './merge';
+import { mergeJobs, mergeRecords } from './merge';
+import {
+  copyName,
+  linkResumeLabels,
+  MAX_RESUME_NAME,
+  MAX_RESUME_TEXT,
+  sanitizeResumeRecords,
+} from './resumes';
 import { mergeDuplicateJobs, pairKey } from './smart/duplicates';
 import {
   DEFAULT_SETTINGS,
@@ -22,9 +29,12 @@ import {
   type Job,
   type JobRecord,
   type JobStatus,
+  type Resume,
+  type ResumeRecord,
   type StatusChange,
   TOMBSTONE_TTL_MS,
   isLiveJob,
+  isLiveResume,
 } from './types';
 import { normalizeUrl } from './url';
 import { sanitizeRecords } from './validate';
@@ -57,6 +67,7 @@ export const LEGACY_DB_NAME = 'pocket-career';
 export class AppliCliqDB extends Dexie {
   jobs!: Table<JobRecord, string>;
   settings!: Table<SettingsRow, string>;
+  resumes!: Table<ResumeRecord, string>;
 
   /** `legacyName`: a database to take the data from once (the default DB adopts the old one). */
   constructor(
@@ -74,6 +85,12 @@ export class AppliCliqDB extends Dexie {
     this.version(3).stores({
       jobs: 'id, url, *alternateUrls, company, status, updatedAt, deletedAt',
       settings: 'id',
+    });
+    // 4: resumes (Resume match), with tombstones like jobs.
+    this.version(4).stores({
+      jobs: 'id, url, *alternateUrls, company, status, updatedAt, deletedAt',
+      settings: 'id',
+      resumes: 'id, updatedAt, deletedAt',
     });
     // Runs before the first query; queries wait for it.
     if (legacyName) this.on('ready', () => adoptLegacyDatabase(this, legacyName));
@@ -123,6 +140,8 @@ export type JobPatch = Partial<
   Omit<Job, 'id' | 'history' | 'createdAt' | 'updatedAt' | 'deletedAt'>
 >;
 
+export type ResumePatch = Partial<Pick<Resume, 'name' | 'text'>>;
+
 export type ImportResult = {
   /** Valid records read from the file (jobs and tombstones). */
   imported: number;
@@ -147,6 +166,44 @@ export function createJobRepository(db: AppliCliqDB, now: () => number = Date.no
       await db.jobs.clear();
       await db.jobs.bulkPut(merged);
       return merged;
+    });
+  }
+
+  /** Live resumes, by name. */
+  async function getResumes(): Promise<Resume[]> {
+    const all = (await db.resumes.toArray()).filter(isLiveResume);
+    return all.sort((a, b) => a.name.localeCompare(b.name) || a.createdAt - b.createdAt);
+  }
+
+  /** Merges resume records from elsewhere (Drive, a backup) into the local store. */
+  async function mergeResumesIntoLocal(incoming: ResumeRecord[]): Promise<ResumeRecord[]> {
+    return db.transaction('rw', db.resumes, async () => {
+      const merged = mergeRecords(await db.resumes.toArray(), incoming, now());
+      await db.resumes.clear();
+      await db.resumes.bulkPut(merged);
+      return merged;
+    });
+  }
+
+  /**
+   * Links jobs whose old free-text resume label names a resume (case-insensitive), dropping the
+   * label. Run whenever a resume is added or renamed. Returns how many jobs changed.
+   */
+  async function linkResumeVersions(): Promise<number> {
+    return db.transaction('rw', db.jobs, db.resumes, async () => {
+      const links = linkResumeLabels(
+        await db.jobs.toArray(),
+        (await db.resumes.toArray()).filter(isLiveResume),
+      );
+      const at = now();
+      await db.jobs.bulkPut(
+        links.map(({ job, resumeId }) => {
+          const next: Job = { ...job, resumeId, updatedAt: Math.max(at, job.updatedAt + 1) };
+          delete next.resumeVersion;
+          return next;
+        }),
+      );
+      return links.length;
     });
   }
 
@@ -365,10 +422,15 @@ export function createJobRepository(db: AppliCliqDB, now: () => number = Date.no
 
     /** Deletes tombstones at least `ttl` old (30 days by default). Returns how many. */
     async purgeOldTombstones(ttl: number = TOMBSTONE_TTL_MS): Promise<number> {
-      return db.jobs
+      const jobs = await db.jobs
         .where('deletedAt')
         .belowOrEqual(now() - ttl)
         .delete();
+      const resumes = await db.resumes
+        .where('deletedAt')
+        .belowOrEqual(now() - ttl)
+        .delete();
+      return jobs + resumes;
     },
 
     /** Every record, tombstones included. Used by sync and export. */
@@ -382,11 +444,14 @@ export function createJobRepository(db: AppliCliqDB, now: () => number = Date.no
      * so importing it on another device also propagates deletions.
      */
     async exportJSON(): Promise<string> {
+      const resumes = await db.resumes.toArray();
       const snapshot: SyncSnapshot = {
         schemaVersion: SCHEMA_VERSION,
         updatedAt: now(),
         records: await getAllRecords(),
         settings: await getSyncedSettings(),
+        // A backup is the user's own file: resumes are in it whatever the Drive setting says.
+        ...(resumes.length ? { resumes } : {}),
       };
       return JSON.stringify(snapshot, null, 2);
     },
@@ -414,6 +479,8 @@ export function createJobRepository(db: AppliCliqDB, now: () => number = Date.no
       }
       const { records, skipped } = sanitizeRecords(snapshot.records);
       await mergeIntoLocal(records);
+      const resumes = sanitizeResumeRecords(snapshot.resumes);
+      if (resumes.length) await mergeResumesIntoLocal(resumes);
       let settingsApplied = false;
       if (snapshot.settings !== undefined) {
         settingsApplied = (await mergeSettingsIntoLocal(snapshot.settings)).changed;
@@ -452,6 +519,8 @@ export function createJobRepository(db: AppliCliqDB, now: () => number = Date.no
         };
       });
       await db.jobs.bulkAdd(jobs);
+      // An imported "resume name" that matches a resume links to it.
+      await linkResumeVersions();
       return { batchId, count: jobs.length };
     },
 
@@ -474,6 +543,111 @@ export function createJobRepository(db: AppliCliqDB, now: () => number = Date.no
 
     getSettings,
     updateSettings,
+
+    // --- Resumes (Resume match) ---------------------------------------------------------------
+
+    getResumes,
+
+    /** Calls `listener` with the live resumes now and after every change; returns an unsubscribe. */
+    watchResumes(listener: (resumes: Resume[]) => void, onError?: (e: unknown) => void) {
+      const subscription = liveQuery(getResumes).subscribe({
+        next: listener,
+        error: (error: unknown) => onError?.(error),
+      });
+      return () => subscription.unsubscribe();
+    },
+
+    async getResume(id: string): Promise<Resume | undefined> {
+      const record = await db.resumes.get(id);
+      return record && isLiveResume(record) ? record : undefined;
+    },
+
+    /** Adds a resume; jobs labelled with its name get linked to it. */
+    async addResume(input: { name: string; text?: string }): Promise<Resume> {
+      const at = now();
+      const resume: Resume = {
+        id: crypto.randomUUID(),
+        name: input.name.trim().slice(0, MAX_RESUME_NAME) || 'Resume',
+        text: (input.text ?? '').slice(0, MAX_RESUME_TEXT),
+        createdAt: at,
+        updatedAt: at,
+      };
+      await db.resumes.add(resume);
+      await linkResumeVersions();
+      return resume;
+    },
+
+    /** Renames or edits a resume (bumps `updatedAt`); a new name links matching jobs. */
+    async updateResume(id: string, patch: ResumePatch): Promise<Resume> {
+      const next = await db.transaction('rw', db.resumes, async () => {
+        const current = await db.resumes.get(id);
+        if (!current || !isLiveResume(current)) throw new Error('That resume no longer exists.');
+        const changes: ResumePatch = {};
+        if (patch.name !== undefined) {
+          changes.name = patch.name.trim().slice(0, MAX_RESUME_NAME) || current.name;
+        }
+        if (patch.text !== undefined) changes.text = patch.text.slice(0, MAX_RESUME_TEXT);
+        const updated: Resume = {
+          ...current,
+          ...changes,
+          updatedAt: Math.max(now(), current.updatedAt + 1),
+        };
+        await db.resumes.put(updated);
+        return updated;
+      });
+      if (patch.name !== undefined) await linkResumeVersions();
+      return next;
+    },
+
+    /** A copy of a resume, named "… (copy)". */
+    async duplicateResume(id: string): Promise<Resume> {
+      return db.transaction('rw', db.resumes, async () => {
+        const current = await db.resumes.get(id);
+        if (!current || !isLiveResume(current)) throw new Error('That resume no longer exists.');
+        const at = now();
+        const copy: Resume = {
+          id: crypto.randomUUID(),
+          name: copyName(current.name, await getResumes()),
+          text: current.text,
+          createdAt: at,
+          updatedAt: at,
+        };
+        await db.resumes.add(copy);
+        return copy;
+      });
+    },
+
+    /** Replaces a resume with a tombstone. Jobs keep their link (undo brings it back). */
+    async deleteResume(id: string): Promise<boolean> {
+      return db.transaction('rw', db.resumes, async () => {
+        const current = await db.resumes.get(id);
+        if (!current || !isLiveResume(current)) return false;
+        await db.resumes.put({ id, deletedAt: Math.max(now(), current.updatedAt) });
+        return true;
+      });
+    },
+
+    /** Undoes `deleteResume`, dated after the deletion so the restore wins when synced. */
+    async restoreResume(resume: Resume): Promise<Resume> {
+      return db.transaction('rw', db.resumes, async () => {
+        const current = await db.resumes.get(resume.id);
+        if (current && isLiveResume(current)) return current;
+        const after = current ? current.deletedAt + 1 : 0;
+        const restored: Resume = {
+          ...resume,
+          updatedAt: Math.max(now(), after, resume.updatedAt + 1),
+        };
+        delete restored.deletedAt;
+        await db.resumes.put(restored);
+        return restored;
+      });
+    },
+
+    /** Every resume record, tombstones included. Used by sync and export. */
+    getAllResumeRecords: () => db.resumes.toArray(),
+
+    mergeResumesIntoLocal,
+    linkResumeVersions,
 
     /** Whether a feature is on (Settings → Features). */
     async isFeatureEnabled(id: FeatureId): Promise<boolean> {
@@ -539,11 +713,12 @@ export function createJobRepository(db: AppliCliqDB, now: () => number = Date.no
       });
     },
 
-    /** Empties this device's copy: jobs, settings and app state. Drive is not touched. */
+    /** Empties this device's copy: jobs, resumes, settings and app state. Drive is not touched. */
     async clearLocalData(): Promise<void> {
-      await db.transaction('rw', db.jobs, db.settings, async () => {
+      await db.transaction('rw', db.jobs, db.settings, db.resumes, async () => {
         await db.jobs.clear();
         await db.settings.clear();
+        await db.resumes.clear();
       });
     },
   };

@@ -9,6 +9,7 @@
     { id: 'statuses', label: 'Statuses & tags', reset: 'labels' },
     { id: 'features', label: 'Features' },
     { id: 'helpers', label: 'Smart helpers', reset: 'helpers', feature: 'smartHelpers' },
+    { id: 'resumes', label: 'Resumes', reset: 'resumes', feature: 'resumeMatch' },
     { id: 'import', label: 'Import', feature: 'import' },
     { id: 'data', label: 'Sync & data', reset: 'sync' },
     { id: 'about', label: 'About' },
@@ -42,6 +43,7 @@
   import LabelsSection from './sections/LabelsSection.svelte';
   import NotificationsSection from './sections/NotificationsSection.svelte';
   import RegionalSection from './sections/RegionalSection.svelte';
+  import ResumesSection from './sections/ResumesSection.svelte';
   import { button } from './styles';
   import type { SettingsPlatform, SettingsSync } from './types';
 
@@ -262,6 +264,28 @@
               </p>
             {:else}
               <HelpersSection {settings} {save} onfeatures={() => (section = 'features')} />
+            {/if}
+          {:else if section === 'resumes'}
+            {#if featureOff}
+              <p class="bg-surface-muted my-3 rounded-md px-3 py-2 text-sm">
+                Resume match is turned off.
+                <button
+                  type="button"
+                  class="text-accent font-medium hover:underline"
+                  onclick={() => (section = 'features')}
+                >
+                  Turn it on in Features
+                </button>
+              </p>
+            {:else}
+              <ResumesSection
+                {settings}
+                {save}
+                {adapter}
+                {jobs}
+                {notify}
+                ondata={() => (section = 'data')}
+              />
             {/if}
           {:else if section === 'import'}
             {#if featureOff}

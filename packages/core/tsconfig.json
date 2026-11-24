@@ -7,5 +7,5 @@
     "outDir": "dist",
     "types": ["node"]
   },
-  "include": ["src", "vitest.config.ts"]
+  "include": ["src", "src/**/*.json", "vitest.config.ts"]
 }
