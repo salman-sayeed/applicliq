@@ -27,6 +27,10 @@
 
   // eslint-disable-next-line svelte/no-navigation-without-resolve -- a resolved path plus a hash
   const openImport = () => void goto(`${resolve('/app/settings')}#import`);
+  // eslint-disable-next-line svelte/no-navigation-without-resolve -- a resolved path plus a hash
+  const openSettings = (section: string) => void goto(`${resolve('/app/settings')}#${section}`);
+  // `/app#view=insights` opens the Insights tab.
+  const initialView = page.url.hash === '#view=insights' ? ('insights' as const) : undefined;
   const onSignIn = () => void startSignIn();
   const onSignOut = () => void startSignOut();
 </script>
@@ -47,7 +51,14 @@
 {/snippet}
 
 {#if sync.signedIn}
-  <Dashboard adapter={dashboardAdapter} {onboarding} onimport={openImport}>
+  <Dashboard
+    adapter={dashboardAdapter}
+    {onboarding}
+    {initialView}
+    logoUrl={logo}
+    onimport={openImport}
+    onsettings={openSettings}
+  >
     {#snippet header()}
       {@render brand()}
       <div class="ml-auto flex items-center gap-2">

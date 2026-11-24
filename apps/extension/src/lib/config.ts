@@ -6,12 +6,21 @@ export const SITE_URL = 'https://applicliq.pages.dev';
 export const ISSUES_URL = `${GITHUB_URL}/issues/new`;
 
 /**
- * Opens the dashboard extension page in a new tab, optionally on one job's details or with the
- * introduction shown again.
+ * Opens the dashboard extension page in a new tab, optionally on one job's details, on a view
+ * (e.g. Insights) or with the introduction shown again.
  */
-export async function openDashboard(jobId?: string, { onboarding = false } = {}): Promise<void> {
+export async function openDashboard(
+  jobId?: string,
+  { onboarding = false, view }: { onboarding?: boolean; view?: 'insights' } = {},
+): Promise<void> {
   const url = browser.runtime.getURL('/dashboard.html');
-  const hash = jobId ? `#job=${encodeURIComponent(jobId)}` : onboarding ? '#onboarding' : '';
+  const hash = jobId
+    ? `#job=${encodeURIComponent(jobId)}`
+    : view
+      ? `#view=${view}`
+      : onboarding
+        ? '#onboarding'
+        : '';
   await browser.tabs.create({ url: `${url}${hash}` });
 }
 

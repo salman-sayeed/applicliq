@@ -2,6 +2,7 @@
   import {
     type FeatureDefinition,
     type FeatureId,
+    type SubToggle,
     getFeature,
     isFeatureEnabled,
     needsPermissions,
@@ -18,7 +19,28 @@
     save,
     platform,
     adapter,
-  }: SectionProps & { platform: SettingsPlatform; adapter: DashboardAdapter } = $props();
+    onoptions,
+  }: SectionProps & {
+    platform: SettingsPlatform;
+    adapter: DashboardAdapter;
+    /** Opens a feature's own settings page. */
+    onoptions?: (page: 'helpers' | 'notifications') => void;
+  } = $props();
+
+  /** Where a feature's options live, if it has a page of them. */
+  const OPTIONS: Partial<Record<FeatureId, { page: 'helpers' | 'notifications'; label: string }>> =
+    {
+      smartHelpers: { page: 'helpers', label: 'Options and templates' },
+      insights: { page: 'notifications', label: 'Weekly recap time' },
+    };
+
+  function subValue(sub: SubToggle): boolean {
+    return (settings[sub.section] as Record<string, unknown>)[sub.key] === true;
+  }
+
+  function setSub(sub: SubToggle, value: boolean) {
+    void save({ [sub.section]: { [sub.key]: value } });
+  }
 
   const features = visibleFeatures();
   let errors = $state<Partial<Record<FeatureId, string>>>({});
@@ -115,6 +137,35 @@
           <p>No extra permissions. Works on this device, and offline.</p>
         {/if}
       </div>
+      {#if on && feature.subToggles?.length}
+        <ul class="border-line mt-3 space-y-2.5 border-t pt-3" aria-label="{feature.name} parts">
+          {#each feature.subToggles as sub (sub.key)}
+            {@const subUsable = (sub.platforms ?? feature.platforms).includes(platform.kind)}
+            <li class="flex items-start justify-between gap-4 {subUsable ? '' : 'opacity-60'}">
+              <div class="min-w-0">
+                <p class="text-sm">{sub.name}</p>
+                <p class="text-ink-muted text-xs leading-relaxed">
+                  {sub.description}{subUsable ? '' : ' In the browser extension.'}
+                </p>
+              </div>
+              <Toggle
+                label={sub.name}
+                checked={subValue(sub)}
+                onchange={(value) => setSub(sub, value)}
+              />
+            </li>
+          {/each}
+        </ul>
+        {#if OPTIONS[feature.id] && onoptions && (OPTIONS[feature.id]!.page !== 'notifications' || platform.kind === 'extension')}
+          <button
+            type="button"
+            class="text-accent mt-3 text-xs font-medium hover:underline"
+            onclick={() => onoptions(OPTIONS[feature.id]!.page)}
+          >
+            {OPTIONS[feature.id]!.label} →
+          </button>
+        {/if}
+      {/if}
       {#if errors[feature.id]}
         <p role="alert" class="text-status-rejected mt-2 text-xs">{errors[feature.id]}</p>
       {/if}

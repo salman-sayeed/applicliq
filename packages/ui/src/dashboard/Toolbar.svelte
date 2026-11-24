@@ -24,6 +24,15 @@
 
   const prefs = getPrefs();
 
+  const views = $derived([
+    ['list', 'List'],
+    ['board', 'Board'],
+    ['stats', 'Stats'],
+    ...(prefs.feature('insights') ? [['insights', 'Insights']] : []),
+  ] as [DashboardView, string][]);
+  /** Stats and Insights cover every job, so the filters are hidden there. */
+  const filtered = $derived(view === 'list' || view === 'board');
+
   const active = $derived(
     !!(filter.query?.trim() || filter.status || filter.tag || filter.source || filter.workType),
   );
@@ -38,7 +47,7 @@
 
 <div class="flex flex-wrap items-center gap-2">
   <!-- Goals and stats always cover every job, so filters only apply to the list and board. -->
-  {#if view !== 'stats'}
+  {#if filtered}
     <div class="relative min-w-48 flex-1 sm:max-w-xs">
       <svg
         class="text-ink-muted pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2"
@@ -110,11 +119,13 @@
   {/if}
 
   <div
-    class="border-line flex rounded-md border p-0.5 {view === 'stats' ? 'ml-auto' : ''}"
+    class="border-line flex max-w-full overflow-x-auto rounded-md border p-0.5 {filtered
+      ? ''
+      : 'ml-auto'}"
     role="group"
     aria-label="View"
   >
-    {#each [['list', 'List'], ['board', 'Board'], ['stats', 'Stats']] as const as [value, label] (value)}
+    {#each views as [value, label] (value)}
       <button
         type="button"
         aria-pressed={view === value}

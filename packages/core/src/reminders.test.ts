@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  lastWeeklyTime,
+  nextWeeklyTime,
   REMINDER_MAX_AGE_MS,
   dailyGoalBadge,
   dueReminders,
@@ -173,5 +175,24 @@ describe('times of day', () => {
     expect(inQuietHours(at(12), null)).toBe(false);
     expect(quietHoursEnd(at(23), quiet)).toBe(new Date(2026, 10, 20, 7).getTime());
     expect(quietHoursEnd(at(12), quiet)).toBe(at(12));
+  });
+});
+
+describe('weekly times', () => {
+  // Sunday 14 June 2026, local time.
+  const sunday = (h: number, m = 0) => new Date(2026, 5, 14, h, m).getTime();
+
+  it("finds this week's and next week's recap time", () => {
+    expect(lastWeeklyTime(sunday(21), 0, '20:00')).toBe(sunday(20));
+    expect(lastWeeklyTime(sunday(20), 0, '20:00')).toBe(sunday(20));
+    expect(lastWeeklyTime(sunday(19), 0, '20:00')).toBe(new Date(2026, 5, 7, 20).getTime());
+    expect(nextWeeklyTime(sunday(19), 0, '20:00')).toBe(sunday(20));
+    expect(nextWeeklyTime(sunday(20), 0, '20:00')).toBe(new Date(2026, 5, 21, 20).getTime());
+  });
+
+  it('works for other weekdays', () => {
+    // Monday 9:30 → the last one was Monday the 8th; the next is Monday the 15th.
+    expect(lastWeeklyTime(sunday(12), 1, '09:30')).toBe(new Date(2026, 5, 8, 9, 30).getTime());
+    expect(nextWeeklyTime(sunday(12), 1, '09:30')).toBe(new Date(2026, 5, 15, 9, 30).getTime());
   });
 });

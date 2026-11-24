@@ -271,3 +271,28 @@ describe('purgeTombstones', () => {
     expect(purgeTombstones([tomb('a', NOW - 10)], NOW, 50)).toHaveLength(1);
   });
 });
+
+describe('mergeJobs with merged duplicates and offers', () => {
+  it('carries alternate URLs and offers with the winning version', () => {
+    const offer = { base: 100, currency: 'EUR', period: 'year' as const, benefits: ['Gym'] };
+    const local = job('a', 1);
+    const remote = job('a', 2, { alternateUrls: ['https://board.test/a'], offer });
+    const [merged] = mergeJobs([local], [remote], NOW);
+    expect(merged).toEqual(remote);
+    // And an older remote copy doesn't bring them back after a local edit removed them.
+    expect(mergeJobs([job('a', 3)], [remote], NOW)).toEqual([job('a', 3)]);
+  });
+
+  it('propagates the tombstone of a merged-away duplicate', () => {
+    const kept = job('keep', 5, { alternateUrls: ['https://example.com/jobs/other'] });
+    const gone = tomb('other', NOW - 1);
+    const merged = mergeJobs([kept, gone], [job('keep', 1), job('other', 2)], NOW);
+    expect(sorted(merged)).toEqual([kept, gone]);
+  });
+
+  it('is order independent for equal timestamps with different offers', () => {
+    const a = job('a', 1, { offer: { base: 1 } });
+    const b = job('a', 1, { offer: { base: 2 } });
+    expect(mergeJobs([a], [b], NOW)).toEqual(mergeJobs([b], [a], NOW));
+  });
+});

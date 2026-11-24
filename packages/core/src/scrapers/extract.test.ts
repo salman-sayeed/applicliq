@@ -267,3 +267,38 @@ describe('extractJob: robustness', () => {
     expect(() => extractJob(doc, new URL('https://www.linkedin.com/jobs/view/1/'))).not.toThrow();
   });
 });
+
+describe('extractJob: posting dates', () => {
+  const page = (body: string) => new DOMParser().parseFromString(body, 'text/html');
+  const now = new Date(2026, 5, 15, 12).getTime();
+
+  it('reads datePosted and validThrough from JSON-LD', () => {
+    const doc = page(
+      `<script type="application/ld+json">${JSON.stringify({
+        '@type': 'JobPosting',
+        title: 'Dev',
+        hiringOrganization: 'Acme',
+        datePosted: '2026-04-01',
+        validThrough: '2026-06-01T00:00:00Z',
+      })}</script>`,
+    );
+    const { posting } = extractJob(doc, new URL('https://acme.test/jobs/1'), now);
+    expect(posting).toEqual({
+      datePosted: new Date(2026, 3, 1).getTime(),
+      validThrough: Date.UTC(2026, 5, 1),
+    });
+  });
+
+  it('reads LinkedIn\'s "x days ago" line', () => {
+    const doc = page(`<h1 class="top-card-layout__title">Dev</h1>
+      <a class="topcard__org-name-link">Acme</a>
+      <span class="posted-time-ago__text">2 weeks ago</span>`);
+    const result = extractJob(doc, new URL('https://www.linkedin.com/jobs/view/1/'), now);
+    expect(result.posting).toEqual({ datePosted: now - 14 * 86_400_000 });
+  });
+
+  it('leaves posting out when the page gives no dates', () => {
+    const doc = page('<title>Dev at Acme</title>');
+    expect(extractJob(doc, new URL('https://a.test'), now)).not.toHaveProperty('posting');
+  });
+});

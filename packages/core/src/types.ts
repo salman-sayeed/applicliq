@@ -24,6 +24,26 @@ export type Salary = {
 
 export type StatusChange = { status: JobStatus; at: number };
 
+/** Offer pay is compared per month and per year only. */
+export type OfferPeriod = 'month' | 'year';
+
+/** The details of an offer (Smart helpers → Offer comparison). */
+export type Offer = {
+  /** Base pay, per `period`. */
+  base?: number;
+  /** ISO 4217 code. */
+  currency?: string;
+  period?: OfferPeriod;
+  bonus?: string;
+  equity?: string;
+  benefits?: string[];
+  startDate?: number;
+  /** When the offer must be answered; a reminder comes a day before. */
+  deadline?: number;
+  pros?: string;
+  cons?: string;
+};
+
 export type Job = {
   id: string;
   url: string;
@@ -42,6 +62,12 @@ export type Job = {
   interviewAt?: number;
   followUpAt?: number;
   descriptionSnapshot?: string;
+  /**
+   * Other postings of the same job (e.g. the company's own site and LinkedIn), kept when two
+   * saved jobs were merged. `getJobByUrl` matches these too.
+   */
+  alternateUrls?: string[];
+  offer?: Offer;
   /**
    * Set on jobs brought in by an import (LinkedIn, CSV): when it ran. Imported applications count
    * toward stats but not toward goals or streaks, and the ghosting clock starts here.

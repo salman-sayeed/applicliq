@@ -41,6 +41,15 @@ TRACK EVERY APPLICATION
 • Jobs with no reply are marked "ghosted" automatically after a few weeks (you choose when)
 • Daily and weekly goals, streaks and a funnel of where your applications end up
 
+SMART HELPERS AND INSIGHTS (worked out on your device)
+• A "Heads up" note on old or closed postings, missing salaries and companies you applied to
+  recently
+• The same job saved from two sites is spotted, and merged with one click
+• Follow-up messages from templates, and a list of applications waiting on one
+• Offers side by side, with a reminder the day before each deadline
+• Response rates and reply times by source and work type, a weekly recap, and a shareable card
+  of your numbers (never company names)
+
 PRIVATE BY DESIGN
 • No account, no server, no ads, no tracking or analytics
 • Your jobs are stored in your browser

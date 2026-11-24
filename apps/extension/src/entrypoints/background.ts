@@ -2,7 +2,13 @@ import { flashBadge } from '@/lib/badge';
 import { SAVE_SHORTCUT_COMMAND, openDashboard } from '@/lib/config';
 import { repo } from '@/lib/db';
 import type { BackgroundMessage } from '@/lib/messages';
-import { DRAFT_FIELDS, type DraftField, isDraftField } from '@applicliq/core';
+import {
+  DRAFT_FIELDS,
+  type DraftField,
+  findDuplicates,
+  isDraftField,
+  isHelperEnabled,
+} from '@applicliq/core';
 import { drafts } from '@/lib/draft';
 import { reconcileFeaturePermissions } from '@/lib/features';
 import { applyOpenIn, toggleSidebar } from '@/lib/open-in';
@@ -13,6 +19,7 @@ import {
   ALARM_SYNC,
   ensureAlarms,
   handleGoalNotificationClick,
+  handleRecapNotificationClick,
   jobIdFromNotification,
   reconcilePageBadge,
   refresh,
@@ -151,6 +158,7 @@ export default defineBackground(() => {
 
   browser.notifications.onClicked.addListener((notificationId) => {
     if (handleGoalNotificationClick(notificationId)) return;
+    if (handleRecapNotificationClick(notificationId)) return;
     const jobId = jobIdFromNotification(notificationId);
     if (!jobId) return;
     void openDashboard(jobId);
@@ -192,7 +200,17 @@ async function saveFromShortcut(tabId?: number) {
     if (!(await openPopup())) await flashBadge('!', '#d97706', 'Open AppliCliq to save');
     return;
   }
-  const { automation } = await repo.getSettings();
+  const settings = await repo.getSettings();
+  const { automation } = settings;
+  // A job that looks like one saved from another site: the popup asks whether to merge.
+  if (isHelperEnabled(settings, 'duplicates')) {
+    const options = { notDuplicates: settings.helpers.notDuplicatePairs };
+    const candidate = { title: job.title, company: job.company };
+    if (findDuplicates(candidate, await repo.getJobs(), options).length) {
+      if (!(await openPopup())) await flashBadge('!', '#d97706', 'Open AppliCliq to save');
+      return;
+    }
+  }
   const saved = { ...job, url: job.url, title: job.title, company: job.company };
   if (!automation.saveDescriptionSnapshot) delete saved.descriptionSnapshot;
   await repo.addJob({ ...saved, status: automation.defaultSaveStatus });

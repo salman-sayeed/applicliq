@@ -1,4 +1,5 @@
 import type { Salary, SalaryPeriod } from '../types';
+import { parsePostingDate } from '../smart/red-flags';
 import { cleanText, htmlToText } from './text';
 import type { ExtractedFields } from './types';
 
@@ -195,6 +196,8 @@ export function parseJobPostingJsonLd(
       location: decode(parseLocation(posting), doc),
       description: description?.trim() ? htmlToText(description, doc) : undefined,
       salary: parseSalary(posting),
+      datePosted: parsePostingDate(posting.datePosted),
+      validThrough: parsePostingDate(posting.validThrough),
       workType: /TELECOMMUTE|REMOTE/i.test(locationType)
         ? 'remote'
         : /HYBRID/i.test(locationType)

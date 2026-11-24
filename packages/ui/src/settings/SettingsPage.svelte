@@ -8,6 +8,7 @@
     { id: 'regional', label: 'Regional', reset: 'regional' },
     { id: 'statuses', label: 'Statuses & tags', reset: 'labels' },
     { id: 'features', label: 'Features' },
+    { id: 'helpers', label: 'Smart helpers', reset: 'helpers', feature: 'smartHelpers' },
     { id: 'import', label: 'Import', feature: 'import' },
     { id: 'data', label: 'Sync & data', reset: 'sync' },
     { id: 'about', label: 'About' },
@@ -36,6 +37,7 @@
   import DataSection from './sections/DataSection.svelte';
   import FeaturesSection from './sections/FeaturesSection.svelte';
   import GoalsSection from './sections/GoalsSection.svelte';
+  import HelpersSection from './sections/HelpersSection.svelte';
   import JobPagesSection from './sections/JobPagesSection.svelte';
   import LabelsSection from './sections/LabelsSection.svelte';
   import NotificationsSection from './sections/NotificationsSection.svelte';
@@ -239,7 +241,28 @@
           {:else if section === 'statuses'}
             <LabelsSection {settings} {save} {usedTags} {renameTag} />
           {:else if section === 'features'}
-            <FeaturesSection {settings} {save} {platform} {adapter} />
+            <FeaturesSection
+              {settings}
+              {save}
+              {platform}
+              {adapter}
+              onoptions={(id) => (section = id)}
+            />
+          {:else if section === 'helpers'}
+            {#if featureOff}
+              <p class="bg-surface-muted my-3 rounded-md px-3 py-2 text-sm">
+                Smart helpers are turned off.
+                <button
+                  type="button"
+                  class="text-accent font-medium hover:underline"
+                  onclick={() => (section = 'features')}
+                >
+                  Turn them on in Features
+                </button>
+              </p>
+            {:else}
+              <HelpersSection {settings} {save} onfeatures={() => (section = 'features')} />
+            {/if}
           {:else if section === 'import'}
             {#if featureOff}
               <p class="bg-surface-muted my-3 rounded-md px-3 py-2 text-sm">

@@ -77,6 +77,21 @@
       icon: 'M12 4v11M8 11l4 4 4-4M5 20h14',
     },
     {
+      title: 'A heads-up before you apply',
+      text: 'Notes on old or closed postings, missing salaries and companies you applied to recently, and the same job saved from two sites merged into one.',
+      icon: 'M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z',
+    },
+    {
+      title: 'Follow-ups and offers',
+      text: 'Follow-up messages from templates, a list of applications waiting on one, and offers compared side by side with deadline reminders.',
+      icon: 'M4 6h16v12H4zM4 7l8 6 8-6',
+    },
+    {
+      title: 'Insights you can share',
+      text: 'Response rates and reply times by source and work type, a weekly recap, and a card of your numbers to share (never company names).',
+      icon: 'M4 20V10M10 20V4M16 20v-7M22 20H2',
+    },
+    {
       title: 'Synced through your Drive',
       text: 'Your jobs sync between browsers through a hidden folder in your own Google Drive. No account with us, no server.',
       icon: 'M7 18a5 5 0 0 1-.9-9.9A6 6 0 0 1 17.7 7 4.5 4.5 0 0 1 17 18z',

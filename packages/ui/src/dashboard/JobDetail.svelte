@@ -21,6 +21,7 @@
     toDateInput,
     toDateTimeInput,
   } from './format';
+  import OfferSection from './smart/OfferSection.svelte';
   import TagInput from './TagInput.svelte';
   import Timeline from './Timeline.svelte';
 
@@ -30,12 +31,18 @@
     onupdate,
     ondelete,
     onclose,
+    onfollowup,
+    oncompare,
   }: {
     job: Job;
     facets: { tags: string[]; resumeVersions: string[] };
     onupdate: (patch: JobPatch) => Promise<unknown>;
     ondelete: () => void;
     onclose: () => void;
+    /** Opens the follow-up templates (Smart helpers). */
+    onfollowup?: () => void;
+    /** Opens the offer comparison (Smart helpers). */
+    oncompare?: () => void;
   } = $props();
 
   type Draft = {
@@ -83,6 +90,14 @@
   }
 
   const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+
+  function hostOf(url: string): string {
+    try {
+      return new URL(url).hostname.replace(/^www\./, '');
+    } catch {
+      return url;
+    }
+  }
 
   const prefs = getPrefs();
   const regional = $derived(prefs.settings.regional);
@@ -245,16 +260,27 @@
 
     <section>
       <label class={labelClass} for="d-status">Status</label>
-      <select
-        id="d-status"
-        class={inputClass}
-        bind:value={draft.status}
-        onchange={() => commit({ status: draft.status })}
-      >
-        {#each prefs.statuses(job.status) as status (status)}
-          <option value={status}>{prefs.status(status)}</option>
-        {/each}
-      </select>
+      <div class="flex gap-2">
+        <select
+          id="d-status"
+          class={inputClass}
+          bind:value={draft.status}
+          onchange={() => commit({ status: draft.status })}
+        >
+          {#each prefs.statuses(job.status) as status (status)}
+            <option value={status}>{prefs.status(status)}</option>
+          {/each}
+        </select>
+        {#if onfollowup && prefs.feature('smartHelpers') && prefs.settings.helpers.followUps}
+          <button
+            type="button"
+            onclick={onfollowup}
+            class="border-line hover:bg-surface-muted focus-visible:ring-accent shrink-0 rounded-md border px-3 text-sm font-medium whitespace-nowrap transition focus-visible:ring-2 focus-visible:outline-none"
+          >
+            Follow up
+          </button>
+        {/if}
+      </div>
     </section>
 
     <section class="space-y-3">
@@ -286,6 +312,19 @@
           bind:value={draft.url}
           onchange={() => commitRequired('url', 'URL')}
         />
+        {#if job.alternateUrls?.length}
+          <p class="text-ink-muted mt-1 text-xs">
+            Also posted at:
+            {#each job.alternateUrls as alt, i (alt)}
+              {#if i > 0},{/if}
+              {#if /^https?:\/\//.test(alt)}
+                <a href={alt} target="_blank" rel="noreferrer" class="text-accent hover:underline">
+                  {hostOf(alt)}
+                </a>
+              {:else}{alt}{/if}
+            {/each}
+          </p>
+        {/if}
       </div>
       <div class="grid grid-cols-[1fr_8rem] gap-2">
         <div>
@@ -454,6 +493,10 @@
         />
       </div>
     </section>
+
+    {#if prefs.feature('smartHelpers') && prefs.settings.helpers.offers}
+      <OfferSection {job} {onupdate} {oncompare} />
+    {/if}
 
     <section>
       <label class={sectionTitle + ' block'} for="d-notes">Notes</label>

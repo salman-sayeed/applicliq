@@ -137,9 +137,12 @@ describe('split / combine', () => {
         sitesWithBadgeOff: [],
         openIn: 'popup',
       },
+      // The weekly recap is a notification, like the other notification settings.
+      insights: { weeklyRecap: true, weeklyRecapDay: 'sun', weeklyRecapTime: '20:00' },
       // Features that need browser permissions stay on the device that granted them.
       features: { autofill: false, gmailSuggestions: false },
     });
+    expect(synced.helpers).toMatchObject({ notDuplicatePairs: [], redFlags: true });
     expect(synced.jobPages).toEqual({ duplicateWarning: true, toolbarBadge: 'today' });
     expect(synced.features).toMatchObject({ import: true });
     expect(synced.features).not.toHaveProperty('autofill');
@@ -220,8 +223,61 @@ describe('features', () => {
   it('defaults from the registry and ignores invalid values', () => {
     expect(DEFAULT_SETTINGS.features.import).toBe(true);
     expect(DEFAULT_SETTINGS.features.autofill).toBe(false);
-    const s = sanitizeSettings({ version: 1, features: { import: false, insights: 'yes' } });
+    const s = sanitizeSettings({ version: 1, features: { import: false, autofill: 'yes' } });
     expect(s.features.import).toBe(false);
-    expect(s.features.insights).toBe(false);
+    expect(s.features.autofill).toBe(false);
+    expect(s.features.smartHelpers).toBe(true);
+    expect(s.features.insights).toBe(true);
+  });
+});
+
+describe('helpers and insights', () => {
+  it('has default templates and ignores invalid values', () => {
+    expect(DEFAULT_SETTINGS.helpers.followUpTemplates.map((t) => t.name)).toEqual([
+      'Checking on my application',
+      'Thank you after interview',
+      'Following up after no response',
+    ]);
+    const s = sanitizeSettings({
+      version: 1,
+      helpers: { oldPostingDays: 0, appliedBeforeDays: 45, myName: '  Sam  ', offers: 'no' },
+      insights: { weeklyRecapDay: 'someday', weeklyRecapTime: '21:30' },
+    });
+    expect(s.helpers).toMatchObject({
+      oldPostingDays: 30,
+      appliedBeforeDays: 45,
+      myName: 'Sam',
+      offers: true,
+    });
+    expect(s.insights).toEqual({
+      weeklyRecap: true,
+      weeklyRecapDay: 'sun',
+      weeklyRecapTime: '21:30',
+    });
+  });
+
+  it('cleans templates: drops nameless ones, fills missing ids, keeps unique ids', () => {
+    const s = sanitizeSettings({
+      version: 1,
+      helpers: {
+        followUpTemplates: [
+          { id: 'a', name: 'One', subject: ' Hi ', body: 'Body' },
+          { id: 'a', name: 'Two', body: 'Other' },
+          { name: '', body: 'No name' },
+          { name: 'Three', body: 'x' },
+          'junk',
+        ],
+      },
+    });
+    expect(s.helpers.followUpTemplates).toEqual([
+      { id: 'a', name: 'One', subject: 'Hi', body: 'Body' },
+      { id: 'a-1', name: 'Two', subject: '', body: 'Other' },
+      { id: 't3', name: 'Three', subject: '', body: 'x' },
+    ]);
+  });
+
+  it('allows an empty template list (all deleted)', () => {
+    const s = sanitizeSettings({ version: 1, helpers: { followUpTemplates: [] } });
+    expect(s.helpers.followUpTemplates).toEqual([]);
   });
 });

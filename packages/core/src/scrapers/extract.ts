@@ -1,4 +1,5 @@
 import type { Job, Salary, WorkType } from '../types';
+import { type PostingDates, parseRelativePosted } from '../smart/red-flags';
 import { normalizeUrl } from '../url';
 import { extractJsonLd } from './json-ld';
 import { extractMeta } from './meta';
@@ -61,7 +62,7 @@ function attempt<T>(fn: () => T): T | undefined {
  * 3. Open Graph / meta tags / `<title>`.
  * Work type and salary currency are then filled in from the page text if still missing.
  */
-export function extractJob(doc: Document, url: URL): ExtractedJob {
+export function extractJob(doc: Document, url: URL, now: number = Date.now()): ExtractedJob {
   const adapter: SiteAdapter | undefined = attempt(() => findAdapter(url));
   const found: { [F in Field]?: { value: Values[F]; trust: number } } = {};
   const sources = new Set<string>();
@@ -78,8 +79,12 @@ export function extractJob(doc: Document, url: URL): ExtractedJob {
     sources.add(source);
   }
 
+  const posting: PostingDates = {};
+
   function offerFields(fields: ExtractedFields | undefined, trust: number, source: string) {
     if (!fields) return;
+    posting.datePosted ??= fields.datePosted ?? parseRelativePosted(fields.postedText, now);
+    posting.validThrough ??= fields.validThrough;
     const trustOf = (f: keyof ExtractedFields) =>
       fields.guessed?.includes(f) ? Math.min(trust, TRUST.guessed) : trust;
     offer('title', cleanText(fields.title), trustOf('title'), source);
@@ -143,5 +148,15 @@ export function extractJob(doc: Document, url: URL): ExtractedJob {
     confidence += WEIGHTS[field] * (found[field]?.trust ?? 0);
   }
 
-  return { job, confidence: Math.round(confidence * 100) / 100, sources: [...sources] };
+  const result: ExtractedJob = {
+    job,
+    confidence: Math.round(confidence * 100) / 100,
+    sources: [...sources],
+  };
+  if (posting.datePosted !== undefined || posting.validThrough !== undefined) {
+    result.posting = Object.fromEntries(
+      Object.entries(posting).filter(([, v]) => v !== undefined),
+    ) as PostingDates;
+  }
+  return result;
 }

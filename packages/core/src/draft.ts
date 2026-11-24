@@ -1,4 +1,5 @@
 import { detectWorkType, parseSalary } from './scrapers/text';
+import type { PostingDates } from './smart/red-flags';
 import type { Job, SalaryPeriod, WorkType } from './types';
 import type { Settings } from './settings';
 import type { NewJob } from './storage';
@@ -19,6 +20,8 @@ export type Draft = {
   /** Carried through unchanged from extraction. */
   source?: string;
   descriptionSnapshot?: string;
+  /** The posting's dates, for the "Heads up" notes (not saved with the job). */
+  posting?: PostingDates;
 };
 
 /** `defaults` (the regional settings) fill the currency and period the page didn't give. */

@@ -1,5 +1,6 @@
 import { daysSince, lastAppliedAt } from './history';
 import type { QuietHours, TimeOfDay, ToolbarBadgeMode } from './settings';
+import { OFFER_DEADLINE_NOTICE_MS } from './smart/offers';
 import { firstAppliedAt } from './stats';
 import type { Job, JobStatus } from './types';
 
@@ -27,7 +28,7 @@ export function jobsToGhost(jobs: readonly Job[], afterDays: number | null, now:
 // ---------------------------------------------------------------------------------------------
 // Follow-up and interview reminders
 
-export type ReminderKind = 'followUp' | 'interview';
+export type ReminderKind = 'followUp' | 'interview' | 'offerDeadline';
 
 export type Reminder = {
   /** Stable per job, kind and due time: rescheduling a reminder makes it due again. */
@@ -44,6 +45,8 @@ export type ReminderOptions = {
   followUps?: boolean;
   /** Minutes before an interview; null = no interview reminders. Default 0 (at the time). */
   interviewOffsetMinutes?: number | null;
+  /** A reminder a day before an offer's deadline (Smart helpers → Offers). Default false. */
+  offerDeadlines?: boolean;
 };
 
 /** Reminders older than this are dropped rather than shown late (e.g. browser closed a week). */
@@ -59,7 +62,7 @@ function reminderKey(jobId: string, kind: ReminderKind, at: number): string {
 /** Every reminder set on an open job, due or not. */
 export function allReminders(
   jobs: readonly Job[],
-  { followUps = true, interviewOffsetMinutes = 0 }: ReminderOptions = {},
+  { followUps = true, interviewOffsetMinutes = 0, offerDeadlines = false }: ReminderOptions = {},
 ): Reminder[] {
   const reminders: Reminder[] = [];
   for (const job of jobs) {
@@ -71,6 +74,11 @@ export function allReminders(
     if (interviewOffsetMinutes !== null && job.interviewAt !== undefined) {
       const at = job.interviewAt - interviewOffsetMinutes * 60_000;
       reminders.push({ key: reminderKey(job.id, 'interview', at), kind: 'interview', job, at });
+    }
+    if (offerDeadlines && job.offer?.deadline !== undefined) {
+      const at = job.offer.deadline - OFFER_DEADLINE_NOTICE_MS;
+      const kind = 'offerDeadline';
+      reminders.push({ key: reminderKey(job.id, kind, at), kind, job, at });
     }
   }
   return reminders;
@@ -193,4 +201,36 @@ export function inQuietHours(now: number, quiet: QuietHours | null): boolean {
 /** When notifications may show again: `now` outside quiet hours, else the window's end. */
 export function quietHoursEnd(now: number, quiet: QuietHours | null): number {
   return inQuietHours(now, quiet) && quiet ? nextTimeOfDay(now, quiet.end) : now;
+}
+
+/**
+ * The latest moment at or before `now` when it was `time` on weekday `day` (0 = Sunday), local
+ * time: when this week's weekly recap was due.
+ */
+export function lastWeeklyTime(now: number, day: number, time: TimeOfDay): number {
+  const minutes = minutesOf(time);
+  const d = new Date(now);
+  const back = (d.getDay() - day + 7) % 7;
+  const candidate = new Date(
+    d.getFullYear(),
+    d.getMonth(),
+    d.getDate() - back,
+    0,
+    minutes,
+  ).getTime();
+  if (candidate <= now) return candidate;
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() - back - 7, 0, minutes).getTime();
+}
+
+/** The next moment after `now` when it is `time` on weekday `day` (0 = Sunday), local time. */
+export function nextWeeklyTime(now: number, day: number, time: TimeOfDay): number {
+  const last = lastWeeklyTime(now, day, time);
+  const d = new Date(last);
+  return new Date(
+    d.getFullYear(),
+    d.getMonth(),
+    d.getDate() + 7,
+    d.getHours(),
+    d.getMinutes(),
+  ).getTime();
 }

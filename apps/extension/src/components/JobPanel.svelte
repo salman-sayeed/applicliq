@@ -1,5 +1,13 @@
 <script lang="ts">
-  import { type Job, type JobStatus, draftKey } from '@applicliq/core';
+  import {
+    type Job,
+    type JobStatus,
+    type PostingDates,
+    draftKey,
+    findDuplicates,
+    isHelperEnabled,
+    redFlags,
+  } from '@applicliq/core';
   import { Prefs, applyAppearance, fly, setPrefs, slide } from '@applicliq/ui';
   import { onMount, untrack } from 'svelte';
   import { showGoalBadge } from '@/lib/badge';
@@ -21,6 +29,8 @@
   import { requestPageAccess } from '@/lib/page-access';
   import { takePendingLink } from '@/lib/pending-link';
   import { extractFromTab, getActiveTab, isSavableUrl, startPicker } from '@/lib/tabs';
+  import DuplicatePrompt from './DuplicatePrompt.svelte';
+  import HeadsUp from './HeadsUp.svelte';
   import JobForm from './JobForm.svelte';
   import RecentJobs from './RecentJobs.svelte';
   import SavedJob from './SavedJob.svelte';
@@ -50,6 +60,14 @@
   let saving = $state(false);
   let error = $state<string>();
   let recent = $state<Job[]>([]);
+  /** Every saved job, for the "Heads up" notes and the duplicate check. */
+  let allJobs = $state.raw<Job[]>([]);
+  /** The posting's dates as read from the page (for a saved job; the form keeps its own). */
+  let posting = $state.raw<PostingDates>();
+  /** The page was read (not a bare link), so "no salary" means the page shows none. */
+  let pageRead = $state(false);
+  /** A saved job that looks like this one, asked about on save. */
+  let duplicate = $state.raw<{ match: Job; status: JobStatus }>();
   let shortcut = $state<string>();
   let windowId = $state<number>();
 
@@ -64,8 +82,30 @@
   const recentShown = $derived(recent.filter((j) => j.id !== currentId).slice(0, RECENT_COUNT));
 
   async function loadRecent() {
-    recent = (await repo.getJobs()).slice(0, RECENT_COUNT + 1);
+    allJobs = await repo.getJobs();
+    recent = allJobs.slice(0, RECENT_COUNT + 1);
   }
+
+  const flags = $derived.by(() => {
+    const settings = prefs.settings;
+    if (!isHelperEnabled(settings, 'redFlags')) return [];
+    const options = {
+      jobs: allJobs,
+      oldPostingDays: settings.helpers.oldPostingDays,
+      appliedBeforeDays: settings.helpers.appliedBeforeDays,
+      pageRead,
+    };
+    if (view.kind === 'form') {
+      const { salary } = toNewJob(draft);
+      return redFlags({
+        ...options,
+        posting: draft.posting,
+        job: { company: draft.company, salary },
+      });
+    }
+    if (view.kind === 'saved') return redFlags({ ...options, posting, job: view.job });
+    return [];
+  });
 
   // --- Draft autosave -------------------------------------------------------------------------
 
@@ -137,6 +177,9 @@
     const url = stored?.url ?? extracted?.job.url ?? target.url;
     const existing = await repo.getJobByUrl(url);
     if (run !== loadRun) return;
+    posting = stored?.posting ?? extracted?.posting;
+    pageRead = !link && !!(stored || extracted);
+    duplicate = undefined;
 
     if (existing) {
       if (stored) await forgetDraft();
@@ -144,13 +187,14 @@
       return;
     }
 
-    draft =
-      stored ??
-      draftFrom(
+    draft = stored ?? {
+      ...draftFrom(
         extracted?.job ?? { title: link?.title ?? tab?.title ?? '' },
         url,
         settings.regional,
-      );
+      ),
+      ...(extracted?.posting ? { posting: extracted.posting } : {}),
+    };
     baseline = JSON.stringify(draft);
     view = {
       kind: 'form',
@@ -177,14 +221,31 @@
 
   // --- Actions --------------------------------------------------------------------------------
 
-  async function save(status: JobStatus) {
+  /**
+   * Saves the form. With "Same job on two sites" on, a job that looks like a saved one is asked
+   * about first (`duplicate`); `then` runs after the save (merge, or remember "not a duplicate").
+   */
+  async function save(status: JobStatus, then?: (job: Job) => Promise<Job | void>) {
     if (saving || !isDraftValid(draft)) return;
+    if (!then && isHelperEnabled(prefs.settings, 'duplicates')) {
+      const [match] = findDuplicates(
+        { company: draft.company, title: draft.title },
+        await repo.getJobs(),
+        { notDuplicates: prefs.settings.helpers.notDuplicatePairs },
+      );
+      if (match) {
+        duplicate = { match, status };
+        return;
+      }
+    }
     saving = true;
     error = undefined;
     try {
       const keep = prefs.settings.automation.saveDescriptionSnapshot;
-      const job = await repo.addJob({ ...toNewJob(draft, keep), status });
+      let job = await repo.addJob({ ...toNewJob(draft, keep), status });
       await forgetDraft();
+      job = (await then?.(job)) ?? job;
+      duplicate = undefined;
       notifyJobsChanged();
       view = { kind: 'saved', job, justSaved: true };
       await loadRecent();
@@ -193,6 +254,22 @@
     } finally {
       saving = false;
     }
+  }
+
+  function mergeDuplicate(keep: 'saved' | 'new') {
+    if (!duplicate) return;
+    const { match, status } = duplicate;
+    void save(status, (job) =>
+      keep === 'saved'
+        ? repo.mergeDuplicates(match.id, job.id)
+        : repo.mergeDuplicates(job.id, match.id),
+    );
+  }
+
+  function saveSeparately() {
+    if (!duplicate) return;
+    const { match, status } = duplicate;
+    void save(status, (job) => repo.markNotDuplicate(job.id, match.id));
   }
 
   async function setStatus(status: JobStatus) {
@@ -408,14 +485,27 @@
             </button>
           </p>
         {/if}
+        {#if flags.length}
+          <div class="mb-3"><HeadsUp {flags} onopen={(id) => openDashboard(id)} /></div>
+        {/if}
         <JobForm
           bind:draft
           {saving}
           defaultStatus={prefs.settings.automation.defaultSaveStatus}
           duplicateWarning={prefs.settings.jobPages.duplicateWarning}
-          onsave={save}
+          showAppliedWarning={!isHelperEnabled(prefs.settings, 'redFlags')}
+          onsave={(status) => save(status)}
           onpick={page?.tabId !== undefined ? pick : undefined}
         />
+        {#if duplicate}
+          <DuplicatePrompt
+            match={duplicate.match}
+            busy={saving}
+            onmerge={mergeDuplicate}
+            onseparate={saveSeparately}
+            oncancel={() => (duplicate = undefined)}
+          />
+        {/if}
         {#if error}
           <p
             transition:slide={{ duration: 150 }}
@@ -426,6 +516,9 @@
           </p>
         {/if}
       {:else}
+        {#if flags.length}
+          <div class="mb-3"><HeadsUp {flags} onopen={(id) => openDashboard(id)} /></div>
+        {/if}
         <SavedJob
           job={view.job}
           justSaved={view.justSaved}

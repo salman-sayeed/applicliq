@@ -8,7 +8,8 @@
   import { slide } from '@applicliq/ui';
   import { repo } from '@/lib/db';
 
-  let { company }: { company: string } = $props();
+  /** `showApplied` off: the "Heads up" row already says it (with a link). */
+  let { company, showApplied = true }: { company: string; showApplied?: boolean } = $props();
 
   let applied = $state<RecentApplication>();
   let others = $state<Job[]>([]);
@@ -30,7 +31,7 @@
   });
 </script>
 
-{#if applied}
+{#if applied && showApplied}
   <div
     transition:slide={{ duration: 150 }}
     role="status"
@@ -42,7 +43,7 @@
     </p>
     <p class="truncate opacity-80">{applied.job.title}</p>
   </div>
-{:else if others.length}
+{:else if others.length && !applied}
   <p transition:slide={{ duration: 150 }} class="text-ink-muted mt-1.5 text-xs">
     You've saved {others.length} other {others.length === 1 ? 'job' : 'jobs'} at {others[0]!
       .company}.

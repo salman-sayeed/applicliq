@@ -1,3 +1,4 @@
+import type { PostingDates } from '../smart/red-flags';
 import type { Job, Salary, WorkType } from '../types';
 
 /** What one extraction strategy (JSON-LD, a site adapter, meta tags) found on a page. */
@@ -13,6 +14,11 @@ export type ExtractedFields = {
   workType?: WorkType;
   /** Raw workplace badge or location line ("Hybrid work in Berlin"). */
   workplaceText?: string;
+  /** When the posting went up / when it closes (epoch ms). */
+  datePosted?: number;
+  validThrough?: number;
+  /** Raw "3 days ago" line, parsed centrally. */
+  postedText?: string;
   /** Fields that are educated guesses (e.g. company from a URL slug); trusted less. */
   guessed?: (keyof ExtractedFields)[];
 };
@@ -35,4 +41,6 @@ export type ExtractedJob = {
   confidence: number;
   /** Strategies that contributed at least one field, e.g. `['json-ld', 'linkedin', 'meta']`. */
   sources: string[];
+  /** Dates the page gives for the posting; for the "Heads up" notes, not stored with the job. */
+  posting?: PostingDates;
 };
