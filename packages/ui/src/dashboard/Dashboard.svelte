@@ -32,6 +32,7 @@
     emptyHint,
     onboarding = false,
     onboardingSync,
+    onimport,
   }: {
     adapter: DashboardAdapter;
     /** Opens this job's detail panel on load (e.g. from a `#job=` link). */
@@ -44,6 +45,8 @@
     onboarding?: boolean;
     /** Sign-in control shown in the last onboarding step (optional Drive sync). */
     onboardingSync?: Snippet;
+    /** Opens Settings → Import; the empty state offers it while the Import feature is on. */
+    onimport?: () => void;
   } = $props();
 
   const TOAST_MS = 6000;
@@ -223,6 +226,16 @@
       <div class="text-ink-muted mx-auto mt-16 max-w-sm text-center text-sm">
         <p class="text-ink mb-1 text-base font-semibold">No jobs yet</p>
         {#if emptyHint}{@render emptyHint()}{:else}<p>Saved jobs will show up here.</p>{/if}
+        {#if onimport && prefs.feature('import')}
+          <p class="mt-4">Already tracking applications somewhere else?</p>
+          <button
+            type="button"
+            onclick={onimport}
+            class="border-line text-ink hover:bg-surface-muted focus-visible:ring-accent mt-2 rounded-md border px-3 py-1.5 text-sm font-medium transition focus-visible:ring-2 focus-visible:outline-none"
+          >
+            Import jobs
+          </button>
+        {/if}
       </div>
     {:else if view === 'board'}
       <KanbanBoard jobs={visible} {selectedId} onselect={(id) => (selectedId = id)} onmove={move} />

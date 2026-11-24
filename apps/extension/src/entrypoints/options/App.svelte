@@ -19,6 +19,11 @@
   import { repo } from '@/lib/db';
   import { isSignedIn, isSyncConfigured, signIn, signOut } from '@/lib/google-auth';
   import { notifyJobsChanged, requestSync } from '@/lib/messages';
+  import {
+    reconcileFeaturePermissions,
+    removeFeaturePermissions,
+    requestFeaturePermissions,
+  } from '@/lib/features';
   import { removePageAccess, requestPageAccess } from '@/lib/page-access';
   import {
     SYNC_STATUS_KEY,
@@ -66,6 +71,7 @@
 
   onMount(() => {
     void loadSync();
+    void reconcileFeaturePermissions().catch(() => {});
     browser.storage.onChanged.addListener(onStorageChange);
     return () => browser.storage.onChanged.removeListener(onStorageChange);
   });
@@ -129,6 +135,8 @@
             if (s.jobPages.openIn !== 'sidebar') await removePageAccess();
             return false;
           }),
+    requestPermissions: requestFeaturePermissions,
+    removePermissions: removeFeaturePermissions,
     getShortcut: getSaveShortcut,
     openShortcutSettings: () => void openShortcutSettings(),
   };

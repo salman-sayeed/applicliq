@@ -1,5 +1,7 @@
 import {
   DEFAULT_SETTINGS,
+  type FeatureId,
+  isFeatureEnabled,
   type JobStatus,
   type Settings,
   statusLabel,
@@ -27,6 +29,9 @@ export class Prefs {
   statuses = (keep?: JobStatus): JobStatus[] => visibleStatuses(this.settings, keep);
 
   tagClass = (tag: string): string => TAG_CLASSES[tagColor(this.settings, tag)];
+
+  /** Whether a feature is on (Settings → Features); updates with the settings. */
+  feature = (id: FeatureId): boolean => isFeatureEnabled(this.settings, id);
 
   date = (ms: number): string => formatDate(ms, this.settings.regional.dateFormat);
 

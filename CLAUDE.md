@@ -37,6 +37,7 @@ apps/
     src/lib/background.ts  auto-ghosting, reminders (quiet hours, goal nudge), goal badge, page badge
     src/lib/google-auth.ts launchWebAuthFlow (Web client); getAuthToken on Chrome if only a Chrome client
     src/lib/sync.ts     background sync runner + status in extension storage
+    src/lib/features.ts feature permissions: request on enable, remove on disable, start-up check
 docs/screenshots/       capture.mjs (dashboard shots), capture-extension.mjs (sidebar, pick from
                         page, right-click menu on fictional postings from demo-job.html)
 docs/google-setup.md    creating the OAuth client IDs (env vars in apps/extension/.env, apps/web/.env)
@@ -72,6 +73,12 @@ packages/
     src/types.ts        Job model, statuses, tombstones
     src/settings.ts     Settings schema + defaults + validation (SETTINGS_SCHEMA), synced vs device
                         keys (DEVICE_KEYS), settings merge
+    src/features.ts     feature registry (FEATURES): id, name, description, defaultEnabled,
+                        permissions, syncScope, platforms, implemented; isFeatureEnabled
+    src/import/         job import: csv-parse (delimiter / header detection), fields (column
+                        guessing, status values, dates), linkedin (export .zip/.csv, fflate loaded
+                        lazily), review (rows → drafts, duplicates, import batches);
+                        __fixtures__ holds a synthetic LinkedIn file (never commit a real export)
     src/storage.ts      Dexie DB (jobs, settings) + repository: CRUD, URL/company lookup, settings,
                         import/export
     src/csv.ts          jobsToCsv (spreadsheet export)
@@ -92,6 +99,9 @@ packages/
                         it add `@source` for this folder in their CSS.
     src/settings/       shared SettingsPage (section nav, auto-save). Platform bits come in through a
                         SettingsPlatform prop; extension-only sections are disabled on the web.
+                        sections/FeaturesSection: a card per implemented feature
+    src/import/         Settings → Import (LinkedIn, CSV mapping, review, undo, history); loaded
+                        with a dynamic import. Pages that render settings add `@source` for it
     src/prefs.svelte.ts Prefs context: status names, hidden statuses, tag colours, date format
     src/appearance.ts   applyAppearance: theme / accent / density / reduce-motion on <html>
     src/motion.ts       fade/fly/slide/flip/crossfade that honour reduced motion (Svelte 5 runs
@@ -139,7 +149,17 @@ pnpm readme:cards   # regenerate the README store cards (docs/readme/*.svg) afte
 6. `packages/core` contains no UI code and no framework imports (no Svelte, no DOM rendering).
    Platform-specific bits (e.g. getting an OAuth token) are injected by the apps.
 7. Request the minimum extension permissions; add one only when a feature needs it.
-8. **The app was renamed from Career Pocket to AppliCliq.** Identifiers that persist in users'
+8. **Every optional feature goes through the feature registry** (`packages/core/src/features.ts`):
+   register it (`implemented: false` keeps a planned one hidden and off), make it toggleable in
+   Settings → Features, and check it with `isFeatureEnabled(settings, id)`, `prefs.feature(id)`
+   in the UI or `repo.isFeatureEnabled(id)`. Its browser permissions go in the manifest as
+   `optional_permissions` / `optional_host_permissions` only, are requested from the click that
+   turns it on (`permissions.request()`; a refusal leaves it off), and are removed when it is
+   turned off (unless another feature or the page badge still needs them). The extension turns a
+   feature off at start-up when its permission is gone, and Settings → Features says so. Features
+   that need permissions are `syncScope: 'device'`. Load feature code lazily (dynamic `import()`)
+   so the popup stays small.
+9. **The app was renamed from Career Pocket to AppliCliq.** Identifiers that persist in users'
    browsers or Drive keep the old name and must never change: the IndexedDB name
    (`career-pocket`), the Drive file (`career-pocket.json`, legacy `pocket-career.json`),
    `career-pocket:*` storage keys, notification IDs, the Web Lock name, the ICS UID suffix, the
@@ -172,6 +192,8 @@ type Job = {
   interviewAt?: number;
   followUpAt?: number;
   descriptionSnapshot?: string;
+  importedAt?: number; // set by an import: when it ran (the "imported" flag)
+  importBatchId?: string; // the import that added it, for undo
   createdAt: number;
   updatedAt: number;
   deletedAt?: number;
@@ -181,6 +203,16 @@ type Job = {
 - All timestamps are epoch milliseconds.
 - `history` gets a new entry whenever `status` changes (the repository does this).
 - `updatedAt` is bumped on every write; it decides merges.
+
+### Imports
+
+`repo.importJobs(drafts)` adds a batch in one transaction, each job with `importBatchId` and
+`importedAt`. The date applied becomes `createdAt` and the `applied` history entry; a later status
+is recorded at the import time. `repo.undoImport(batchId)` deletes the batch's live jobs as
+tombstones (so it syncs); past imports are derived from live jobs (`importBatches`). Imported
+applications count toward stats but not toward goals or streaks (`goalAppliedAt`), and the
+ghosting clock starts at `importedAt`. Duplicates: same normalized URL, or same company + title
+with dates within 3 days. LinkedIn imports use source `linkedin` (the scraper's id).
 
 ### Deletion rule (tombstones)
 
@@ -196,8 +228,9 @@ type Job = {
 
 `Settings` (`packages/core/src/settings.ts`) is one typed object with a `version` and an
 `updatedAt`, grouped in sections (goals, automation, notifications, jobPages, appearance, regional,
-labels, sync). It is stored in the `settings` table as two rows: `app` (synced keys) and `device`
-(`DEVICE_KEYS`: notification settings and the page badge's on/position/sites, which never leave the
+labels, sync, features). It is stored in the `settings` table as two rows: `app` (synced keys) and `device`
+(`DEVICE_KEYS`: notification settings, the page badge's on/position/sites and device-scoped feature
+switches, which never leave the
 browser). Everything read from storage, Drive or a file goes through `sanitizeSettings`, which also
 reads the old shape (top-level `theme`/`ghostedAfterDays`, 0 = off). `updatedAt` only moves when a
 synced key changes. Status keys never change; `labels.statusLabels` only renames them for display.

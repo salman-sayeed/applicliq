@@ -25,6 +25,21 @@ export function firstAppliedAt(
   return job.history.find((h) => statuses.includes(h.status))?.at;
 }
 
+/**
+ * When the application counts toward goals and streaks: as `firstAppliedAt`, except that an
+ * application an import brought in (sent before the import) never counts. A job imported as
+ * `saved` and applied to later does.
+ */
+export function goalAppliedAt(
+  job: Job,
+  statuses: readonly JobStatus[] = APPLIED_STATUSES,
+): number | undefined {
+  const at = firstAppliedAt(job, statuses);
+  if (at === undefined || job.importedAt === undefined) return at;
+  const after = job.history.find((h) => statuses.includes(h.status) && h.at > job.importedAt!);
+  return after?.at;
+}
+
 function reached(job: Job, statuses: readonly JobStatus[]): boolean {
   return statuses.includes(job.status) || job.history.some((h) => statuses.includes(h.status));
 }
@@ -64,14 +79,19 @@ export function dayKey(ms: number): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-/** Applications sent per local day, keyed by `dayKey`. */
+/**
+ * Applications sent per local day, keyed by `dayKey`. `forGoals` leaves out imported
+ * applications (see `goalAppliedAt`).
+ */
 export function applicationsByDay(
   jobs: readonly Job[],
   statuses: readonly JobStatus[] = APPLIED_STATUSES,
+  forGoals = false,
 ): Map<string, number> {
   const counts = new Map<string, number>();
+  const appliedAt = forGoals ? goalAppliedAt : firstAppliedAt;
   for (const job of jobs) {
-    const at = firstAppliedAt(job, statuses);
+    const at = appliedAt(job, statuses);
     if (at === undefined) continue;
     const key = dayKey(at);
     counts.set(key, (counts.get(key) ?? 0) + 1);
@@ -110,7 +130,7 @@ export function goalProgress(
     monthly: startOfMonth(now),
   };
   const applied = jobs
-    .map((job) => firstAppliedAt(job, countStatuses))
+    .map((job) => goalAppliedAt(job, countStatuses))
     .filter((at): at is number => at !== undefined);
   const progress = (period: GoalPeriod): GoalProgress => {
     const start = starts[period];
@@ -146,7 +166,7 @@ export function applicationStreak(
   countStatuses: readonly JobStatus[] = APPLIED_STATUSES,
 ): Streak {
   if (dailyGoal === null || dailyGoal <= 0) return { current: 0, best: 0, todayMet: false };
-  const counts = applicationsByDay(jobs, countStatuses);
+  const counts = applicationsByDay(jobs, countStatuses, true);
   const met = (day: number) => (counts.get(dayKey(day)) ?? 0) >= dailyGoal;
 
   const today = startOfDay(now);

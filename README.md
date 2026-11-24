@@ -34,6 +34,10 @@
 - Track each application from saved to offer in a list, a kanban board, or stats with weekly goals.
 - Follow-up and interview reminders; quiet applications are marked ghosted after three weeks.
 - A badge on job pages you already saved, and a note when you've applied to a company before.
+- Import your history: LinkedIn applications (from LinkedIn's data export) or any CSV from a
+  spreadsheet, Notion, Huntr or Teal, with column matching, duplicate checks and undo.
+- Optional features can be turned on and off in Settings → Features; any extra browser
+  permission is asked for only when you turn a feature on.
 - Works offline. Export to JSON or CSV any time.
 
 ## Privacy

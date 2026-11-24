@@ -15,7 +15,12 @@
   });
 </script>
 
-<Dashboard adapter={dashboardAdapter} {initialJobId} {onboarding}>
+<Dashboard
+  adapter={dashboardAdapter}
+  {initialJobId}
+  {onboarding}
+  onimport={() => void openSettings('import')}
+>
   {#snippet header()}
     <img src="/icon/32.png" alt="" class="size-6" />
     <h1 class="text-base font-semibold">AppliCliq</h1>

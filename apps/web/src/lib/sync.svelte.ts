@@ -185,6 +185,8 @@ export const dashboardAdapter: DashboardAdapter = {
   updateSettings: syncing(repo.updateSettings),
   resetSettingsSection: syncing(repo.resetSettingsSection),
   renameTag: syncing(repo.renameTag),
+  importJobs: syncing(repo.importJobs),
+  undoImport: syncing(repo.undoImport),
   getLocalState: repo.getLocalState,
   setLocalState: repo.setLocalState,
 };

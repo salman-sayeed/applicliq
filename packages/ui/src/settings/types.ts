@@ -1,4 +1,4 @@
-import type { ImportResult, Settings, SettingsPatch } from '@applicliq/core';
+import type { FeaturePermissions, ImportResult, Settings, SettingsPatch } from '@applicliq/core';
 import type { SyncMenuStatus } from '../dashboard/types';
 
 /** What the settings page needs from the app it runs in (extension page or web app). */
@@ -20,6 +20,13 @@ export type SettingsPlatform = {
   replayOnboarding(): void;
   /** Extension: asks for (or drops) access to all sites for the page badge. Call from a click. */
   setPageAccess?(on: boolean): Promise<boolean>;
+  /**
+   * Extension: asks the browser for a feature's optional permissions. Must be called straight
+   * from the click (no await before it); resolves false if the user says no.
+   */
+  requestPermissions?(permissions: FeaturePermissions): Promise<boolean>;
+  /** Extension: gives back permissions a feature no longer needs. */
+  removePermissions?(permissions: FeaturePermissions): Promise<void>;
   /** Extension: the save shortcut as the browser shows it, if one is set. */
   getShortcut?(): Promise<string | undefined>;
   /** Extension: opens the browser's keyboard shortcut settings. */

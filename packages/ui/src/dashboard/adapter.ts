@@ -1,4 +1,5 @@
 import type {
+  ImportDraft,
   Job,
   JobPatch,
   LocalState,
@@ -25,6 +26,10 @@ export type DashboardAdapter = {
   resetSettingsSection(section: SettingsSection): Promise<Settings>;
   /** Renames a tag on every job; returns how many changed. */
   renameTag(from: string, to: string): Promise<number>;
+  /** Adds imported jobs as one batch (Settings → Import). */
+  importJobs(drafts: ImportDraft[]): Promise<{ batchId: string; count: number }>;
+  /** Deletes the jobs of an import batch (as tombstones); returns how many. */
+  undoImport(batchId: string): Promise<number>;
   getLocalState(): Promise<LocalState>;
   setLocalState(patch: LocalState): Promise<void>;
 };

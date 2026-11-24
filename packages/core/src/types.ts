@@ -42,6 +42,13 @@ export type Job = {
   interviewAt?: number;
   followUpAt?: number;
   descriptionSnapshot?: string;
+  /**
+   * Set on jobs brought in by an import (LinkedIn, CSV): when it ran. Imported applications count
+   * toward stats but not toward goals or streaks, and the ghosting clock starts here.
+   */
+  importedAt?: number;
+  /** The import that created the job; undoing that import deletes the batch. */
+  importBatchId?: string;
   createdAt: number;
   updatedAt: number;
   deletedAt?: number;
