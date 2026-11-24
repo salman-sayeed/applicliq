@@ -25,8 +25,8 @@ describe('feature registry', () => {
   });
 
   it('shows only implemented features, and planned ones are always off', () => {
-    expect(visibleFeatures().map((f) => f.id)).toEqual(['import']);
-    expect(isFeatureEnabled(withFeatures({ insights: true }), 'insights')).toBe(false);
+    expect(visibleFeatures().map((f) => f.id)).toEqual(['import', 'smartHelpers', 'insights']);
+    expect(isFeatureEnabled(withFeatures({ encryptedSync: true }), 'encryptedSync')).toBe(false);
     expect(isFeatureEnabled(DEFAULT_SETTINGS, 'import')).toBe(true);
     expect(isFeatureEnabled(withFeatures({ import: false }), 'import')).toBe(false);
   });

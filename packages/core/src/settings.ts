@@ -6,6 +6,7 @@ import {
   type FeatureSettings,
 } from './features';
 import { canonical } from './merge';
+import { DEFAULT_FOLLOW_UP_TEMPLATES, type FollowUpTemplate } from './smart/templates';
 import { APPLIED_STATUSES } from './stats';
 import { JOB_STATUSES, type JobStatus, type SalaryPeriod } from './types';
 
@@ -25,6 +26,9 @@ import { JOB_STATUSES, type JobStatus, type SalaryPeriod } from './types';
 export const SETTINGS_VERSION = 1;
 
 export type Theme = 'system' | 'light' | 'dark';
+export const WEEK_DAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
+/** A day of the week; index in `WEEK_DAYS` = `Date.getDay()`. */
+export type WeekDay = (typeof WEEK_DAYS)[number];
 export type WeekStartDay = 'sat' | 'sun' | 'mon';
 export type ToolbarBadgeMode = 'today' | 'goal' | 'off';
 /** Where the toolbar button opens AppliCliq: its popup or the browser's sidebar. */
@@ -116,6 +120,34 @@ export type Settings = {
     resumeVersions: string[];
   };
   sync: { syncIntervalMinutes: number };
+  /** Smart helpers (feature `smartHelpers`): its sub-switches and their options. */
+  helpers: {
+    /** "Heads up" notes on job pages: old posting, possibly closed, no salary, applied before. */
+    redFlags: boolean;
+    /** A posting older than this many days gets a note. */
+    oldPostingDays: number;
+    /** "You applied to this company before" looks back this many days. */
+    appliedBeforeDays: number;
+    /** Spot the same job saved from two sites. */
+    duplicates: boolean;
+    /** Pairs of job ids the user said are not duplicates (`idA|idB`, sorted). */
+    notDuplicatePairs: string[];
+    /** Follow-up templates and the "Needs follow-up" list. */
+    followUps: boolean;
+    /** Jobs `applied` this many days with no follow-up reminder are listed as needing one. */
+    followUpAfterDays: number;
+    followUpTemplates: FollowUpTemplate[];
+    /** Fills `{myName}` in templates. */
+    myName: string;
+    /** Offer details and the side-by-side comparison. */
+    offers: boolean;
+  };
+  /** Insights (feature `insights`). The weekly recap is a notification, so it's per device. */
+  insights: {
+    weeklyRecap: boolean;
+    weeklyRecapDay: WeekDay;
+    weeklyRecapTime: TimeOfDay;
+  };
   /** Feature switches (see `features.ts`); device-scoped ones are in `DEVICE_KEYS`. */
   features: FeatureSettings;
 };
@@ -132,6 +164,8 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
   'regional',
   'labels',
   'sync',
+  'helpers',
+  'insights',
   'features',
 ];
 
@@ -178,6 +212,19 @@ export const DEFAULT_SETTINGS: Settings = {
   regional: { currency: '', salaryPeriod: 'year', dateFormat: 'system' },
   labels: { statusLabels: {}, hiddenStatuses: [], tags: [], resumeVersions: [] },
   sync: { syncIntervalMinutes: 15 },
+  helpers: {
+    redFlags: true,
+    oldPostingDays: 30,
+    appliedBeforeDays: 90,
+    duplicates: true,
+    notDuplicatePairs: [],
+    followUps: true,
+    followUpAfterDays: 7,
+    followUpTemplates: structuredClone(DEFAULT_FOLLOW_UP_TEMPLATES) as FollowUpTemplate[],
+    myName: '',
+    offers: true,
+  },
+  insights: { weeklyRecap: true, weeklyRecapDay: 'sun', weeklyRecapTime: '20:00' },
   features: { ...DEFAULT_FEATURES },
 };
 
@@ -190,6 +237,7 @@ export const DEVICE_KEYS: { readonly [K in SettingsSection]?: readonly (keyof Se
     'quietHours',
   ],
   jobPages: ['showBadge', 'badgePosition', 'sitesWithBadgeOff', 'openIn'],
+  insights: ['weeklyRecap', 'weeklyRecapDay', 'weeklyRecapTime'],
   features: DEVICE_FEATURE_IDS,
 };
 
@@ -319,6 +367,24 @@ const tags: Check<TagSetting[]> = (v) => {
   return out.slice(0, 200);
 };
 
+const followUpTemplates: Check<FollowUpTemplate[]> = (v) => {
+  if (!Array.isArray(v)) return undefined;
+  const out: FollowUpTemplate[] = [];
+  const ids = new Set<string>();
+  for (const [index, item] of v.entries()) {
+    if (!isObject(item)) continue;
+    const name = text(60)(item.name);
+    const subject = typeof item.subject === 'string' ? item.subject.slice(0, 200) : '';
+    const body = typeof item.body === 'string' ? item.body.slice(0, 5000) : undefined;
+    if (!name || body === undefined) continue;
+    let id = text(60)(item.id) || `t${index}`;
+    while (ids.has(id)) id = `${id}-${index}`;
+    ids.add(id);
+    out.push({ id, name, subject: subject.trim(), body });
+  }
+  return out.slice(0, 30);
+};
+
 /** Every field's check. Also used by the settings page to validate input before saving. */
 export const SETTINGS_SCHEMA: {
   [K in SettingsSection]: { [F in keyof Settings[K]]-?: Check<Settings[K][F]> };
@@ -369,6 +435,23 @@ export const SETTINGS_SCHEMA: {
     resumeVersions: textList(100, 60),
   },
   sync: { syncIntervalMinutes: int(5, 24 * 60) },
+  helpers: {
+    redFlags: bool,
+    oldPostingDays: int(1, 365),
+    appliedBeforeDays: int(1, 3650),
+    duplicates: bool,
+    notDuplicatePairs: textList(5000, 200),
+    followUps: bool,
+    followUpAfterDays: int(1, 90),
+    followUpTemplates,
+    myName: text(80),
+    offers: bool,
+  },
+  insights: {
+    weeklyRecap: bool,
+    weeklyRecapDay: oneOf(WEEK_DAYS),
+    weeklyRecapTime: time,
+  },
   features: Object.fromEntries(FEATURE_IDS.map((id) => [id, bool])) as Record<
     FeatureId,
     Check<boolean>

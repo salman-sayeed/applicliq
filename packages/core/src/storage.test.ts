@@ -387,7 +387,7 @@ describe('exportJSON / importJSON', () => {
     const gone = await repo().addJob(input());
     await repo().deleteJob(gone.id);
     const json = await repo().exportJSON();
-    expect(JSON.parse(json)).toMatchObject({ schemaVersion: 1, updatedAt: 1_000 });
+    expect(JSON.parse(json)).toMatchObject({ schemaVersion: 2, updatedAt: 1_000 });
 
     const other = new AppliCliqDB(`test-${crypto.randomUUID()}`);
     try {
@@ -464,7 +464,7 @@ describe('exportJSON / importJSON', () => {
     const a = await repo().addJob(input());
     await expect(repo().importJSON('{nope')).rejects.toThrow('not valid JSON');
     await expect(repo().importJSON('null')).rejects.toThrow('not a AppliCliq export');
-    await expect(repo().importJSON('{"schemaVersion":2,"records":[]}')).rejects.toThrow(
+    await expect(repo().importJSON('{"schemaVersion":3,"records":[]}')).rejects.toThrow(
       'newer version',
     );
     await expect(repo().importJSON('[]')).rejects.toThrow('not a AppliCliq export');
@@ -508,5 +508,91 @@ describe('watchJobs', () => {
     await new Promise((r) => setTimeout(r, 50));
 
     expect(seen).toEqual([[], ['First']]);
+  });
+});
+
+describe('merged duplicates', () => {
+  it('finds a job by any of its alternate URLs', async () => {
+    const job = await repo().addJob(input({ url: 'https://careers.test/1' }));
+    const merged = await repo().updateJob(job.id, {
+      alternateUrls: ['https://www.linkedin.com/jobs/view/42/'],
+    });
+    expect(await repo().getJobByUrl('https://www.linkedin.com/jobs/view/42/?utm_source=x')).toEqual(
+      merged,
+    );
+    expect(await repo().getJobByUrl('https://careers.test/1')).toEqual(merged);
+    expect(await repo().getJobByUrl('https://other.test/')).toBeUndefined();
+  });
+
+  it('finds alternate URLs with URL cleaning off too', async () => {
+    await repo().updateSettings({ automation: { cleanUrls: false } });
+    const job = await repo().addJob(input({ url: 'https://careers.test/1' }));
+    await repo().updateJob(job.id, { alternateUrls: ['https://board.test/x?id=1&utm_source=a'] });
+    expect((await repo().getJobByUrl('https://board.test/x?id=1'))?.id).toBe(job.id);
+  });
+
+  it('merges two jobs in one step and tombstones the other', async () => {
+    const keep = await repo().addJob(input({ url: 'https://careers.test/1', notes: 'A' }));
+    clock = 2_000;
+    const other = await repo().addJob(
+      input({ url: 'https://board.test/1', notes: 'B', tags: ['x'] }),
+    );
+    clock = 3_000;
+    const merged = await repo().mergeDuplicates(keep.id, other.id);
+    expect(merged).toMatchObject({
+      id: keep.id,
+      alternateUrls: ['https://board.test/1'],
+      notes: 'A\n\nB',
+      tags: ['x'],
+      createdAt: 1_000,
+      updatedAt: 3_000,
+    });
+    expect(await repo().getJobs()).toEqual([merged]);
+    expect(await repo().getAllRecords()).toContainEqual({ id: other.id, deletedAt: 3_000 });
+    expect((await repo().getJobByUrl('https://board.test/1'))?.id).toBe(keep.id);
+  });
+
+  it('refuses to merge a job with itself or a deleted job', async () => {
+    const a = await repo().addJob(input());
+    const b = await repo().addJob(input({ url: 'https://jobs.test/2' }));
+    await expect(repo().mergeDuplicates(a.id, a.id)).rejects.toThrow();
+    await repo().deleteJob(b.id);
+    await expect(repo().mergeDuplicates(a.id, b.id)).rejects.toThrow('no longer exists');
+  });
+
+  it('remembers pairs that are not duplicates, once', async () => {
+    await repo().markNotDuplicate('b', 'a');
+    await repo().markNotDuplicate('a', 'b');
+    const settings = await repo().getSettings();
+    expect(settings.helpers.notDuplicatePairs).toEqual(['a|b']);
+    expect(settings.updatedAt).toBeGreaterThan(0);
+  });
+});
+
+describe('database upgrade', () => {
+  it('opens a version 2 database and keeps its jobs', async () => {
+    const name = `test-${crypto.randomUUID()}`;
+    const old = new Dexie(name);
+    old
+      .version(2)
+      .stores({ jobs: 'id, url, company, status, updatedAt, deletedAt', settings: 'id' });
+    const job: Job = {
+      id: 'old',
+      url: 'https://jobs.test/old',
+      title: 'Dev',
+      company: 'Acme',
+      status: 'saved',
+      history: [{ status: 'saved', at: 1 }],
+      createdAt: 1,
+      updatedAt: 1,
+    };
+    await old.table('jobs').put(job);
+    old.close();
+
+    const upgraded = new AppliCliqDB(name, { legacyName: undefined });
+    const r = createJobRepository(upgraded, () => clock);
+    expect(await r.getJobs()).toEqual([job]);
+    expect(upgraded.verno).toBe(3);
+    await upgraded.delete();
   });
 });

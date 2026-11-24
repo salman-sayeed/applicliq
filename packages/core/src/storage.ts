@@ -2,6 +2,7 @@ import { Dexie, type Table, liveQuery } from 'dexie';
 import { type FeatureId, isFeatureEnabled } from './features';
 import type { ImportDraft } from './import/review';
 import { mergeJobs } from './merge';
+import { mergeDuplicateJobs, pairKey } from './smart/duplicates';
 import {
   DEFAULT_SETTINGS,
   type Settings,
@@ -67,6 +68,11 @@ export class AppliCliqDB extends Dexie {
     // `url`/`company`/`status`/`updatedAt`, so they never appear in those indexes.
     this.version(2).stores({
       jobs: 'id, url, company, status, updatedAt, deletedAt',
+      settings: 'id',
+    });
+    // 3: other URLs of merged duplicates are indexed too, so `getJobByUrl` finds them.
+    this.version(3).stores({
+      jobs: 'id, url, *alternateUrls, company, status, updatedAt, deletedAt',
       settings: 'id',
     });
     // Runs before the first query; queries wait for it.
@@ -223,9 +229,18 @@ export function createJobRepository(db: AppliCliqDB, now: () => number = Date.no
         jobs.filter(isLiveJob).sort((a, b) => b.updatedAt - a.updatedAt)[0];
       const keys = [...new Set([normalized, url.trim()])];
       const found = newest(await db.jobs.where('url').anyOf(keys).toArray());
-      if (found || (await getSettings()).automation.cleanUrls) return found;
+      if (found) return found;
+      // Another posting of a merged job (its `alternateUrls`).
+      const alternate = newest(await db.jobs.where('alternateUrls').anyOf(keys).toArray());
+      if (alternate || (await getSettings()).automation.cleanUrls) return alternate;
       return newest(
-        await db.jobs.filter((r) => isLiveJob(r) && normalizeUrl(r.url) === normalized).toArray(),
+        await db.jobs
+          .filter(
+            (r) =>
+              isLiveJob(r) &&
+              [r.url, ...(r.alternateUrls ?? [])].some((u) => normalizeUrl(u) === normalized),
+          )
+          .toArray(),
       );
     },
 
@@ -267,6 +282,11 @@ export function createJobRepository(db: AppliCliqDB, now: () => number = Date.no
         const changes: JobPatch = { ...patch };
         for (const key of PROTECTED_FIELDS) delete (changes as Record<string, unknown>)[key];
         if (changes.url !== undefined) changes.url = await storedUrl(changes.url);
+        if (changes.alternateUrls !== undefined) {
+          const urls = await Promise.all(changes.alternateUrls.map(storedUrl));
+          const unique = [...new Set(urls)].filter((u) => u && u !== (changes.url ?? current.url));
+          changes.alternateUrls = unique.length ? unique : undefined;
+        }
         if (changes.company !== undefined) changes.company = changes.company.trim();
 
         // Never let the clock run backwards for this record, or a merge could drop the edit.
@@ -309,6 +329,37 @@ export function createJobRepository(db: AppliCliqDB, now: () => number = Date.no
         delete restored.deletedAt;
         await db.jobs.put(restored);
         return restored;
+      });
+    },
+
+    /**
+     * Merges two saved jobs that are the same posting: `otherId` is folded into `keepId` (see
+     * `mergeDuplicateJobs`) and then deleted as a tombstone, in one transaction.
+     */
+    async mergeDuplicates(keepId: string, otherId: string): Promise<Job> {
+      if (keepId === otherId) throw new Error('Pick two different jobs to merge.');
+      return db.transaction('rw', db.jobs, async () => {
+        const [keep, other] = await db.jobs.bulkGet([keepId, otherId]);
+        if (!keep || !isLiveJob(keep) || !other || !isLiveJob(other)) {
+          throw new Error('One of the jobs no longer exists.');
+        }
+        const at = Math.max(now(), keep.updatedAt + 1, other.updatedAt);
+        const merged: Job = { ...mergeDuplicateJobs(keep, other), updatedAt: at };
+        await db.jobs.put(merged);
+        await db.jobs.put({ id: otherId, deletedAt: at });
+        return merged;
+      });
+    },
+
+    /** Remembers that two jobs aren't duplicates, so they are never suggested again. */
+    async markNotDuplicate(a: string, b: string): Promise<void> {
+      await db.transaction('rw', db.settings, async () => {
+        const { helpers } = await getSettings();
+        const key = pairKey(a, b);
+        if (helpers.notDuplicatePairs.includes(key)) return;
+        await updateSettings({
+          helpers: { notDuplicatePairs: [...helpers.notDuplicatePairs, key] },
+        });
       });
     },
 

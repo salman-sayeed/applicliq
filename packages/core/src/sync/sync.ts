@@ -8,7 +8,13 @@ import {
 import type { JobRepository } from '../storage';
 import type { JobRecord } from '../types';
 import { sanitizeRecords } from '../validate';
-import { type DriveClient, DriveError, SCHEMA_VERSION, type SyncSnapshot } from './drive';
+import {
+  type DriveClient,
+  DriveError,
+  MIN_SCHEMA_VERSION,
+  SCHEMA_VERSION,
+  type SyncSnapshot,
+} from './drive';
 
 export type SyncErrorKind =
   /** No usable token: the user must sign in (again). */
@@ -53,7 +59,7 @@ export type SyncOptions = {
 /**
  * Reads a Drive file's records. Throws (instead of returning nothing) when the file is from a
  * newer schema or not ours, so the caller never overwrites data it doesn't understand.
- * Files from before `schemaVersion` used `version: 1`, which is the same format.
+ * Files from before `schemaVersion` used `version: 1`; version 1 files are read as they are.
  */
 export function parseSnapshot(data: unknown): {
   records: JobRecord[];
@@ -77,7 +83,7 @@ export function parseSnapshot(data: unknown): {
       'Your Drive data was saved by a newer version of AppliCliq. Update to keep syncing.',
     );
   }
-  if (schema !== SCHEMA_VERSION) {
+  if (typeof schema !== 'number' || !Number.isInteger(schema) || schema < MIN_SCHEMA_VERSION) {
     throw new SyncError('invalid-remote', 'The Drive file is not a AppliCliq file.');
   }
   // Drive content is untrusted input: drop malformed records instead of storing them.

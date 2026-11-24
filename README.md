@@ -34,6 +34,12 @@
 - Track each application from saved to offer in a list, a kanban board, or stats with weekly goals.
 - Follow-up and interview reminders; quiet applications are marked ghosted after three weeks.
 - A badge on job pages you already saved, and a note when you've applied to a company before.
+- Smart helpers: a "Heads up" note on old or closed postings, missing salaries and companies you
+  applied to recently; the same job saved from two sites spotted and merged; follow-up messages
+  from templates and a "Needs follow-up" list; offer details compared side by side, with a
+  reminder before each deadline.
+- Insights: response, interview and offer rates and reply times by source and work type, a weekly
+  recap notification, and a share card of your numbers (never company names) as a PNG.
 - Import your history: LinkedIn applications (from LinkedIn's data export) or any CSV from a
   spreadsheet, Notion, Huntr or Teal, with column matching, duplicate checks and undo.
 - Optional features can be turned on and off in Settings → Features; any extra browser

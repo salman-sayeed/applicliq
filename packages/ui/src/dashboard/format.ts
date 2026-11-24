@@ -85,11 +85,52 @@ export function formatSalary(salary: Salary | undefined): string {
 }
 
 /** Saves text as a file through a temporary link (no platform APIs needed). */
-export function downloadFile(name: string, content: string, type: string): void {
-  const url = URL.createObjectURL(new Blob([content], { type }));
+export function downloadFile(name: string, content: string | Blob, type: string): void {
+  const blob = content instanceof Blob ? content : new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
   link.download = name;
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/** A whole amount in full ("€85,000"), or the number and code for unknown currencies. */
+export function formatMoney(value: number, currency: string | undefined): string {
+  const rounded = Math.round(value);
+  if (currency) {
+    try {
+      return new Intl.NumberFormat(undefined, {
+        style: 'currency',
+        currency,
+        maximumFractionDigits: 0,
+      }).format(rounded);
+    } catch {
+      // Unknown currency code: the number plus the code.
+    }
+  }
+  const n = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(rounded);
+  return currency ? `${n} ${currency}` : n;
+}
+
+/**
+ * Copies text: the Clipboard API, or a hidden text box and `execCommand` where the API is
+ * refused (older browsers, unfocused pages). Throws if both fail.
+ */
+export async function copyText(text: string): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return;
+  } catch {
+    // Fall back below.
+  }
+  const box = document.createElement('textarea');
+  box.value = text;
+  box.setAttribute('readonly', '');
+  box.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+  document.body.append(box);
+  box.select();
+  const ok = document.execCommand('copy');
+  box.remove();
+  if (!ok) throw new Error('Copy failed');
 }

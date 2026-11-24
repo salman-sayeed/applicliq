@@ -35,6 +35,19 @@ export type FeaturePermissions = {
 
 export type FeaturePlatform = 'extension' | 'web';
 
+/** A switch for one part of a feature, stored as a boolean in `settings[section][key]`. */
+export type SubToggle = {
+  section: 'helpers' | 'insights';
+  key: HelperToggle | InsightToggle;
+  name: string;
+  description: string;
+  /** Where it works (default: wherever the feature does). */
+  platforms?: readonly FeaturePlatform[];
+};
+
+export type HelperToggle = 'redFlags' | 'duplicates' | 'followUps' | 'offers';
+export type InsightToggle = 'weeklyRecap';
+
 export type FeatureDefinition = {
   id: FeatureId;
   name: string;
@@ -51,6 +64,8 @@ export type FeatureDefinition = {
   platforms: readonly FeaturePlatform[];
   /** False for planned features: hidden in the UI and always off. */
   implemented: boolean;
+  /** Parts the user can turn off separately (on the feature's card). */
+  subToggles?: readonly SubToggle[];
 };
 
 const BOTH: readonly FeaturePlatform[] = ['extension', 'web'];
@@ -71,24 +86,63 @@ export const FEATURES: readonly FeatureDefinition[] = [
   {
     id: 'smartHelpers',
     name: 'Smart helpers',
-    description: 'Suggestions for follow-ups and next steps, worked out on this device.',
-    defaultEnabled: false,
+    description:
+      'Heads-up notes on job pages, duplicate spotting, follow-up messages and offer comparison, all worked out on this device.',
+    defaultEnabled: true,
     permissions: {},
     permissionNotes: [],
     syncScope: 'synced',
     platforms: BOTH,
-    implemented: false,
+    implemented: true,
+    subToggles: [
+      {
+        section: 'helpers',
+        key: 'redFlags',
+        name: 'Heads up',
+        description:
+          'Notes on job pages: an old or closed posting, no salary, a company you applied to recently.',
+        platforms: EXTENSION,
+      },
+      {
+        section: 'helpers',
+        key: 'duplicates',
+        name: 'Same job on two sites',
+        description: 'Spot a job saved twice (say, LinkedIn and the careers page) and merge them.',
+      },
+      {
+        section: 'helpers',
+        key: 'followUps',
+        name: 'Follow-up templates',
+        description: 'Ready-to-send follow-up messages and a list of applications to follow up on.',
+      },
+      {
+        section: 'helpers',
+        key: 'offers',
+        name: 'Offer comparison',
+        description: 'Offer details, deadline reminders and a side-by-side comparison.',
+      },
+    ],
   },
   {
     id: 'insights',
     name: 'Insights',
-    description: 'Deeper statistics about where your applications go.',
-    defaultEnabled: false,
+    description:
+      'Response rates and reply times by source and work type, a weekly recap and a shareable card.',
+    defaultEnabled: true,
     permissions: {},
     permissionNotes: [],
     syncScope: 'synced',
     platforms: BOTH,
-    implemented: false,
+    implemented: true,
+    subToggles: [
+      {
+        section: 'insights',
+        key: 'weeklyRecap',
+        name: 'Weekly recap',
+        description: 'A notification with your week in numbers (follows quiet hours).',
+        platforms: EXTENSION,
+      },
+    ],
   },
   {
     id: 'encryptedSync',
@@ -163,6 +217,19 @@ export function visibleFeatures(): FeatureDefinition[] {
 /** Whether a feature is on. Planned (unimplemented) features are always off. */
 export function isFeatureEnabled(settings: Pick<Settings, 'features'>, id: FeatureId): boolean {
   return getFeature(id).implemented && settings.features[id] === true;
+}
+
+/** Whether a Smart helpers part is on: the feature and its own switch. */
+export function isHelperEnabled(
+  settings: Pick<Settings, 'features' | 'helpers'>,
+  key: HelperToggle,
+): boolean {
+  return isFeatureEnabled(settings, 'smartHelpers') && settings.helpers[key];
+}
+
+/** Whether the weekly recap is on: Insights and its own switch. */
+export function isWeeklyRecapEnabled(settings: Pick<Settings, 'features' | 'insights'>): boolean {
+  return isFeatureEnabled(settings, 'insights') && settings.insights.weeklyRecap;
 }
 
 export function needsPermissions(feature: FeatureDefinition): boolean {

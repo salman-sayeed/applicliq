@@ -30,6 +30,10 @@ export type DashboardAdapter = {
   importJobs(drafts: ImportDraft[]): Promise<{ batchId: string; count: number }>;
   /** Deletes the jobs of an import batch (as tombstones); returns how many. */
   undoImport(batchId: string): Promise<number>;
+  /** Folds `otherId` into `keepId` and deletes it (Smart helpers → Same job on two sites). */
+  mergeDuplicates(keepId: string, otherId: string): Promise<Job>;
+  /** Remembers that two jobs are not duplicates. */
+  markNotDuplicate(a: string, b: string): Promise<void>;
   getLocalState(): Promise<LocalState>;
   setLocalState(patch: LocalState): Promise<void>;
 };

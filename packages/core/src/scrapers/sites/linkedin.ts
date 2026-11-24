@@ -35,6 +35,12 @@ export const linkedin: SiteAdapter = {
     ])
       ?.split('·')[0]
       ?.trim(),
+    // "Berlin, Germany · 3 days ago · 120 applicants" (logged in) or "2 weeks ago" (public).
+    postedText: textAt(doc, [
+      '.job-details-jobs-unified-top-card__primary-description-container',
+      '.jobs-unified-top-card__posted-date',
+      '.posted-time-ago__text',
+    ]),
     workplaceText: textAt(doc, [
       '.job-details-jobs-unified-top-card__workplace-type',
       '.jobs-unified-top-card__workplace-type',

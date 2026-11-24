@@ -18,6 +18,8 @@ export type PageBadgeMessage = {
     jobId: string;
     text: string;
     position: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+    /** "Heads up" notes (Smart helpers); empty or missing for none. */
+    notes?: string[];
   } | null;
 };
 

@@ -7,7 +7,11 @@
   import SyncControl from './SyncControl.svelte';
   import SettingsLink from './SettingsLink.svelte';
 
-  let { initialJobId, onboarding }: { initialJobId?: string; onboarding?: boolean } = $props();
+  let {
+    initialJobId,
+    onboarding,
+    initialView,
+  }: { initialJobId?: string; onboarding?: boolean; initialView?: 'insights' } = $props();
 
   let shortcut = $state<string>();
   onMount(() => {
@@ -18,8 +22,11 @@
 <Dashboard
   adapter={dashboardAdapter}
   {initialJobId}
+  {initialView}
   {onboarding}
+  logoUrl="/icon/128.png"
   onimport={() => void openSettings('import')}
+  onsettings={(section) => void openSettings(section)}
 >
   {#snippet header()}
     <img src="/icon/32.png" alt="" class="size-6" />

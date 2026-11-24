@@ -1,4 +1,11 @@
-import { JOB_STATUSES, type Job, type JobRecord, type JobStatus, type StatusChange } from './types';
+import {
+  JOB_STATUSES,
+  type Job,
+  type JobRecord,
+  type JobStatus,
+  type Offer,
+  type StatusChange,
+} from './types';
 
 const isObject = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -24,10 +31,47 @@ export function sanitizeRecord(value: unknown): JobRecord | undefined {
   delete job.deletedAt;
   if (job.importedAt !== undefined && !isTime(job.importedAt)) delete job.importedAt;
   if (job.importBatchId !== undefined && !isText(job.importBatchId)) delete job.importBatchId;
+  if (job.alternateUrls !== undefined) {
+    const urls = Array.isArray(job.alternateUrls)
+      ? [...new Set(job.alternateUrls.filter((u) => isText(u) && u.trim()))]
+      : [];
+    if (urls.length) job.alternateUrls = urls.slice(0, 20);
+    else delete job.alternateUrls;
+  }
+  if (job.offer !== undefined) {
+    const offer = sanitizeOffer(job.offer);
+    if (offer) job.offer = offer;
+    else delete job.offer;
+  }
   job.history = history.filter(
     (h): h is StatusChange => isObject(h) && isStatus(h.status) && isTime(h.at),
   );
   return job;
+}
+
+const MAX_TEXT = 2000;
+
+/** A clean offer from untrusted input; undefined when nothing usable is left. */
+export function sanitizeOffer(value: unknown): Offer | undefined {
+  if (!isObject(value)) return undefined;
+  const offer: Offer = {};
+  const text = (v: unknown) => (isText(v) && v.trim() ? v.trim().slice(0, MAX_TEXT) : undefined);
+  if (isTime(value.base) && value.base >= 0) offer.base = value.base;
+  if (isText(value.currency) && /^[A-Za-z]{3}$/.test(value.currency.trim())) {
+    offer.currency = value.currency.trim().toUpperCase();
+  }
+  if (value.period === 'month' || value.period === 'year') offer.period = value.period;
+  for (const key of ['bonus', 'equity', 'pros', 'cons'] as const) {
+    const t = text(value[key]);
+    if (t) offer[key] = t;
+  }
+  if (Array.isArray(value.benefits)) {
+    const benefits = value.benefits.map(text).filter((b): b is string => !!b);
+    if (benefits.length) offer.benefits = benefits.slice(0, 50);
+  }
+  if (isTime(value.startDate)) offer.startDate = value.startDate;
+  if (isTime(value.deadline)) offer.deadline = value.deadline;
+  return Object.keys(offer).length ? offer : undefined;
 }
 
 /** Sanitizes a list of untrusted records, reporting how many were dropped. */

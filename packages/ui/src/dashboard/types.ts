@@ -7,7 +7,7 @@ export type ToastMessage = {
   tone?: 'info' | 'error';
 };
 
-export type DashboardView = 'list' | 'board' | 'stats';
+export type DashboardView = 'list' | 'board' | 'stats' | 'insights';
 
 /** What a sync runner reports to `SyncMenu`; each app keeps it in its own storage. */
 export type SyncMenuStatus = {

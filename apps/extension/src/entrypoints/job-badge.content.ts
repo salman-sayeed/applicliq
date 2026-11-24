@@ -26,7 +26,7 @@ export default defineContentScript({
       host = undefined;
     }
 
-    function show(jobId: string, text: string, position: string) {
+    function show(jobId: string, text: string, position: string, notes: string[] = []) {
       remove();
       if (dismissed.has(jobId)) return;
 
@@ -50,7 +50,18 @@ export default defineContentScript({
       const dot = document.createElement('span');
       dot.className = 'dot';
       dot.setAttribute('aria-hidden', 'true');
-      open.append(dot, text);
+      const label = document.createElement('span');
+      label.className = 'label';
+      label.append(text);
+      // "Heads up" notes (Smart helpers): a second line in the same badge.
+      if (notes.length) {
+        badge.classList.add('has-notes');
+        const line = document.createElement('span');
+        line.className = 'notes';
+        line.textContent = `Heads up: ${notes.join(' · ')}`;
+        label.append(line);
+      }
+      open.append(dot, label);
       open.addEventListener('click', () => {
         const message: OpenJobMessage = { type: 'applicliq:open-job', jobId };
         browser.runtime.sendMessage(message).catch(() => {});
@@ -74,8 +85,12 @@ export default defineContentScript({
     browser.runtime.onMessage.addListener((message: unknown) => {
       const m = message as PageBadgeMessage | undefined;
       if (m?.type !== 'applicliq:page-badge') return;
-      if (m.badge) show(m.badge.jobId, m.badge.text, m.badge.position);
-      else remove();
+      if (m.badge) {
+        const notes = Array.isArray(m.badge.notes)
+          ? m.badge.notes.filter((n): n is string => typeof n === 'string')
+          : [];
+        show(m.badge.jobId, m.badge.text, m.badge.position, notes);
+      } else remove();
     });
   },
 });
@@ -104,6 +119,11 @@ const CSS = `
   button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
   .open { display: flex; align-items: center; gap: 8px; padding: 4px 8px; white-space: nowrap; }
   .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex: none; }
+  .label { display: flex; flex-direction: column; }
+  .notes { color: #b45309; font-size: 12px; font-weight: 400; white-space: normal; max-width: 320px; }
+  @media (prefers-color-scheme: dark) { .notes { color: #fbbf24; } }
+  .has-notes { border-radius: 14px; }
+  .has-notes button { border-radius: 10px; }
   .close {
     display: grid; place-items: center; width: 24px; height: 24px;
     color: var(--muted); font-size: 18px; line-height: 1;

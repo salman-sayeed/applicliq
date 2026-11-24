@@ -34,7 +34,8 @@ apps/
     src/lib/draft.ts    form drafts in storage.session (per page URL, 24 h), toolbar "•" badge
     src/lib/tab-draft.ts  writes selected / picked page text into a tab's draft, page toast
     src/lib/open-in.ts  toolbar button opens popup or sidebar (side_panel / sidebar_action)
-    src/lib/background.ts  auto-ghosting, reminders (quiet hours, goal nudge), goal badge, page badge
+    src/lib/background.ts  auto-ghosting, reminders (quiet hours, goal nudge, offer deadlines),
+                        weekly recap, goal badge, page badge (with Heads up notes)
     src/lib/google-auth.ts launchWebAuthFlow (Web client); getAuthToken on Chrome if only a Chrome client
     src/lib/sync.ts     background sync runner + status in extension storage
     src/lib/features.ts feature permissions: request on enable, remove on disable, start-up check
@@ -74,7 +75,14 @@ packages/
     src/settings.ts     Settings schema + defaults + validation (SETTINGS_SCHEMA), synced vs device
                         keys (DEVICE_KEYS), settings merge
     src/features.ts     feature registry (FEATURES): id, name, description, defaultEnabled,
-                        permissions, syncScope, platforms, implemented; isFeatureEnabled
+                        permissions, syncScope, platforms, implemented, subToggles;
+                        isFeatureEnabled, isHelperEnabled, isWeeklyRecapEnabled
+    src/smart/          Smart helpers, pure: red-flags (Heads up notes, posting dates), duplicates
+                        (company/title normalizing, Dice similarity, mergeDuplicateJobs), templates
+                        (follow-up templates, placeholders, mailto, needs-follow-up), offers
+                        (pay per month/year, compareOffers with a user-typed rate)
+    src/insights.ts     response rates, reply times (median), period stats, weekly recap, share
+                        card data and post text
     src/import/         job import: csv-parse (delimiter / header detection), fields (column
                         guessing, status values, dates), linkedin (export .zip/.csv, fflate loaded
                         lazily), review (rows → drafts, duplicates, import batches);
@@ -83,7 +91,8 @@ packages/
                         import/export
     src/csv.ts          jobsToCsv (spreadsheet export)
     src/draft.ts        save-form Draft, setDraftField (salary text parsing), createDraftStore
-    src/reminders.ts    auto-ghost selection, due reminders, job summary, goal badge text
+    src/reminders.ts    auto-ghost selection, due reminders (follow-up, interview, offer deadline),
+                        job summary, goal badge text, weekly times (recap)
     src/merge.ts        mergeJobs: last-write-wins merge, tombstone purge
     src/url.ts          normalizeUrl (strips hash + tracking params) for duplicate detection
     src/validate.ts     sanitizeRecord(s) for untrusted data (Drive file, imports)
@@ -93,13 +102,17 @@ packages/
   ui/                   shared Svelte components + Tailwind theme
     src/theme.css       @theme tokens; import after `tailwindcss` in each app
     src/components/     Button, StatusBadge, ...
-    src/dashboard/      shared Dashboard (list, kanban, detail panel, onboarding) and SyncMenu. Talks to
+    src/dashboard/      shared Dashboard (list, kanban, detail panel, onboarding) and SyncMenu.
+                        smart/: HelpersPanel (needs follow-up, possible duplicates), FollowUpDialog
+                        and CompareOffers (both lazy), OfferSection; insights/: InsightsView (lazy),
+                        RateBars, ShareCard + share-card.ts (canvas PNG). Talks to
                         storage only through a DashboardAdapter prop, never extension/platform APIs,
                         so the extension page and the web app can both mount it. Pages that render
                         it add `@source` for this folder in their CSS.
     src/settings/       shared SettingsPage (section nav, auto-save). Platform bits come in through a
                         SettingsPlatform prop; extension-only sections are disabled on the web.
-                        sections/FeaturesSection: a card per implemented feature
+                        sections/FeaturesSection: a card per implemented feature, with its
+                        sub-toggles; sections/HelpersSection: Smart helpers options and templates
     src/import/         Settings → Import (LinkedIn, CSV mapping, review, undo, history); loaded
                         with a dynamic import. Pages that render settings add `@source` for it
     src/prefs.svelte.ts Prefs context: status names, hidden statuses, tag colours, date format
@@ -192,6 +205,19 @@ type Job = {
   interviewAt?: number;
   followUpAt?: number;
   descriptionSnapshot?: string;
+  alternateUrls?: string[]; // other postings of a merged duplicate; getJobByUrl matches them
+  offer?: {
+    base?: number;
+    currency?: string;
+    period?: 'month' | 'year';
+    bonus?: string;
+    equity?: string;
+    benefits?: string[];
+    startDate?: number;
+    deadline?: number;
+    pros?: string;
+    cons?: string;
+  };
   importedAt?: number; // set by an import: when it ran (the "imported" flag)
   importBatchId?: string; // the import that added it, for undo
   createdAt: number;
@@ -228,17 +254,19 @@ with dates within 3 days. LinkedIn imports use source `linkedin` (the scraper's 
 
 `Settings` (`packages/core/src/settings.ts`) is one typed object with a `version` and an
 `updatedAt`, grouped in sections (goals, automation, notifications, jobPages, appearance, regional,
-labels, sync, features). It is stored in the `settings` table as two rows: `app` (synced keys) and `device`
-(`DEVICE_KEYS`: notification settings, the page badge's on/position/sites and device-scoped feature
-switches, which never leave the
-browser). Everything read from storage, Drive or a file goes through `sanitizeSettings`, which also
+labels, sync, helpers, insights, features). It is stored in the `settings` table as two rows: `app` (synced keys) and `device`
+(`DEVICE_KEYS`: notification settings, the weekly recap's switch/day/time, the page badge's
+on/position/sites and device-scoped feature switches, which never leave the
+browser). `helpers` holds the Smart helpers' sub-toggles and options, `notDuplicatePairs` (`idA|idB`,
+sorted) and `followUpTemplates`, all synced. Everything read from storage, Drive or a file goes through `sanitizeSettings`, which also
 reads the old shape (top-level `theme`/`ghostedAfterDays`, 0 = off). `updatedAt` only moves when a
 synced key changes. Status keys never change; `labels.statusLabels` only renames them for display.
 
 ### Sync / merge
 
 The Drive file `career-pocket.json` in `appDataFolder` holds
-`{ schemaVersion: 1, updatedAt, records, settings }` (`settings` = the synced part; files from
+`{ schemaVersion: 2, updatedAt, records, settings }` (2 added `alternateUrls` and `offer`;
+version 1 files are read as they are) (`settings` = the synced part; files from
 older versions lack it and it is added on the next upload)
 (older files and exports used `version: 1`, still read). Sync = download, sanitize,
 `mergeJobs(local, remote)` (per id, last write wins by `updatedAt` / `deletedAt`; a tombstone
@@ -253,4 +281,17 @@ under a Web Lock so tabs don't race; its token (GIS, 1 h) needs a click to renew
 clears the browser's local copy.
 `exportJSON()` writes the same format; `importJSON()` merges it the same way.
 
-Job URLs are stored normalized (`normalizeUrl`), so `getJobByUrl` is an indexed lookup.
+Job URLs are stored normalized (`normalizeUrl`), so `getJobByUrl` is an indexed lookup (Dexie
+version 3 also indexes `*alternateUrls`).
+
+### Smart helpers and Insights
+
+Both are features (default on) with sub-toggles in `settings.helpers` / `settings.insights`;
+check a part with `isHelperEnabled(settings, 'redFlags' | 'duplicates' | 'followUps' | 'offers')`
+or `isWeeklyRecapEnabled(settings)`. No new permissions: the page badge's notes use the access it
+already has; clipboard and downloads come from clicks. Duplicates: same normalized company
+(legal forms stripped), title Dice similarity ≥ 0.8, created within 60 days;
+`repo.mergeDuplicates(keepId, otherId)` folds one into the other and tombstones it. Offer
+amounts are never converted with live rates. Insights count imported applications, but status
+changes an import recorded at import time are not used as reply dates. Insights, the compare
+view and the follow-up dialog load with dynamic `import()`.

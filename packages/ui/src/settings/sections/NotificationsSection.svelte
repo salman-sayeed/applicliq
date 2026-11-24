@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { INTERVIEW_REMINDER_OFFSETS } from '@applicliq/core';
+  import { INTERVIEW_REMINDER_OFFSETS, WEEK_DAYS, isFeatureEnabled } from '@applicliq/core';
   import Field from '../Field.svelte';
   import Toggle from '../Toggle.svelte';
   import { input } from '../styles';
@@ -8,6 +8,9 @@
   let { settings, save, disabled = false }: SectionProps & { disabled?: boolean } = $props();
 
   const n = $derived(settings.notifications);
+  const recap = $derived(settings.insights);
+  const insightsOn = $derived(isFeatureEnabled(settings, 'insights'));
+  const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   let quietError = $state<string>();
 
   function setQuiet(start: string, end: string) {
@@ -29,7 +32,10 @@
           : `${minutes / 60} hour${minutes === 60 ? '' : 's'} before`;
 </script>
 
-<Field label="Follow-up reminders" hint="A notification on the follow-up date you set on a job.">
+<Field
+  label="Follow-up reminders"
+  hint="A notification on the follow-up date you set on a job, and the day before an offer's deadline."
+>
   <Toggle
     label="Follow-up reminders"
     checked={n.followUpReminders}
@@ -80,6 +86,45 @@
     />
   {/if}
 </Field>
+
+{#if insightsOn}
+  <Field
+    label="Weekly recap"
+    id="recap-day"
+    hint="Your week in numbers: applications, responses, streak and goal (Insights)."
+  >
+    <Toggle
+      label="Weekly recap"
+      checked={recap.weeklyRecap}
+      {disabled}
+      onchange={(weeklyRecap) => save({ insights: { weeklyRecap } })}
+    />
+    {#if recap.weeklyRecap}
+      <select
+        id="recap-day"
+        class={input}
+        {disabled}
+        value={recap.weeklyRecapDay}
+        aria-label="Weekly recap day"
+        onchange={(e) =>
+          save({
+            insights: { weeklyRecapDay: e.currentTarget.value as typeof recap.weeklyRecapDay },
+          })}
+      >
+        {#each WEEK_DAYS as day, i (day)}<option value={day}>{DAY_NAMES[i]}</option>{/each}
+      </select>
+      <input
+        type="time"
+        class={input}
+        aria-label="Weekly recap time"
+        {disabled}
+        value={recap.weeklyRecapTime}
+        onchange={(e) =>
+          e.currentTarget.value && save({ insights: { weeklyRecapTime: e.currentTarget.value } })}
+      />
+    {/if}
+  </Field>
+{/if}
 
 <Field
   label="Quiet hours"

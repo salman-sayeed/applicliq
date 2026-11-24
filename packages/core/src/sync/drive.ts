@@ -15,14 +15,20 @@ export const SYNC_FILE_NAME = 'career-pocket.json';
 /** The file's name before the app was renamed; such a file is adopted and renamed on sync. */
 export const LEGACY_SYNC_FILE_NAME = 'pocket-career.json';
 
-/** Format of the Drive file and of exports. Bump on incompatible changes. */
-export const SCHEMA_VERSION = 1;
+/**
+ * Format of the Drive file and of exports. Bump on incompatible changes.
+ * 2: jobs may carry `alternateUrls` and `offer` (merged duplicates, offer details). Version 1
+ * files are read as they are; versions older than this one can't overwrite a version 2 file.
+ */
+export const SCHEMA_VERSION = 2;
+/** The oldest file format this version still reads. */
+export const MIN_SCHEMA_VERSION = 1;
 
 const API = 'https://www.googleapis.com/drive/v3';
 const UPLOAD = 'https://www.googleapis.com/upload/drive/v3';
 
 export type SyncSnapshot = {
-  schemaVersion: typeof SCHEMA_VERSION;
+  schemaVersion: number;
   updatedAt: number;
   records: JobRecord[];
   /**

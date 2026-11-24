@@ -5,8 +5,17 @@ import {
   type Settings,
   addDays,
   dayKey,
+  WEEK_DAYS,
+  WEEK_START_INDEX,
   dueReminders,
   inQuietHours,
+  isHelperEnabled,
+  isWeeklyRecapEnabled,
+  lastWeeklyTime,
+  nextWeeklyTime,
+  redFlags,
+  weeklyRecap,
+  weeklyRecapText,
   jobSummary,
   jobsToGhost,
   nextReminderAt,
@@ -24,7 +33,7 @@ import { repo } from './db';
 import type { PageBadgeMessage } from './messages';
 import { hasPageAccess } from './page-access';
 import { clearStaleSyncing, runSync, scheduleSync } from './sync';
-import { isSavableUrl } from './tabs';
+import { extractFromTab, isSavableUrl } from './tabs';
 
 /** Background-only work: auto-ghosting, reminders, the goal badge and the saved-job page badge. */
 
@@ -33,6 +42,7 @@ export const ALARM_SYNC = 'sync';
 const ALARM_REMINDER = 'reminder';
 const ALARM_GOAL_REMINDER = 'goal-reminder';
 const ALARM_MIDNIGHT = 'midnight';
+const ALARM_WEEKLY_RECAP = 'weekly-recap';
 const GHOST_CHECK_MINUTES = 6 * 60;
 
 /** Keys of reminders already shown, so each one notifies once (extension storage, local). */
@@ -43,6 +53,11 @@ const GOAL_REMINDER_DAY_KEY = 'goalReminderDay';
 // opening their job.
 const NOTIFICATION_PREFIX = 'career-pocket-reminder:';
 const GOAL_NOTIFICATION_ID = 'career-pocket-goal';
+const RECAP_NOTIFICATION_ID = 'applicliq-weekly-recap';
+/** When the weekly recap last showed (the `lastWeeklyTime` it was for). */
+const RECAP_SHOWN_KEY = 'weeklyRecapShownFor';
+/** A recap more than this late (browser closed all week) isn't shown. */
+const RECAP_MAX_LATE_MS = 24 * 60 * 60 * 1000;
 
 /**
  * Creates the periodic alarms (6-hour ghost check, sync every `syncIntervalMinutes`) unless they
@@ -100,6 +115,7 @@ export function refresh({ ghost = false } = {}): Promise<void> {
       await Promise.all([
         checkReminders(jobs, settings),
         checkGoalReminder(jobs, settings),
+        checkWeeklyRecap(jobs, settings),
         showGoalBadge(jobs, settings),
         ensureAlarms(settings),
       ]);
@@ -130,6 +146,8 @@ async function checkReminders(jobs: readonly Job[], settings: Settings): Promise
   const options: ReminderOptions = {
     followUps: followUpReminders,
     interviewOffsetMinutes: interviewReminderOffset,
+    // Offer deadlines are reminders like follow-ups: they follow the same switch.
+    offerDeadlines: followUpReminders && isHelperEnabled(settings, 'offers'),
   };
 
   // In quiet hours nothing shows; due reminders wait for the window to end.
@@ -189,6 +207,66 @@ async function checkGoalReminder(jobs: readonly Job[], settings: Settings): Prom
   await browser.alarms.create(ALARM_GOAL_REMINDER, { when: next });
 }
 
+/**
+ * The weekly recap (Insights): once a week at the chosen day and time, unless it's more than a
+ * day late. Waits out quiet hours. Schedules its own next check.
+ */
+async function checkWeeklyRecap(jobs: readonly Job[], settings: Settings): Promise<void> {
+  if (!isWeeklyRecapEnabled(settings)) {
+    await browser.alarms.clear(ALARM_WEEKLY_RECAP);
+    return;
+  }
+  const now = Date.now();
+  const { weeklyRecapDay, weeklyRecapTime } = settings.insights;
+  const day = WEEK_DAYS.indexOf(weeklyRecapDay);
+  const due = lastWeeklyTime(now, day, weeklyRecapTime);
+  let next = nextWeeklyTime(now, day, weeklyRecapTime);
+  const stored = (await browser.storage.local.get(RECAP_SHOWN_KEY)) as {
+    [RECAP_SHOWN_KEY]?: number;
+  };
+  if (stored[RECAP_SHOWN_KEY] !== due && now - due < RECAP_MAX_LATE_MS) {
+    const quiet = settings.notifications.quietHours;
+    if (inQuietHours(now, quiet)) {
+      const end = quietHoursEnd(now, quiet);
+      if (end - due < RECAP_MAX_LATE_MS) next = Math.min(next, end);
+    } else {
+      const recap = weeklyRecap(
+        jobs,
+        settings.goals,
+        now,
+        WEEK_START_INDEX[settings.goals.weekStartsOn],
+      );
+      await showNotification(RECAP_NOTIFICATION_ID, weeklyRecapText(recap));
+      await browser.storage.local.set({ [RECAP_SHOWN_KEY]: due });
+    }
+  }
+  await browser.alarms.create(ALARM_WEEKLY_RECAP, { when: next });
+}
+
+async function showNotification(
+  id: string,
+  { title, message }: { title: string; message: string },
+) {
+  try {
+    await browser.notifications.create(id, {
+      type: 'basic',
+      iconUrl: browser.runtime.getURL('/icon/128.png'),
+      title,
+      message,
+    });
+  } catch (error) {
+    console.error('AppliCliq: could not show a notification', error);
+  }
+}
+
+/** Opens Insights for a click on the weekly recap; false for other notifications. */
+export function handleRecapNotificationClick(notificationId: string): boolean {
+  if (notificationId !== RECAP_NOTIFICATION_ID) return false;
+  void openDashboard(undefined, { view: 'insights' });
+  void browser.notifications.clear(notificationId);
+  return true;
+}
+
 async function showGoalReminder(left: number, goal: number): Promise<void> {
   try {
     await browser.notifications.create(GOAL_NOTIFICATION_ID, {
@@ -213,11 +291,22 @@ export function handleGoalNotificationClick(notificationId: string): boolean {
 const timeFormat = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 
 async function showReminder({ kind, job }: Reminder, settings: Settings): Promise<void> {
-  const title = kind === 'interview' ? `Interview: ${job.title}` : `Follow up: ${job.title}`;
+  const title =
+    kind === 'interview'
+      ? `Interview: ${job.title}`
+      : kind === 'offerDeadline'
+        ? `Offer deadline tomorrow: ${job.title}`
+        : `Follow up: ${job.title}`;
   const label = statusLabel(settings, job.status, STATUS_LABELS[job.status]);
+  const when =
+    kind === 'interview'
+      ? job.interviewAt
+      : kind === 'offerDeadline'
+        ? job.offer?.deadline
+        : undefined;
   const message =
-    kind === 'interview' && job.interviewAt !== undefined
-      ? `${job.company} · ${timeFormat.format(job.interviewAt)}`
+    when !== undefined
+      ? `${job.company} · ${timeFormat.format(when)}`
       : `${job.company} · ${label}`;
   try {
     await browser.notifications.create(`${NOTIFICATION_PREFIX}${job.id}:${kind}`, {
@@ -262,7 +351,23 @@ export async function updatePageBadge(tabId: number, url: string | undefined): P
     jobId: job.id,
     text: jobSummary(job, (s) => statusLabel(settings, s, STATUS_LABELS[s]), Date.now()),
     position: settings.jobPages.badgePosition,
+    notes: await badgeNotes(tabId, job, settings),
   });
+}
+
+/** The "Heads up" notes for the badge (Smart helpers → Heads up), read from the page. */
+async function badgeNotes(tabId: number, job: Job, settings: Settings): Promise<string[]> {
+  if (!isHelperEnabled(settings, 'redFlags')) return [];
+  // The badge already has access to the page (the all-sites permission it needs).
+  const extracted = await extractFromTab(tabId);
+  return redFlags({
+    posting: extracted?.posting,
+    job,
+    jobs: await repo.getJobs(),
+    oldPostingDays: settings.helpers.oldPostingDays,
+    appliedBeforeDays: settings.helpers.appliedBeforeDays,
+    pageRead: extracted !== undefined,
+  }).map((flag) => flag.text);
 }
 
 async function sendPageBadge(tabId: number, badge: PageBadgeMessage['badge']): Promise<void> {

@@ -23,6 +23,8 @@ export const dashboardAdapter: DashboardAdapter = {
   renameTag: notifying(repo.renameTag),
   importJobs: notifying(repo.importJobs),
   undoImport: notifying(repo.undoImport),
+  mergeDuplicates: notifying(repo.mergeDuplicates),
+  markNotDuplicate: notifying(repo.markNotDuplicate),
   getLocalState: repo.getLocalState,
   setLocalState: repo.setLocalState,
 };

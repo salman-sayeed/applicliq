@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { sanitizeRecord, sanitizeRecords } from './validate';
+import { sanitizeOffer, sanitizeRecord, sanitizeRecords } from './validate';
 
 const job = {
   id: 'a',
@@ -51,5 +51,47 @@ describe('sanitizeRecords', () => {
       records: [job, { id: 'b', deletedAt: 1 }],
       skipped: 1,
     });
+  });
+});
+
+describe('alternate URLs and offers', () => {
+  it('keeps clean values', () => {
+    const offer = {
+      base: 100_000,
+      currency: 'eur',
+      period: 'year',
+      bonus: '10%',
+      benefits: ['Gym', ' ', 3],
+      deadline: 5,
+      pros: ' Team ',
+    };
+    const record = sanitizeRecord({
+      ...job,
+      alternateUrls: ['https://a.test', 'https://a.test', 7, ''],
+      offer,
+    });
+    expect(record).toMatchObject({
+      alternateUrls: ['https://a.test'],
+      offer: {
+        base: 100_000,
+        currency: 'EUR',
+        period: 'year',
+        bonus: '10%',
+        benefits: ['Gym'],
+        deadline: 5,
+        pros: 'Team',
+      },
+    });
+  });
+
+  it('drops unusable values', () => {
+    const record = sanitizeRecord({
+      ...job,
+      alternateUrls: 'https://a.test',
+      offer: { base: -5, currency: 'euros', period: 'week' },
+    });
+    expect(record).not.toHaveProperty('alternateUrls');
+    expect(record).not.toHaveProperty('offer');
+    expect(sanitizeOffer('offer')).toBeUndefined();
   });
 });

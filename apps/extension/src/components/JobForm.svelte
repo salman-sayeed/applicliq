@@ -10,6 +10,7 @@
     saving,
     defaultStatus = 'saved',
     duplicateWarning = true,
+    showAppliedWarning = true,
     onsave,
     onpick,
   }: {
@@ -19,6 +20,8 @@
     defaultStatus?: JobStatus;
     /** Mention other jobs at the same company (setting). */
     duplicateWarning?: boolean;
+    /** Off when the "Heads up" row says it instead. */
+    showAppliedWarning?: boolean;
     onsave: (status: JobStatus) => void;
     /** "Pick from page" for a field; left out where the page can't be picked from. */
     onpick?: (field: DraftField) => void;
@@ -107,7 +110,10 @@
       />
       {@render pickButton('company')}
     </div>
-    {#if duplicateWarning}<DuplicateWarning company={draft.company} />{/if}
+    {#if duplicateWarning}<DuplicateWarning
+        company={draft.company}
+        showApplied={showAppliedWarning}
+      />{/if}
   </div>
 
   <div class="grid grid-cols-[1fr_7.5rem] gap-2">

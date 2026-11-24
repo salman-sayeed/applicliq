@@ -75,7 +75,7 @@ const snapshot = (
   records: unknown[],
   settings: unknown = splitSettings(DEFAULT_SETTINGS).synced,
 ) => ({
-  schemaVersion: 1,
+  schemaVersion: 2,
   updatedAt: 1,
   records,
   settings,
@@ -108,7 +108,7 @@ describe('syncWithDrive', () => {
     });
     expect(empty.files.size).toBe(1);
     expect(empty.records()).toEqual([job]);
-    expect((empty.files.get('f0')!.data as SyncSnapshot).schemaVersion).toBe(1);
+    expect((empty.files.get('f0')!.data as SyncSnapshot).schemaVersion).toBe(2);
   });
 
   it('merges remote changes in, skipping malformed remote records', async () => {
@@ -198,7 +198,7 @@ describe('syncWithDrive', () => {
   it('never overwrites a file from a newer schema or a foreign file', async () => {
     const repo = createJobRepository(db, clock);
     await repo.addJob({ url: 'https://a.test', title: 't', company: 'c' });
-    const newer = fakeDrive([{ schemaVersion: 2, updatedAt: 1, records: [] }]);
+    const newer = fakeDrive([{ schemaVersion: 3, updatedAt: 1, records: [] }]);
     await expect(syncWithDrive(repo, newer.drive, { now: clock })).rejects.toMatchObject({
       kind: 'newer-schema',
     });

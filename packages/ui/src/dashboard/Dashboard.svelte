@@ -12,6 +12,7 @@
     jobFacets,
     sortJobs,
   } from '@applicliq/core';
+  import type { DuplicatePair } from '@applicliq/core';
   import type { Snippet } from 'svelte';
   import { applyAppearance } from '../appearance';
   import { Prefs, setPrefs } from '../prefs.svelte';
@@ -22,6 +23,7 @@
   import KanbanBoard from './KanbanBoard.svelte';
   import Toast from './Toast.svelte';
   import StatsView from './stats/StatsView.svelte';
+  import HelpersPanel from './smart/HelpersPanel.svelte';
   import Toolbar from './Toolbar.svelte';
   import type { DashboardView, ToastMessage } from './types';
 
@@ -33,6 +35,9 @@
     onboarding = false,
     onboardingSync,
     onimport,
+    initialView,
+    logoUrl,
+    onsettings,
   }: {
     adapter: DashboardAdapter;
     /** Opens this job's detail panel on load (e.g. from a `#job=` link). */
@@ -47,6 +52,12 @@
     onboardingSync?: Snippet;
     /** Opens Settings → Import; the empty state offers it while the Import feature is on. */
     onimport?: () => void;
+    /** Opens on this view (the weekly recap notification opens Insights). */
+    initialView?: DashboardView;
+    /** The AppliCliq logo, drawn on the share card. */
+    logoUrl?: string;
+    /** Opens a settings section (e.g. 'helpers' to edit follow-up templates). */
+    onsettings?: (section: string) => void;
   } = $props();
 
   const TOAST_MS = 6000;
@@ -59,9 +70,15 @@
   let loaded = $state(false);
   let loadError = $state<string>();
   let settings = $state.raw<Settings>();
-  let view = $state<DashboardView>('list');
+  // svelte-ignore state_referenced_locally
+  let view = $state<DashboardView>(initialView ?? 'list');
   /** The view follows the "default view" setting until the user picks one here. */
-  let viewPicked = false;
+  // svelte-ignore state_referenced_locally
+  let viewPicked = initialView !== undefined;
+  /** The job whose follow-up dialog is open. */
+  let followUpId = $state<string>();
+  /** The offer comparison is open, starting with these jobs. */
+  let comparing = $state<string[]>();
   // svelte-ignore state_referenced_locally
   let showIntro = $state(onboarding);
   let filter = $state<JobFilter>({});
@@ -129,6 +146,9 @@
   }
 
   const facets = $derived(jobFacets(jobs));
+  /** Insights is a feature: with it off, its tab falls back to the list. */
+  const shownView = $derived(view === 'insights' && !prefs.feature('insights') ? 'list' : view);
+  const followUpJob = $derived(jobs.find((j) => j.id === followUpId));
   const visible = $derived(sortJobs(filterJobs(jobs, filter), sortKey, sortDir));
   const selected = $derived(jobs.find((j) => j.id === selectedId));
 
@@ -183,6 +203,23 @@
     });
   }
 
+  async function mergeDuplicates(keep: Job, other: Job) {
+    try {
+      const merged = await adapter.mergeDuplicates(keep.id, other.id);
+      showToast({ message: `Merged into “${merged.title}”` });
+      selectedId = merged.id;
+    } catch (error) {
+      reportError('merge the jobs', error);
+    }
+  }
+
+  function notDuplicate({ a, b }: DuplicatePair) {
+    adapter.markNotDuplicate(a.id, b.id).then(
+      () => showToast({ message: 'Got it. They won’t be suggested again.' }),
+      (error) => reportError('save that', error),
+    );
+  }
+
   function onkeydown(event: KeyboardEvent) {
     const target = event.target as HTMLElement | null;
     const typing = target?.closest('input, textarea, select, [contenteditable]');
@@ -202,7 +239,7 @@
     </div>
     <Toolbar
       bind:filter
-      {view}
+      view={shownView}
       onview={pickView}
       bind:searchInput
       {facets}
@@ -220,8 +257,19 @@
       </div>
     {:else if loadError}
       <p role="alert" class="text-status-rejected text-sm">{loadError}</p>
-    {:else if view === 'stats'}
+    {:else if shownView === 'stats'}
       <StatsView {jobs} {settings} onsavegoals={saveGoals} />
+    {:else if shownView === 'insights'}
+      <!-- Loaded on demand: the charts and the share card stay out of the first load. -->
+      {#await import('./insights/InsightsView.svelte')}
+        <div class="bg-surface-muted mx-auto h-40 w-full max-w-5xl animate-pulse rounded-lg"></div>
+      {:then { default: InsightsView }}
+        <InsightsView {jobs} {settings} {logoUrl} />
+      {:catch}
+        <p role="alert" class="text-status-rejected text-sm">
+          Could not load Insights. Reload and try again.
+        </p>
+      {/await}
     {:else if jobs.length === 0}
       <div class="text-ink-muted mx-auto mt-16 max-w-sm text-center text-sm">
         <p class="text-ink mb-1 text-base font-semibold">No jobs yet</p>
@@ -237,27 +285,42 @@
           </button>
         {/if}
       </div>
-    {:else if view === 'board'}
-      <KanbanBoard jobs={visible} {selectedId} onselect={(id) => (selectedId = id)} onmove={move} />
-    {:else if visible.length === 0}
-      <div class="text-ink-muted mt-16 text-center text-sm">
-        <p>No jobs match these filters.</p>
-        <button
-          type="button"
-          onclick={() => (filter = {})}
-          class="text-accent focus-visible:ring-accent mt-1 font-medium hover:underline focus-visible:ring-2 focus-visible:outline-none"
-        >
-          Clear filters
-        </button>
-      </div>
     {:else}
-      <JobTable
-        jobs={visible}
-        bind:sortKey
-        bind:sortDir
-        {selectedId}
+      <HelpersPanel
+        {jobs}
         onselect={(id) => (selectedId = id)}
+        onfollowup={(id) => (followUpId = id)}
+        onmerge={mergeDuplicates}
+        onnotduplicate={notDuplicate}
+        oncompare={() => (comparing = [])}
       />
+      {#if shownView === 'board'}
+        <KanbanBoard
+          jobs={visible}
+          {selectedId}
+          onselect={(id) => (selectedId = id)}
+          onmove={move}
+        />
+      {:else if visible.length === 0}
+        <div class="text-ink-muted mt-16 text-center text-sm">
+          <p>No jobs match these filters.</p>
+          <button
+            type="button"
+            onclick={() => (filter = {})}
+            class="text-accent focus-visible:ring-accent mt-1 font-medium hover:underline focus-visible:ring-2 focus-visible:outline-none"
+          >
+            Clear filters
+          </button>
+        </div>
+      {:else}
+        <JobTable
+          jobs={visible}
+          bind:sortKey
+          bind:sortDir
+          {selectedId}
+          onselect={(id) => (selectedId = id)}
+        />
+      {/if}
     {/if}
   </main>
 </div>
@@ -270,8 +333,35 @@
       onupdate={(patch) => update(selected.id, patch)}
       ondelete={() => remove(selected)}
       onclose={() => (selectedId = undefined)}
+      onfollowup={() => (followUpId = selected.id)}
+      oncompare={() => (comparing = [selected.id])}
     />
   {/key}
+{/if}
+
+{#if followUpJob}
+  {#await import('./smart/FollowUpDialog.svelte') then { default: FollowUpDialog }}
+    <FollowUpDialog
+      job={followUpJob}
+      onupdate={(patch) => update(followUpJob.id, patch)}
+      onclose={() => (followUpId = undefined)}
+      onsettings={onsettings && (() => onsettings('helpers'))}
+    />
+  {/await}
+{/if}
+
+{#if comparing}
+  {#await import('./smart/CompareOffers.svelte') then { default: CompareOffers }}
+    <CompareOffers
+      {jobs}
+      initial={comparing}
+      onopen={(id) => {
+        comparing = undefined;
+        selectedId = id;
+      }}
+      onclose={() => (comparing = undefined)}
+    />
+  {/await}
 {/if}
 
 <Toast {toast} ondismiss={() => (toast = undefined)} />
