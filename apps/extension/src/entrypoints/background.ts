@@ -1,4 +1,5 @@
-import { flashBadge } from '@/lib/badge';
+import { flashBadge, showGoalBadge } from '@/lib/badge';
+import { SYNC_STATUS_KEY, type SyncStatus, isLocked } from '@/lib/sync-status';
 import { SAVE_SHORTCUT_COMMAND, openDashboard } from '@/lib/config';
 import { repo } from '@/lib/db';
 import type { BackgroundMessage } from '@/lib/messages';
@@ -163,6 +164,14 @@ export default defineBackground(() => {
     if (!jobId) return;
     void openDashboard(jobId);
     void browser.notifications.clear(notificationId);
+  });
+
+  // The toolbar shows a lock while encrypted sync waits to be unlocked, and drops it after.
+  browser.storage.onChanged.addListener((changes, area) => {
+    const change = area === 'local' ? changes[SYNC_STATUS_KEY] : undefined;
+    if (!change) return;
+    const was = isLocked(change.oldValue as SyncStatus | undefined);
+    if (was !== isLocked(change.newValue as SyncStatus | undefined)) void showGoalBadge();
   });
 
   // The page badge setting follows the all-sites permission, which the browser can also change.

@@ -12,6 +12,7 @@
   import { onMount, untrack } from 'svelte';
   import { showGoalBadge } from '@/lib/badge';
   import { getSaveShortcut, openDashboard, openSettings } from '@/lib/config';
+  import { SYNC_STATUS_KEY, type SyncStatus, isLocked, readSyncStatus } from '@/lib/sync-status';
   import { repo } from '@/lib/db';
   import {
     DRAFT_AREA,
@@ -70,6 +71,8 @@
   let duplicate = $state.raw<{ match: Job; status: JobStatus }>();
   let shortcut = $state<string>();
   let windowId = $state<number>();
+  /** Encrypted sync waits for this device to be unlocked. */
+  let syncLocked = $state(false);
 
   /** The page the form belongs to: its URL keys the draft. */
   let page = $state.raw<{ url: string; tabId?: number }>();
@@ -339,6 +342,9 @@
 
   /** The background wrote this page's draft (context menu, picker): show it. */
   function onStorageChanged(changes: Record<string, { newValue?: unknown }>, area: string) {
+    if (area === 'local' && SYNC_STATUS_KEY in changes) {
+      syncLocked = isLocked(changes[SYNC_STATUS_KEY]!.newValue as SyncStatus | undefined);
+    }
     if (area !== DRAFT_AREA || !page || view.kind === 'saved') return;
     const stored = changes[draftKey(page.url)]?.newValue as { draft?: Draft } | undefined;
     if (!stored?.draft) return;
@@ -353,6 +359,7 @@
   onMount(() => {
     // Opening the panel pulls changes from other devices (no-op when signed out).
     requestSync();
+    void readSyncStatus().then((status) => (syncLocked = isLocked(status)));
     void loadRecent();
     void load().catch(() => (view = { kind: 'unsupported' }));
     void getSaveShortcut().then((value) => (shortcut = value));
@@ -438,6 +445,17 @@
       </button>
     </div>
   </header>
+
+  {#if syncLocked}
+    <button
+      type="button"
+      onclick={() => openSettings('data')}
+      class="bg-surface-muted text-ink hover:bg-line/60 focus-visible:ring-accent flex items-center gap-2 rounded-md px-3 py-1.5 text-left text-xs transition focus-visible:ring-2 focus-visible:outline-none"
+    >
+      <span aria-hidden="true">🔒</span>
+      <span>Sync paused · <span class="text-accent font-medium">Unlock</span></span>
+    </button>
+  {/if}
 
   {#key view.kind}
     <div in:fly={{ y: 6, duration: 150 }}>

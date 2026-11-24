@@ -21,3 +21,6 @@ export * from './import';
 export * from './sync/drive';
 export * from './sync/sync';
 export * from './scrapers';
+export * from './sync/encryption';
+export * from './crypto/envelope';
+export * from './crypto/key-store';

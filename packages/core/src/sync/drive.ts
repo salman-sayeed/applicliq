@@ -24,6 +24,46 @@ export const SCHEMA_VERSION = 2;
 /** The oldest file format this version still reads. */
 export const MIN_SCHEMA_VERSION = 1;
 
+/**
+ * Encrypted sync keeps its data in its own file, and replaces `career-pocket.json` with a small
+ * marker. Older versions only ever look at `career-pocket.json` (and the legacy name): they find
+ * the marker, whose `schemaVersion` is above anything they support, and stop with "update to
+ * keep syncing" instead of reading or overwriting anything. If the encrypted data sat in a file
+ * they don't look for, with `career-pocket.json` gone, they would see an empty Drive and upload
+ * their jobs in plain text next to it.
+ */
+export const ENCRYPTED_SYNC_FILE_NAME = 'applicliq.enc.json';
+/** Above every plain `schemaVersion` any released version supports (they stop on it). */
+export const ENCRYPTED_MARKER_SCHEMA_VERSION = 3;
+
+export type EncryptedMarker = {
+  schemaVersion: typeof ENCRYPTED_MARKER_SCHEMA_VERSION;
+  encrypted: true;
+  updatedAt: number;
+  /** Empty, so versions that check for `records` before the version reach the version check. */
+  records: [];
+};
+
+export function encryptedMarker(now: number): EncryptedMarker {
+  return {
+    schemaVersion: ENCRYPTED_MARKER_SCHEMA_VERSION,
+    encrypted: true,
+    updatedAt: now,
+    records: [],
+  };
+}
+
+/** Whether a downloaded `career-pocket.json` is the encrypted-sync marker. */
+export function isEncryptedMarker(data: unknown): boolean {
+  const file = data as { encrypted?: unknown; schemaVersion?: unknown } | null;
+  return (
+    !!file &&
+    typeof file === 'object' &&
+    file.encrypted === true &&
+    file.schemaVersion === ENCRYPTED_MARKER_SCHEMA_VERSION
+  );
+}
+
 const API = 'https://www.googleapis.com/drive/v3';
 const UPLOAD = 'https://www.googleapis.com/upload/drive/v3';
 
@@ -134,7 +174,7 @@ export function createDriveClient({
      * Overwrites the file. With `etag`, only if it hasn't changed since it was downloaded:
      * otherwise Drive answers 412 (a `DriveError` with status 412).
      */
-    async update(id: string, snapshot: SyncSnapshot, etag?: string): Promise<void> {
+    async update(id: string, snapshot: object, etag?: string): Promise<void> {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (etag) headers['If-Match'] = etag;
       await request(`${UPLOAD}/files/${encodeURIComponent(id)}?uploadType=media`, {
@@ -145,7 +185,7 @@ export function createDriveClient({
     },
 
     /** Creates the file in appDataFolder; returns its id. */
-    async create(snapshot: SyncSnapshot): Promise<string> {
+    async create(snapshot: object): Promise<string> {
       const form = new FormData();
       form.append(
         'metadata',

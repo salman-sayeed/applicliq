@@ -93,7 +93,7 @@
     },
     {
       title: 'Synced through your Drive',
-      text: 'Your jobs sync between browsers through a hidden folder in your own Google Drive. No account with us, no server.',
+      text: 'Your jobs sync between browsers through a hidden folder in your own Google Drive, encrypted with your own passphrase if you like. No account with us, no server.',
       icon: 'M7 18a5 5 0 0 1-.9-9.9A6 6 0 0 1 17.7 7 4.5 4.5 0 0 1 17 18z',
     },
     {

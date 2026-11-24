@@ -17,7 +17,7 @@
   } from '@/lib/config';
   import { dashboardAdapter } from '@/lib/dashboard-adapter';
   import { repo } from '@/lib/db';
-  import { isSignedIn, isSyncConfigured, signIn, signOut } from '@/lib/google-auth';
+  import { isSignedIn, isSyncConfigured, signIn } from '@/lib/google-auth';
   import { notifyJobsChanged, requestSync } from '@/lib/messages';
   import {
     reconcileFeaturePermissions,
@@ -29,8 +29,9 @@
     SYNC_STATUS_KEY,
     type SyncStatus,
     deleteDriveDataAndSignOut,
+    encryption,
     readSyncStatus,
-    resetSyncStatus,
+    signOutOfSync,
   } from '@/lib/sync';
 
   let { section: initial }: { section?: SettingsPageId } = $props();
@@ -88,11 +89,7 @@
         await signIn();
         requestSync();
       }),
-    onSignOut: () =>
-      act(async () => {
-        await signOut();
-        await resetSyncStatus();
-      }),
+    onSignOut: () => act(signOutOfSync),
     onSyncNow: () => {
       actionError = undefined;
       requestSync();
@@ -126,6 +123,7 @@
       await loadSync();
     },
     replayOnboarding: () => void openDashboard(undefined, { onboarding: true }),
+    encryption,
     // Must run inside the click: the browser only shows the permission prompt for a user gesture.
     // Turning the badge off keeps the access while the sidebar (which follows tabs) uses it.
     setPageAccess: (on) =>

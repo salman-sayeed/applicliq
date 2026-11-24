@@ -24,7 +24,7 @@
     platform: SettingsPlatform;
     adapter: DashboardAdapter;
     /** Opens a feature's own settings page. */
-    onoptions?: (page: 'helpers' | 'notifications') => void;
+    onoptions?: (page: 'helpers' | 'notifications' | 'data') => void;
   } = $props();
 
   /** Where a feature's options live, if it has a page of them. */
@@ -61,8 +61,15 @@
 
   const available = (f: FeatureDefinition) => f.platforms.includes(platform.kind);
 
+  /** Switched on and off in Sync & data: both ways need a passphrase. */
+  const SET_UP_ELSEWHERE: Partial<Record<FeatureId, string>> = {
+    encryptedSync:
+      'Turned on and off in Sync & data, with a passphrase. Needs Google Drive sync. No extra permissions.',
+  };
+
   function toggle(feature: FeatureDefinition, on: boolean) {
     errors = { ...errors, [feature.id]: undefined };
+    if (SET_UP_ELSEWHERE[feature.id]) return onoptions?.('data');
     const turn = (value: boolean) => save({ features: { [feature.id]: value } });
     if (!needsPermissions(feature)) return void turn(on);
     if (on) {
@@ -128,6 +135,17 @@
       <div class="text-ink-muted mt-2 text-xs">
         {#if !usable}
           <p>Available in the AppliCliq browser extension.</p>
+        {:else if SET_UP_ELSEWHERE[feature.id]}
+          <p>{SET_UP_ELSEWHERE[feature.id]}</p>
+          {#if onoptions}
+            <button
+              type="button"
+              class="text-accent mt-1 font-medium hover:underline"
+              onclick={() => onoptions('data')}
+            >
+              {on ? 'Encryption settings' : 'Set it up'} →
+            </button>
+          {/if}
         {:else if feature.permissionNotes.length}
           <p class="text-ink font-medium">Needs your permission to:</p>
           <ul class="mt-0.5 list-disc pl-4">

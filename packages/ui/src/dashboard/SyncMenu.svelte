@@ -11,6 +11,7 @@
     onSignIn,
     onSignOut,
     onSyncNow,
+    onUnlock,
     notConfigured,
     signOutNote = 'Signing out keeps your jobs on this device.',
   }: {
@@ -26,6 +27,8 @@
     onSignIn: () => void;
     onSignOut: () => void;
     onSyncNow: () => void;
+    /** Encrypted sync is locked on this device: opens the unlock form. */
+    onUnlock?: () => void;
     /** Shown instead of the sign-in button when sync isn't configured. */
     notConfigured?: Snippet;
     signOutNote?: string;
@@ -41,6 +44,7 @@
     if (!signedIn) return 'Sync off';
     if (status.syncing) return 'Syncing…';
     if (needsSignIn) return 'Sign in again';
+    if (error?.kind === 'locked') return 'Sync paused · Unlock';
     if (error?.kind === 'offline') return 'Offline';
     if (error) return 'Sync error';
     return status.lastSyncedAt ? `Synced ${relative(status.lastSyncedAt, now)}` : 'Not synced yet';
@@ -51,7 +55,7 @@
       ? 'bg-status-withdrawn'
       : status.syncing
         ? 'bg-status-applied animate-pulse'
-        : error && error.kind !== 'offline'
+        : error && error.kind !== 'offline' && error.kind !== 'locked'
           ? 'bg-status-rejected'
           : error
             ? 'bg-status-interview'
@@ -122,13 +126,14 @@
       {#if error}
         <p
           role="alert"
-          class="rounded-md px-2.5 py-2 text-xs {error.kind === 'offline'
+          class="rounded-md px-2.5 py-2 text-xs {error.kind === 'offline' || error.kind === 'locked'
             ? 'bg-surface-muted text-ink'
             : 'bg-status-rejected/10 text-status-rejected'}"
         >
           {error.message}
           {#if error.kind === 'offline'}Your changes are saved here and will sync when you're back
-            online.{/if}
+            online.{:else if error.kind === 'locked'}Your jobs here stay usable; changes sync once
+            it's unlocked.{/if}
         </p>
       {/if}
 
@@ -136,6 +141,17 @@
         {#if needsSignIn}
           <button type="button" onclick={onSignIn} disabled={busy} class="{primary} flex-1">
             Sign in again
+          </button>
+        {:else if error?.kind === 'locked' && onUnlock}
+          <button
+            type="button"
+            onclick={() => {
+              if (menu) menu.open = false;
+              onUnlock();
+            }}
+            class="{primary} flex-1"
+          >
+            Unlock
           </button>
         {:else}
           <button

@@ -42,6 +42,8 @@
   recap notification, and a share card of your numbers (never company names) as a PNG.
 - Import your history: LinkedIn applications (from LinkedIn's data export) or any CSV from a
   spreadsheet, Notion, Huntr or Teal, with column matching, duplicate checks and undo.
+- Encrypted sync (optional): your data is encrypted with a passphrase on your device before it
+  reaches Google Drive (AES-256-GCM, Web Crypto only), with a recovery code in case you forget it.
 - Optional features can be turned on and off in Settings → Features; any extra browser
   permission is asked for only when you turn a feature on.
 - Works offline. Export to JSON or CSV any time.
@@ -50,7 +52,8 @@
 
 - Your jobs are stored in your browser. There is no AppliCliq server or account.
 - Sync is optional: it uses a hidden app folder in your own Google Drive, which AppliCliq can't
-  see outside of.
+  see outside of. Turn on encrypted sync and the copy in Drive is unreadable without your
+  passphrase.
 - No analytics, no tracking, no ads. See the [privacy policy](https://applicliq.pages.dev/privacy).
 
 ## How to use

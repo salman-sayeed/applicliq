@@ -1,9 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { SyncMenu } from '@applicliq/ui';
-  import { isSignedIn, isSyncConfigured, signIn, signOut } from '@/lib/google-auth';
+  import { openSettings } from '@/lib/config';
+  import { isSignedIn, isSyncConfigured, signIn } from '@/lib/google-auth';
   import { requestSync } from '@/lib/messages';
-  import { SYNC_STATUS_KEY, type SyncStatus, readSyncStatus, resetSyncStatus } from '@/lib/sync';
+  import { SYNC_STATUS_KEY, type SyncStatus, readSyncStatus, signOutOfSync } from '@/lib/sync';
 
   let signedIn = $state(false);
   let status = $state<SyncStatus>({ syncing: false });
@@ -51,11 +52,8 @@
       await signIn();
       requestSync();
     })}
-  onSignOut={() =>
-    act(async () => {
-      await signOut();
-      await resetSyncStatus();
-    })}
+  onSignOut={() => act(signOutOfSync)}
+  onUnlock={() => void openSettings('data')}
   onSyncNow={() => {
     actionError = undefined;
     requestSync();

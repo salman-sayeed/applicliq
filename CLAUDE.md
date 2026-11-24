@@ -37,7 +37,8 @@ apps/
     src/lib/background.ts  auto-ghosting, reminders (quiet hours, goal nudge, offer deadlines),
                         weekly recap, goal badge, page badge (with Heads up notes)
     src/lib/google-auth.ts launchWebAuthFlow (Web client); getAuthToken on Chrome if only a Chrome client
-    src/lib/sync.ts     background sync runner + status in extension storage
+    src/lib/sync.ts     background sync runner, encryption controller + key store (storage.session)
+    src/lib/sync-status.ts  sync status in extension storage (popup and badge read it, no Drive code)
     src/lib/features.ts feature permissions: request on enable, remove on disable, start-up check
 docs/screenshots/       capture.mjs (dashboard shots), capture-extension.mjs (sidebar, pick from
                         page, right-click menu on fictional postings from demo-job.html)
@@ -96,7 +97,11 @@ packages/
     src/merge.ts        mergeJobs: last-write-wins merge, tombstone purge
     src/url.ts          normalizeUrl (strips hash + tracking params) for duplicate detection
     src/validate.ts     sanitizeRecord(s) for untrusted data (Drive file, imports)
-    src/sync/           Drive appDataFolder client (fetch, ETags) + sync orchestration
+    src/sync/           Drive appDataFolder client (fetch, ETags) + sync orchestration;
+                        encryption.ts: encrypted sync flows (enable, unlock, change passphrase,
+                        reset recovery code, disable), shared by the extension and the website
+    src/crypto/         envelope.ts (Web Crypto only: AES-256-GCM, PBKDF2, HKDF, recovery codes,
+                        file validation), key-store.ts (unlocked key in IndexedDB or memory)
     src/scrapers/       extractJob(doc, url): JSON-LD > site adapters (sites/) > meta tags;
                         HTML fixtures in __fixtures__ (excluded from Prettier)
   ui/                   shared Svelte components + Tailwind theme
@@ -115,6 +120,9 @@ packages/
                         sub-toggles; sections/HelpersSection: Smart helpers options and templates
     src/import/         Settings → Import (LinkedIn, CSV mapping, review, undo, history); loaded
                         with a dynamic import. Pages that render settings add `@source` for it
+    src/encryption/     Settings → Sync & data → Encryption (EncryptionPanel, lazy), UnlockForm,
+                        UnlockDialog (web /app), passphrase fields, recovery code step. Pages that
+                        render settings add `@source` for it
     src/prefs.svelte.ts Prefs context: status names, hidden statuses, tag colours, date format
     src/appearance.ts   applyAppearance: theme / accent / density / reduce-motion on <html>
     src/motion.ts       fade/fly/slide/flip/crossfade that honour reduced motion (Svelte 5 runs
@@ -276,13 +284,57 @@ write locally in one transaction (`mergeIntoLocal`); settings merge the same way
 untouched); upload only if the merged set or settings differ from Drive, conditional on the downloaded ETag (`If-Match`; a 412 restarts the round). A file with a
 newer `schemaVersion` is never overwritten. In the extension only the background syncs: on popup
 open, 3 s after a change (`jobs-changed` message), every `sync.syncIntervalMinutes` (default 15)
-and on start-up. The web app syncs on load, 3 s after a change, every `syncIntervalMinutes`, on `online` and when a tab returns to the foreground,
+and on start-up. Any file this version can't read (unknown format, newer `schemaVersion`, a
+duplicate it can't parse) stops the sync with "Update AppliCliq to keep syncing" and is never
+overwritten or deleted. The web app syncs on load, 3 s after a change, every `syncIntervalMinutes`, on `online` and when a tab returns to the foreground,
 under a Web Lock so tabs don't race; its token (GIS, 1 h) needs a click to renew, and sign-out
 clears the browser's local copy.
 `exportJSON()` writes the same format; `importJSON()` merges it the same way.
 
 Job URLs are stored normalized (`normalizeUrl`), so `getJobByUrl` is an indexed lookup (Dexie
 version 3 also indexes `*alternateUrls`).
+
+### Encrypted sync
+
+Feature `encryptedSync` (default off, synced, no permissions), switched only from Settings → Sync
+& data → Encryption (the Features card links there: both ways need a passphrase). Web Crypto only,
+no crypto libraries.
+
+- **Files.** The encrypted data lives in its own file, `applicliq.enc.json`
+  (`ENCRYPTED_SYNC_FILE_NAME`), and `career-pocket.json` is replaced by a marker
+  `{ schemaVersion: 3, encrypted: true, updatedAt, records: [] }`. Why: released versions only
+  ever look at `career-pocket.json` / `pocket-career.json`. They stop on a file they can't read
+  (never overwrite it), but if those files were missing they would see an empty Drive and upload
+  their jobs in plain text. The marker keeps the file there; its `schemaVersion` 3 is above what
+  any of them supports (v1.x: 1, before encryption: 2) and the empty `records` makes them reach
+  their "newer version, update to keep syncing" branch instead of "not an AppliCliq file".
+- **Mode.** Drive is encrypted when the primary `career-pocket.json` is the marker, or when only
+  the encrypted file exists (the marker is recreated). A plain file next to an encrypted one is
+  folded in and replaced by the marker, unless its synced settings are newer and say
+  `encryptedSync: false` (turned off elsewhere; the encrypted file is a leftover). Encryption on
+  locally with an empty Drive is an error, never a plain upload.
+- **Format** (`crypto/envelope.ts`): `{ format: 'applicliq-encrypted', version: 1, schemaVersion,
+kdf: { name: 'PBKDF2', hash: 'SHA-256', iterations: 600000, salt }, wrappedKeys: { passphrase:
+{ iv, data }, recovery: { salt, iv, data } }, iv, ciphertext }`, binary as base64. A random
+  256-bit data key encrypts the whole plain snapshot (records, tombstones, synced settings) with
+  AES-256-GCM and a new 12-byte IV per upload. The key is wrapped (AES-GCM, with AAD naming the
+  slot) by a PBKDF2 key from the passphrase (min 10 characters) and by an HKDF key from the
+  recovery code (128 random bits, 26 base32 characters + 2 check characters, 7 groups of 4).
+  Changing the passphrase or resetting the code only re-wraps the key. `parseEncryptedFile`
+  validates everything; a newer `version` or `schemaVersion` stops sync with "update".
+- **Keys** (`crypto/key-store.ts`): "Remember on this device" (default) keeps a non-extractable
+  `CryptoKey` in IndexedDB `applicliq-keys`; off keeps the raw key in memory only (extension:
+  `storage.session`; website: the page, so a reload asks again). "Lock now" and sign-out forget
+  it. No key → `SyncError('locked')`: nothing merged or uploaded, local data stays usable; the
+  extension shows a 🔒 toolbar badge and "Sync paused · Unlock" in the popup, the website an
+  unlock dialog. A stored key that no longer opens the file (encryption set up again) is
+  forgotten. Passphrases and recovery codes are never stored, logged or put in errors; forms clear
+  them after use.
+- **Flows** (`sync/encryption.ts`, `createEncryptionController`): enable syncs plain data first,
+  uploads the encrypted file, then writes the marker (ETag-conditional); disable decrypts, merges,
+  writes a plain `career-pocket.json` over the marker, deletes the encrypted file. Every Drive
+  write is conditional on the ETag just downloaded. Manual test plan:
+  [docs/encryption-testing.md](docs/encryption-testing.md).
 
 ### Smart helpers and Insights
 

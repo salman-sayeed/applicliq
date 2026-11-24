@@ -3,12 +3,12 @@
   import { resolve } from '$app/paths';
   import { page } from '$app/state';
   import { onMount } from 'svelte';
-  import { Dashboard, SyncMenu } from '@applicliq/ui';
+  import { Dashboard, SyncMenu, UnlockDialog } from '@applicliq/ui';
   import logo from '#lib/assets/logo.png';
   import { isSyncConfigured, loadGis } from '#lib/google-auth.ts';
   import { GITHUB_URL } from '#lib/links.ts';
   import { session, startSignIn, startSignOut, syncNow } from '#lib/session.svelte.ts';
-  import { dashboardAdapter, startAutoSync, sync } from '#lib/sync.svelte.ts';
+  import { dashboardAdapter, encryption, startAutoSync, sync } from '#lib/sync.svelte.ts';
 
   const configured = isSyncConfigured();
 
@@ -32,6 +32,19 @@
   // `/app#view=insights` opens the Insights tab.
   const initialView = page.url.hash === '#view=insights' ? ('insights' as const) : undefined;
   const onSignIn = () => void startSignIn();
+
+  // Encrypted data in Drive and no key here: ask for the passphrase once (the sync menu's
+  // "Unlock" opens it again). Nothing is merged or uploaded meanwhile.
+  const locked = $derived(sync.signedIn && sync.error?.kind === 'locked');
+  let unlockOpen = $state(false);
+  let unlockAsked = false;
+  $effect(() => {
+    if (!locked) unlockAsked = false;
+    else if (!unlockAsked) {
+      unlockAsked = true;
+      unlockOpen = true;
+    }
+  });
   const onSignOut = () => void startSignOut();
 </script>
 
@@ -71,6 +84,7 @@
           {onSignIn}
           {onSignOut}
           onSyncNow={syncNow}
+          onUnlock={() => (unlockOpen = true)}
           signOutNote="Signing out removes your jobs from this browser. They stay in your Google Drive."
         />
         <a
@@ -107,6 +121,13 @@
       {/if}
     {/snippet}
   </Dashboard>
+  {#if unlockOpen && locked}
+    <UnlockDialog
+      controls={encryption}
+      onunlocked={() => {}}
+      onclose={() => (unlockOpen = false)}
+    />
+  {/if}
 {:else}
   <main class="flex min-h-dvh items-center justify-center px-4 py-12">
     <div class="border-line flex w-full max-w-sm flex-col gap-5 rounded-xl border p-6 shadow-sm">

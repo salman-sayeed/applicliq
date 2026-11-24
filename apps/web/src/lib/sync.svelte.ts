@@ -2,9 +2,13 @@ import './legacy-keys.ts';
 import {
   DEFAULT_SETTINGS,
   AppliCliqDB,
+  ENCRYPTED_SYNC_FILE_NAME,
+  type EncryptionController,
   type SyncErrorKind,
   createDriveClient,
+  createEncryptionController,
   createJobRepository,
+  createKeyStore,
   deleteDriveData,
   syncWithDrive,
   toSyncError,
@@ -62,6 +66,42 @@ const drive = createDriveClient({
   getToken: () => getToken(),
   onUnauthorized: async () => dropToken(),
 });
+const encryptedDrive = createDriveClient({
+  getToken: () => getToken(),
+  onUnauthorized: async () => dropToken(),
+  fileName: ENCRYPTED_SYNC_FILE_NAME,
+});
+
+/**
+ * Encrypted sync: the key is remembered in IndexedDB (non-extractable), or with "Remember"
+ * off kept in this page's memory only, so a reload asks for the passphrase again.
+ */
+const keys = createKeyStore();
+const controller = createEncryptionController({ repo, drive, encryptedDrive, keys });
+const syncEncryption = {
+  drive: encryptedDrive,
+  getKey: () => keys.load(),
+  forgetKey: () => keys.clear(),
+};
+
+/** Runs a change, then syncs (under the lock) so the status shows the result. */
+function thenSync<A extends unknown[]>(task: (...args: A) => Promise<void>) {
+  return async (...args: A): Promise<void> => {
+    await withSyncLock(() => task(...args));
+    void runSync();
+  };
+}
+
+/** The encryption flows for the settings page and the unlock dialog. */
+export const encryption: EncryptionController = {
+  ...controller,
+  enable: thenSync(controller.enable),
+  unlock: thenSync(controller.unlock),
+  changePassphrase: thenSync(controller.changePassphrase),
+  resetRecoveryCode: thenSync(controller.resetRecoveryCode),
+  disable: thenSync(controller.disable),
+  lock: thenSync(controller.lock),
+};
 
 let running: Promise<void> | undefined;
 let again = false;
@@ -86,7 +126,7 @@ export function runSync(): Promise<void> {
   return running;
 }
 
-function withSyncLock(task: () => Promise<void>): Promise<void> {
+function withSyncLock<T>(task: () => Promise<T>): Promise<T> {
   return navigator.locks ? navigator.locks.request('career-pocket-sync', task) : task();
 }
 
@@ -96,8 +136,11 @@ async function syncOnce(): Promise<void> {
   if (!navigator.onLine) return setError('offline', 'You are offline.');
   sync.syncing = true;
   try {
-    await withSyncLock(() => syncWithDrive(repo, drive).then(() => {}));
+    const result = await withSyncLock(() =>
+      syncWithDrive(repo, drive, { encryption: syncEncryption }),
+    );
     sync.lastSyncedAt = Date.now();
+    sync.encrypted = result.encrypted;
     sync.error = undefined;
     writeStored(LAST_SYNCED_KEY, String(sync.lastSyncedAt));
     if (!sync.account) {
@@ -109,6 +152,7 @@ async function syncOnce(): Promise<void> {
       cause instanceof NotSignedInError
         ? { kind: 'auth' as const, message: cause.message }
         : toSyncError(cause);
+    if (error.kind === 'locked') sync.encrypted = true;
     setError(error.kind, error.message);
   } finally {
     sync.syncing = false;
@@ -154,7 +198,9 @@ export function startAutoSync(): () => void {
 /** Clears this browser's copy (on sign-out): the site may be on a shared computer. */
 export async function clearLocalData(): Promise<void> {
   await repo.clearLocalData();
+  await keys.clear().catch(() => {});
   sync.lastSyncedAt = undefined;
+  sync.encrypted = undefined;
   sync.error = undefined;
   sync.account = undefined;
   writeStored(LAST_SYNCED_KEY, undefined);
@@ -163,7 +209,7 @@ export async function clearLocalData(): Promise<void> {
 
 /** Deletes the AppliCliq file from Drive (settings page). The caller then signs out. */
 export async function deleteRemoteData(): Promise<void> {
-  await deleteDriveData(drive);
+  await deleteDriveData(drive, encryptedDrive);
 }
 
 /** Runs a write, then schedules a sync. */

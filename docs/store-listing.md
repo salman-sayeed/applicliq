@@ -55,6 +55,8 @@ PRIVATE BY DESIGN
 • Your jobs are stored in your browser
 • Optional: sign in with Google to back up and sync through a hidden folder in your own Google
   Drive. AppliCliq can only see that folder, never your other files.
+• Optional encrypted sync: your data is encrypted with your own passphrase before it reaches
+  Drive, so only your devices can read it
 • Use the same data on any computer at https://applicliq.pages.dev
 
 YOURS TO KEEP

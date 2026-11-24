@@ -68,13 +68,43 @@
     <li>
       <strong>In your Google Drive</strong>, only if you sign in to sync: a single file,
       <code>career-pocket.json</code>, in Drive's hidden application data folder. It doesn't appear
-      among your files and counts toward your Drive storage.
+      among your files and counts toward your Drive storage. With encrypted sync on, that file holds
+      only a small marker, and your data is in <code>applicliq.enc.json</code>, encrypted (see
+      below).
     </li>
   </ul>
   <p>
     Data travels only between your browser and Google, over HTTPS. AppliCliq has no servers it could
     send it to.
   </p>
+
+  <h2>Encrypted sync (optional)</h2>
+  <p>
+    You can turn on encrypted sync in Settings → Sync &amp; data. Your jobs and settings are then
+    locked with a passphrase you choose <strong>before</strong> they leave your browser, so the copy in
+    your Google Drive is scrambled data that Google, AppliCliq's developers or anyone else who got hold
+    of the file cannot read. Only your own devices, once you type the passphrase on them, can unlock it.
+  </p>
+  <ul>
+    <li>
+      It uses the encryption built into your browser (AES-256, with your passphrase strengthened by
+      600,000 rounds of PBKDF2). No extra code is downloaded for it.
+    </li>
+    <li>
+      Your passphrase and recovery code are never stored, never sent anywhere and never written to a
+      log. Each device keeps only the unlocked key, in a form scripts can use but can't read out,
+      until you press "Lock now" (or, if you choose, until the browser closes).
+    </li>
+    <li>
+      You also get a one-time recovery code in case you forget the passphrase. If you lose both,
+      nobody, including us, can recover your synced data. The jobs already in your browsers are not
+      affected.
+    </li>
+    <li>
+      The copy in your browser itself is not encrypted: it is protected the same way as the rest of
+      your browser profile.
+    </li>
+  </ul>
 
   <h2>Google user data</h2>
   <p>

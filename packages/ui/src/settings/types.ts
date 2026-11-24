@@ -1,4 +1,10 @@
-import type { FeaturePermissions, ImportResult, Settings, SettingsPatch } from '@applicliq/core';
+import type {
+  EncryptionController,
+  FeaturePermissions,
+  ImportResult,
+  Settings,
+  SettingsPatch,
+} from '@applicliq/core';
 import type { SyncMenuStatus } from '../dashboard/types';
 
 /** What the settings page needs from the app it runs in (extension page or web app). */
@@ -18,6 +24,11 @@ export type SettingsPlatform = {
   deleteDriveData(): Promise<void>;
   /** Shows the first-run introduction again. */
   replayOnboarding(): void;
+  /**
+   * Encrypted sync (Settings → Sync & data → Encryption). Each call that changes something
+   * should trigger a sync afterwards.
+   */
+  encryption?: EncryptionController;
   /** Extension: asks for (or drops) access to all sites for the page badge. Call from a click. */
   setPageAccess?(on: boolean): Promise<boolean>;
   /**
