@@ -139,6 +139,8 @@ describe('split / combine', () => {
       },
       // The weekly recap is a notification, like the other notification settings.
       insights: { weeklyRecap: true, weeklyRecapDay: 'sun', weeklyRecapTime: '20:00' },
+      // Autofill's on-page button depends on site access granted in this browser.
+      autofill: { showButton: false },
       // Features that need browser permissions stay on the device that granted them.
       features: { autofill: false, gmailSuggestions: false },
     });

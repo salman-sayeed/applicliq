@@ -1,4 +1,18 @@
 import { Dexie, type Table, liveQuery } from 'dexie';
+import {
+  type AnswerRecord,
+  type AutofillProfile,
+  type AutofillRecord,
+  MAX_ANSWER_LENGTH,
+  MAX_QUESTION_LENGTH,
+  PROFILE_ID,
+  type SavedAnswer,
+  EMPTY_PROFILE,
+  isAnswerRecord,
+  isProfileRecord,
+  sanitizeAutofillRecords,
+  sanitizeProfile,
+} from './autofill/profile';
 import { type FeatureId, isFeatureEnabled } from './features';
 import type { ImportDraft } from './import/review';
 import { mergeJobs, mergeRecords } from './merge';
@@ -68,6 +82,7 @@ export class AppliCliqDB extends Dexie {
   jobs!: Table<JobRecord, string>;
   settings!: Table<SettingsRow, string>;
   resumes!: Table<ResumeRecord, string>;
+  autofill!: Table<AutofillRecord, string>;
 
   /** `legacyName`: a database to take the data from once (the default DB adopts the old one). */
   constructor(
@@ -91,6 +106,13 @@ export class AppliCliqDB extends Dexie {
       jobs: 'id, url, *alternateUrls, company, status, updatedAt, deletedAt',
       settings: 'id',
       resumes: 'id, updatedAt, deletedAt',
+    });
+    // 5: Autofill's profile and saved answers (one table, tombstones like jobs).
+    this.version(5).stores({
+      jobs: 'id, url, *alternateUrls, company, status, updatedAt, deletedAt',
+      settings: 'id',
+      resumes: 'id, updatedAt, deletedAt',
+      autofill: 'id, updatedAt, deletedAt',
     });
     // Runs before the first query; queries wait for it.
     if (legacyName) this.on('ready', () => adoptLegacyDatabase(this, legacyName));
@@ -430,7 +452,11 @@ export function createJobRepository(db: AppliCliqDB, now: () => number = Date.no
         .where('deletedAt')
         .belowOrEqual(now() - ttl)
         .delete();
-      return jobs + resumes;
+      const autofill = await db.autofill
+        .where('deletedAt')
+        .belowOrEqual(now() - ttl)
+        .delete();
+      return jobs + resumes + autofill;
     },
 
     /** Every record, tombstones included. Used by sync and export. */
@@ -445,13 +471,16 @@ export function createJobRepository(db: AppliCliqDB, now: () => number = Date.no
      */
     async exportJSON(): Promise<string> {
       const resumes = await db.resumes.toArray();
+      const autofill = await db.autofill.toArray();
       const snapshot: SyncSnapshot = {
         schemaVersion: SCHEMA_VERSION,
         updatedAt: now(),
         records: await getAllRecords(),
         settings: await getSyncedSettings(),
-        // A backup is the user's own file: resumes are in it whatever the Drive setting says.
+        // A backup is the user's own file: resumes and the Autofill profile are in it whatever
+        // the Drive settings say.
         ...(resumes.length ? { resumes } : {}),
+        ...(autofill.length ? { autofill } : {}),
       };
       return JSON.stringify(snapshot, null, 2);
     },
@@ -481,6 +510,8 @@ export function createJobRepository(db: AppliCliqDB, now: () => number = Date.no
       await mergeIntoLocal(records);
       const resumes = sanitizeResumeRecords(snapshot.resumes);
       if (resumes.length) await mergeResumesIntoLocal(resumes);
+      const autofill = sanitizeAutofillRecords(snapshot.autofill);
+      if (autofill.length) await mergeAutofillIntoLocal(autofill);
       let settingsApplied = false;
       if (snapshot.settings !== undefined) {
         settingsApplied = (await mergeSettingsIntoLocal(snapshot.settings)).changed;
@@ -649,6 +680,91 @@ export function createJobRepository(db: AppliCliqDB, now: () => number = Date.no
     mergeResumesIntoLocal,
     linkResumeVersions,
 
+    // --- Autofill: profile and saved answers -----------------------------------------------
+
+    getAutofillProfile,
+
+    /** Replaces the profile (bumps `updatedAt`). */
+    async saveAutofillProfile(profile: AutofillProfile): Promise<AutofillProfile> {
+      return db.transaction('rw', db.autofill, async () => {
+        const current = await db.autofill.get(PROFILE_ID);
+        const clean = sanitizeProfile(profile);
+        const updatedAt = Math.max(
+          now(),
+          (current && 'updatedAt' in current ? current.updatedAt : 0) + 1,
+        );
+        await db.autofill.put({ id: PROFILE_ID, profile: clean, updatedAt });
+        return clean;
+      });
+    },
+
+    getSavedAnswers,
+
+    /** Calls `listener` with the profile and saved answers now and after every change. */
+    watchAutofill(
+      listener: (data: { profile: AutofillProfile; answers: SavedAnswer[] }) => void,
+      onError?: (e: unknown) => void,
+    ) {
+      const subscription = liveQuery(async () => ({
+        profile: await getAutofillProfile(),
+        answers: await getSavedAnswers(),
+      })).subscribe({ next: listener, error: (error: unknown) => onError?.(error) });
+      return () => subscription.unsubscribe();
+    },
+
+    /** Adds a question and its answer to the saved answers. */
+    async addSavedAnswer(input: { question: string; answer: string }): Promise<SavedAnswer> {
+      const at = now();
+      const record: AnswerRecord = {
+        id: crypto.randomUUID(),
+        kind: 'answer',
+        question: input.question.trim().slice(0, MAX_QUESTION_LENGTH),
+        answer: input.answer.slice(0, MAX_ANSWER_LENGTH),
+        createdAt: at,
+        updatedAt: at,
+      };
+      if (!record.question) throw new Error('A saved answer needs a question.');
+      await db.autofill.add(record);
+      return toAnswer(record);
+    },
+
+    async updateSavedAnswer(
+      id: string,
+      patch: Partial<Pick<SavedAnswer, 'question' | 'answer'>>,
+    ): Promise<SavedAnswer> {
+      return db.transaction('rw', db.autofill, async () => {
+        const current = await db.autofill.get(id);
+        if (!current || !isAnswerRecord(current)) throw new Error('That answer no longer exists.');
+        const next: AnswerRecord = {
+          ...current,
+          ...(patch.question !== undefined
+            ? { question: patch.question.trim().slice(0, MAX_QUESTION_LENGTH) || current.question }
+            : {}),
+          ...(patch.answer !== undefined
+            ? { answer: patch.answer.slice(0, MAX_ANSWER_LENGTH) }
+            : {}),
+          updatedAt: Math.max(now(), current.updatedAt + 1),
+        };
+        await db.autofill.put(next);
+        return toAnswer(next);
+      });
+    },
+
+    /** Replaces a saved answer with a tombstone (so the deletion syncs). */
+    async deleteSavedAnswer(id: string): Promise<boolean> {
+      return db.transaction('rw', db.autofill, async () => {
+        const current = await db.autofill.get(id);
+        if (!current || !isAnswerRecord(current)) return false;
+        await db.autofill.put({ id, deletedAt: Math.max(now(), current.updatedAt) });
+        return true;
+      });
+    },
+
+    /** Every Autofill record, tombstones included. Used by sync and export. */
+    getAllAutofillRecords: () => db.autofill.toArray(),
+
+    mergeAutofillIntoLocal,
+
     /** Whether a feature is on (Settings → Features). */
     async isFeatureEnabled(id: FeatureId): Promise<boolean> {
       return isFeatureEnabled(await getSettings(), id);
@@ -715,13 +831,39 @@ export function createJobRepository(db: AppliCliqDB, now: () => number = Date.no
 
     /** Empties this device's copy: jobs, resumes, settings and app state. Drive is not touched. */
     async clearLocalData(): Promise<void> {
-      await db.transaction('rw', db.jobs, db.settings, db.resumes, async () => {
+      await db.transaction('rw', [db.jobs, db.settings, db.resumes, db.autofill], async () => {
         await db.jobs.clear();
         await db.settings.clear();
         await db.resumes.clear();
+        await db.autofill.clear();
       });
     },
   };
+
+  async function getAutofillProfile(): Promise<AutofillProfile> {
+    const record = await db.autofill.get(PROFILE_ID);
+    return record && isProfileRecord(record)
+      ? sanitizeProfile(record.profile)
+      : { ...EMPTY_PROFILE };
+  }
+
+  /** Saved answers, newest first. */
+  async function getSavedAnswers(): Promise<SavedAnswer[]> {
+    return (await db.autofill.toArray())
+      .filter(isAnswerRecord)
+      .map(toAnswer)
+      .sort((a, b) => b.updatedAt - a.updatedAt);
+  }
+
+  /** Merges Autofill records from elsewhere (Drive, a backup) into the local store. */
+  async function mergeAutofillIntoLocal(incoming: AutofillRecord[]): Promise<AutofillRecord[]> {
+    return db.transaction('rw', db.autofill, async () => {
+      const merged = mergeRecords(await db.autofill.toArray(), incoming, now());
+      await db.autofill.clear();
+      await db.autofill.bulkPut(merged);
+      return merged;
+    });
+  }
 
   async function getLocalState(): Promise<LocalState> {
     const row = await db.settings.get(LOCAL_STATE_ID);
@@ -757,6 +899,10 @@ export function createJobRepository(db: AppliCliqDB, now: () => number = Date.no
       return { settings: winner, changed: !sameSyncedValues(winner, local) };
     });
   }
+}
+
+function toAnswer({ id, question, answer, createdAt, updatedAt }: AnswerRecord): SavedAnswer {
+  return { id, question, answer, createdAt, updatedAt };
 }
 
 export type JobRepository = ReturnType<typeof createJobRepository>;

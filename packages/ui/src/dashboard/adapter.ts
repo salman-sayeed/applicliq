@@ -1,10 +1,12 @@
 import type {
+  AutofillProfile,
   ImportDraft,
   Job,
   JobPatch,
   LocalState,
   Resume,
   ResumePatch,
+  SavedAnswer,
   Settings,
   SettingsPatch,
   SettingsSection,
@@ -44,6 +46,20 @@ export type DashboardAdapter = {
   deleteResume(id: string): Promise<boolean>;
   /** Undo for `deleteResume`. */
   restoreResume(resume: Resume): Promise<Resume>;
+  /** Autofill's profile and saved answers (Settings → Autofill profile). Extension only. */
+  autofill?: {
+    watch(
+      listener: (data: { profile: AutofillProfile; answers: SavedAnswer[] }) => void,
+      onError?: (e: unknown) => void,
+    ): () => void;
+    saveProfile(profile: AutofillProfile): Promise<AutofillProfile>;
+    addAnswer(input: { question: string; answer: string }): Promise<SavedAnswer>;
+    updateAnswer(
+      id: string,
+      patch: Partial<Pick<SavedAnswer, 'question' | 'answer'>>,
+    ): Promise<SavedAnswer>;
+    deleteAnswer(id: string): Promise<boolean>;
+  };
   getLocalState(): Promise<LocalState>;
   setLocalState(patch: LocalState): Promise<void>;
 };

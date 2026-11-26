@@ -301,6 +301,39 @@
     if (surface === 'popup') window.close();
   }
 
+  // --- Autofill ------------------------------------------------------------------------------
+
+  /** Job boards: Autofill saves the job from the form when it isn't saved yet. */
+  async function ensureJob(): Promise<Job | undefined> {
+    if (view.kind === 'saved') return view.job;
+    if (view.kind !== 'form' || !isDraftValid(draft)) return undefined;
+    const keep = prefs.settings.automation.saveDescriptionSnapshot;
+    const job = await repo.addJob({ ...toNewJob(draft, keep), status: 'saved' });
+    await forgetDraft();
+    notifyJobsChanged();
+    view = { kind: 'saved', job, justSaved: true };
+    await loadRecent();
+    return job;
+  }
+
+  /** Forms: this page becomes one of the job's URLs, so it's recognised here from now on. */
+  async function linkJob(job: Job) {
+    if (!page) return;
+    const urls = [...new Set([...(job.alternateUrls ?? []), page.url])];
+    const updated = await repo.updateJob(job.id, { alternateUrls: urls });
+    await forgetDraft();
+    notifyJobsChanged();
+    view = { kind: 'saved', job: updated, justSaved: false };
+    await loadRecent();
+  }
+
+  /** Forms: "Create a new job" puts the form's title in the save form. */
+  function createFromForm(title: string) {
+    if (view.kind !== 'form') return;
+    if (title) draft = { ...draft, title };
+    document.querySelector<HTMLInputElement>('#company')?.focus();
+  }
+
   /** Resume match → "Ignore this skill". */
   async function ignoreSkill(skill: string) {
     const list = prefs.settings.resumes.ignoredSkills;
@@ -577,6 +610,23 @@
       {/if}
     </div>
   {/key}
+
+  {#if (view.kind === 'form' || view.kind === 'saved') && page?.tabId !== undefined && prefs.feature('autofill')}
+    <!-- Loaded on demand: the form reader and matcher stay out of the popup bundle. -->
+    {#await import('./AutofillPanel.svelte') then { default: AutofillPanel }}
+      <div class="border-line border-t pt-3">
+        <AutofillPanel
+          tabId={page.tabId}
+          settings={prefs.settings}
+          job={view.kind === 'saved' ? view.job : undefined}
+          jobs={allJobs}
+          onensurejob={ensureJob}
+          onlinkjob={linkJob}
+          oncreatejob={createFromForm}
+        />
+      </div>
+    {/await}
+  {/if}
 
   {#if (view.kind === 'form' || view.kind === 'saved') && prefs.feature('resumeMatch')}
     <!-- Loaded on demand: the matcher and its skills dictionary stay out of the popup bundle. -->

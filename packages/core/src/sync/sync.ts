@@ -9,6 +9,11 @@ import { isFeatureEnabled } from '../features';
 import { type SyncRecord, canonical, mergeJobs, mergeRecords } from '../merge';
 import { resumeSyncEnabled, sanitizeResumeRecords } from '../resumes';
 import {
+  type AutofillRecord,
+  autofillSyncEnabled,
+  sanitizeAutofillRecords,
+} from '../autofill/profile';
+import {
   type SyncedSettings,
   isNewerSettings,
   mergeSyncedSettings,
@@ -107,6 +112,8 @@ export function parseSnapshot(data: unknown): {
   settings: unknown;
   /** Resume records (checked); empty when the file has none. */
   resumes: ResumeRecord[];
+  /** Autofill records (checked); empty when the file has none. */
+  autofill: AutofillRecord[];
 } {
   const file = data as {
     schemaVersion?: unknown;
@@ -114,6 +121,7 @@ export function parseSnapshot(data: unknown): {
     records?: unknown;
     settings?: unknown;
     resumes?: unknown;
+    autofill?: unknown;
   } | null;
   if (!file || typeof file !== 'object') {
     throw new SyncError('invalid-remote', INVALID_REMOTE_MESSAGE);
@@ -135,11 +143,14 @@ export function parseSnapshot(data: unknown): {
   const jobs = sanitizeRecords(file.records);
   const resumes = sanitizeResumeRecords(file.resumes);
   const badResumes = Array.isArray(file.resumes) ? file.resumes.length - resumes.length : 0;
+  const autofill = sanitizeAutofillRecords(file.autofill);
+  const badAutofill = Array.isArray(file.autofill) ? file.autofill.length - autofill.length : 0;
   return {
     records: jobs.records,
-    skipped: jobs.skipped + badResumes,
+    skipped: jobs.skipped + badResumes + badAutofill,
     settings: file.settings,
     resumes,
+    autofill,
   };
 }
 
@@ -174,16 +185,13 @@ export async function syncWithDrive(
   drive: DriveClient,
   { now = Date.now, maxAttempts = 3, encryption }: SyncOptions = {},
 ): Promise<SyncResult> {
-  const snapshot = (
-    records: JobRecord[],
-    settings: unknown,
-    resumes?: ResumeRecord[],
-  ): SyncSnapshot => ({
+  const snapshot: SnapshotFn = (records, settings, { resumes, autofill } = {}) => ({
     schemaVersion: SCHEMA_VERSION,
     updatedAt: now(),
     records,
     settings: settings as SyncedSettings,
     ...(resumes?.length ? { resumes } : {}),
+    ...(autofill?.length ? { autofill } : {}),
   });
 
   for (let attempt = 1; ; attempt++) {
@@ -221,8 +229,14 @@ export async function syncWithDrive(
       const merged = await repo.mergeIntoLocal([]);
       const settings = await repo.getSyncedSettings();
       const resumes = await syncedResumes(repo, []);
+      const autofill = await syncedAutofill(repo, []);
       // Nothing to keep yet: don't create a file for an untouched install.
-      if (merged.length === 0 && settings.updatedAt === 0 && !resumes?.length) {
+      if (
+        merged.length === 0 &&
+        settings.updatedAt === 0 &&
+        !resumes?.length &&
+        !autofill?.length
+      ) {
         return { records: 0, uploaded: false, settingsChanged: false, encrypted: false };
       }
       // Encrypted sync is on here but Drive is empty (its data was deleted): never fall back
@@ -233,7 +247,7 @@ export async function syncWithDrive(
           'Encrypted sync is on, but your Drive has no AppliCliq data. Turn encryption off, or set it up again, in Settings → Sync & data.',
         );
       }
-      await drive.create(snapshot(merged, settings, resumes));
+      await drive.create(snapshot(merged, settings, { resumes, autofill }));
       return { records: merged.length, uploaded: true, settingsChanged: false, encrypted: false };
     }
 
@@ -242,6 +256,7 @@ export async function syncWithDrive(
       skipped,
       settings: remoteSettings,
       resumes: remoteResumes,
+      autofill: remoteAutofill,
     } = parseSnapshot(primary!.data);
     // Duplicates come from two devices creating the file at once: fold them in, then delete.
     const folded = await foldExtras(drive, extraFiles, now);
@@ -258,6 +273,11 @@ export async function syncWithDrive(
     // After the settings merge, so a switch turned off elsewhere applies here this round.
     const resumes = await syncedResumes(repo, mergeRecords(remoteResumes, folded.resumes, now()));
     const resumesInSync = sameRecords(resumes ?? [], remoteResumes);
+    const autofill = await syncedAutofill(
+      repo,
+      mergeRecords(remoteAutofill, folded.autofill, now()),
+    );
+    const autofillInSync = sameRecords(autofill ?? [], remoteAutofill);
     const result = {
       records: merged.length,
       settingsChanged: settingsMerge.changed,
@@ -271,13 +291,18 @@ export async function syncWithDrive(
       skipped === 0 &&
       settingsInSync &&
       resumesInSync &&
+      autofillInSync &&
       sameRecords(merged, remote)
     ) {
       return { ...result, uploaded: false };
     }
 
     try {
-      await drive.update(primaryFile.id, snapshot(merged, outSettings, resumes), primary!.etag);
+      await drive.update(
+        primaryFile.id,
+        snapshot(merged, outSettings, { resumes, autofill }),
+        primary!.etag,
+      );
     } catch (error) {
       if (error instanceof DriveError && error.status === 412) {
         if (attempt < maxAttempts) continue;
@@ -305,10 +330,29 @@ async function syncedResumes(
   return repo.mergeResumesIntoLocal(incoming);
 }
 
+/**
+ * Autofill's profile and saved answers after a sync round, like `syncedResumes`: only with
+ * "Sync autofill profile" on; off, nothing is read from Drive and the upload leaves them out.
+ */
+async function syncedAutofill(
+  repo: JobRepository,
+  incoming: AutofillRecord[],
+): Promise<AutofillRecord[] | undefined> {
+  if (!autofillSyncEnabled(await repo.getSettings())) return undefined;
+  return repo.mergeAutofillIntoLocal(incoming);
+}
+
+type SnapshotFn = (
+  records: JobRecord[],
+  settings: unknown,
+  extras?: { resumes?: ResumeRecord[]; autofill?: AutofillRecord[] },
+) => SyncSnapshot;
+
 /** Reads duplicate plain files; the ones this version can't read are skipped (and kept). */
 async function foldExtras(drive: DriveClient, files: DriveFile[], now: () => number) {
   let records: JobRecord[] = [];
   let resumes: ResumeRecord[] = [];
+  let autofill: AutofillRecord[] = [];
   const settings: unknown[] = [];
   const ids: string[] = [];
   for (const { id } of files) {
@@ -316,13 +360,14 @@ async function foldExtras(drive: DriveClient, files: DriveFile[], now: () => num
       const extra = parseSnapshot((await drive.download(id)).data);
       records = mergeJobs(records, extra.records, now());
       resumes = mergeRecords(resumes, extra.resumes, now());
+      autofill = mergeRecords(autofill, extra.autofill, now());
       settings.push(extra.settings);
       ids.push(id);
     } catch {
       // Unreadable (or the encrypted-sync marker): the primary file stays the source of truth.
     }
   }
-  return { records, resumes, settings, ids };
+  return { records, resumes, autofill, settings, ids };
 }
 
 /** Turns an encrypted-file problem into a sync error the UI can show. */
@@ -366,7 +411,7 @@ async function encryptedRound(
     primary?: DriveDownload;
     extraFiles: DriveFile[];
     encryptedFiles: DriveFile[];
-    snapshot: (records: JobRecord[], settings: unknown, resumes?: ResumeRecord[]) => SyncSnapshot;
+    snapshot: SnapshotFn;
     now: () => number;
   },
 ): Promise<SyncResult | undefined> {
@@ -400,6 +445,7 @@ async function encryptedRound(
     skipped,
     settings: remoteSettings,
     resumes: remoteResumes,
+    autofill: remoteAutofill,
   } = parseSnapshot(parsedPayload);
 
   // Plain copies of career-pocket.json (e.g. written by an older version) are folded in and
@@ -409,6 +455,7 @@ async function encryptedRound(
   const plain = await foldExtras(drive, [...plainPrimary, ...extraFiles], now);
   let incoming = mergeJobs(remote, plain.records, now());
   let incomingResumes = mergeRecords(remoteResumes, plain.resumes, now());
+  let incomingAutofill = mergeRecords(remoteAutofill, plain.autofill, now());
   const settingsList = [...plain.settings];
   const encIds: string[] = [];
   for (const extra of encExtras) {
@@ -417,6 +464,7 @@ async function encryptedRound(
       const parsed = parseSnapshot(JSON.parse(await openFile(other.file, key)));
       incoming = mergeJobs(incoming, parsed.records, now());
       incomingResumes = mergeRecords(incomingResumes, parsed.resumes, now());
+      incomingAutofill = mergeRecords(incomingAutofill, parsed.autofill, now());
       settingsList.push(parsed.settings);
       encIds.push(extra.id);
     } catch {
@@ -436,6 +484,8 @@ async function encryptedRound(
   const settingsInSync = canonical(outSettings) === canonical(remoteSettings);
   const resumes = await syncedResumes(repo, incomingResumes);
   const resumesInSync = sameRecords(resumes ?? [], remoteResumes);
+  const autofill = await syncedAutofill(repo, incomingAutofill);
+  const autofillInSync = sameRecords(autofill ?? [], remoteAutofill);
   const tidy = plain.ids.length > 0 || encIds.length > 0;
 
   /** Puts the marker in place (old versions then stop instead of syncing in plain text). */
@@ -445,13 +495,24 @@ async function encryptedRound(
       await drive.update(primaryFile.id, encryptedMarker(now()), primary?.etag);
   };
 
-  if (!tidy && skipped === 0 && settingsInSync && resumesInSync && sameRecords(merged, remote)) {
+  if (
+    !tidy &&
+    skipped === 0 &&
+    settingsInSync &&
+    resumesInSync &&
+    autofillInSync &&
+    sameRecords(merged, remote)
+  ) {
     await writeMarker();
     return { ...result, uploaded: false };
   }
 
   // A fresh IV on every upload (sealFile); the header (wrapped keys) is kept as it is.
-  const sealed = await sealFile(file, key, JSON.stringify(snapshot(merged, outSettings, resumes)));
+  const sealed = await sealFile(
+    file,
+    key,
+    JSON.stringify(snapshot(merged, outSettings, { resumes, autofill })),
+  );
   try {
     await encryption.drive.update(encFile.id, sealed, etag);
   } catch (error) {

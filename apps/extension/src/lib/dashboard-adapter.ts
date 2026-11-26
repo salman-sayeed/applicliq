@@ -31,6 +31,13 @@ export const dashboardAdapter: DashboardAdapter = {
   duplicateResume: notifying(repo.duplicateResume),
   deleteResume: notifying(repo.deleteResume),
   restoreResume: notifying(repo.restoreResume),
+  autofill: {
+    watch: repo.watchAutofill,
+    saveProfile: notifying(repo.saveAutofillProfile),
+    addAnswer: notifying(repo.addSavedAnswer),
+    updateAnswer: notifying(repo.updateSavedAnswer),
+    deleteAnswer: notifying(repo.deleteSavedAnswer),
+  },
   getLocalState: repo.getLocalState,
   setLocalState: repo.setLocalState,
 };

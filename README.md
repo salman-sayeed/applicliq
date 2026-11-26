@@ -44,6 +44,11 @@
   description are on your resume and which are missing, required vs nice-to-have, in the popup,
   the sidebar and each job's details. Plain keyword matching against a dictionary of about 1,000
   skills, on your device: no AI, nothing sent anywhere, no made-up "ATS score".
+- Autofill (off by default, Settings → Features): fill application forms on Greenhouse, Lever,
+  Ashby, Google Forms and Microsoft Forms from your profile and saved answers. A preview shows
+  every value first (editable; guesses marked "Suggested"), Undo puts the form back, and the
+  confirmation page offers "Mark as applied?". Never submits a form, never touches CAPTCHAs,
+  hidden fields or file uploads. The profile stays in your browser unless you choose to sync it.
 - Import your history: LinkedIn applications (from LinkedIn's data export) or any CSV from a
   spreadsheet, Notion, Huntr or Teal, with column matching, duplicate checks and undo.
 - Encrypted sync (optional): your data is encrypted with a passphrase on your device before it

@@ -87,6 +87,11 @@
       icon: 'M9 12l2 2 4-4M7 3h7l5 5v13H7zM14 3v5h5',
     },
     {
+      title: 'Autofill',
+      text: 'Fill Greenhouse, Lever, Ashby, Google Forms and Microsoft Forms applications from your profile, after a preview you can edit, with undo. You always submit yourself.',
+      icon: 'M4 20h4L18.5 9.5a2.1 2.1 0 0 0-4-4L4 16v4zM13.5 6.5l4 4',
+    },
+    {
       title: 'Follow-ups and offers',
       text: 'Follow-up messages from templates, a list of applications waiting on one, and offers compared side by side with deadline reminders.',
       icon: 'M4 6h16v12H4zM4 7l8 6 8-6',

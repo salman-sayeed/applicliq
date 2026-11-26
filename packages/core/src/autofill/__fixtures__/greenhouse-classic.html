@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Job Application for Data Engineer at Example Co</title>
+    <!-- Greenhouse's classic board layout (boards.greenhouse.io before it moved to
+     job-boards.greenhouse.io; boards.greenhouse.io now redirects, so no live classic page was
+     available to save in November 2026). Rebuilt from the classic markup: #application_form,
+     job_application[...] names, label[for] with span.asterisk, select-based custom questions
+     and the US EEO section. Includes a honeypot-style hidden field and a reCAPTCHA response. -->
+  </head>
+  <body>
+    <div id="application">
+      <form
+        id="application_form"
+        action="/example/jobs/123"
+        method="post"
+        enctype="multipart/form-data"
+      >
+        <div id="main_fields">
+          <div class="field">
+            <label for="first_name">First Name <span class="asterisk">*</span></label>
+            <input
+              type="text"
+              id="first_name"
+              name="job_application[first_name]"
+              autocomplete="given-name"
+              aria-required="true"
+            />
+          </div>
+          <div class="field">
+            <label for="last_name">Last Name <span class="asterisk">*</span></label>
+            <input
+              type="text"
+              id="last_name"
+              name="job_application[last_name]"
+              autocomplete="family-name"
+              aria-required="true"
+            />
+          </div>
+          <div class="field">
+            <label for="email">Email <span class="asterisk">*</span></label>
+            <input
+              type="text"
+              id="email"
+              name="job_application[email]"
+              autocomplete="email"
+              aria-required="true"
+            />
+          </div>
+          <div class="field">
+            <label for="phone">Phone</label>
+            <input type="text" id="phone" name="job_application[phone]" autocomplete="tel" />
+          </div>
+          <div class="field">
+            <label for="job_application_location">Location (City)</label>
+            <input
+              type="text"
+              id="job_application_location"
+              name="job_application[location]"
+              placeholder="Start typing..."
+            />
+          </div>
+          <div class="field" id="resume_fieldset">
+            <label for="resume">Resume/CV <span class="asterisk">*</span></label>
+            <input type="file" id="resume" name="job_application[resume]" />
+          </div>
+        </div>
+        <div id="custom_fields">
+          <div class="field">
+            <label for="job_application_answers_attributes_0_text_value">LinkedIn Profile</label>
+            <input
+              type="text"
+              id="job_application_answers_attributes_0_text_value"
+              name="job_application[answers_attributes][0][text_value]"
+            />
+          </div>
+          <div class="field">
+            <label for="job_application_answers_attributes_1_text_value">Website</label>
+            <input
+              type="text"
+              id="job_application_answers_attributes_1_text_value"
+              name="job_application[answers_attributes][1][text_value]"
+              value="https://already-there.example"
+            />
+          </div>
+          <div class="field">
+            <label for="job_application_answers_attributes_2_boolean_value"
+              >Are you legally authorized to work in the United Kingdom?
+              <span class="asterisk">*</span></label
+            >
+            <select
+              id="job_application_answers_attributes_2_boolean_value"
+              name="job_application[answers_attributes][2][boolean_value]"
+            >
+              <option value="">--</option>
+              <option value="0">No</option>
+              <option value="1">Yes</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="job_application_answers_attributes_3_boolean_value"
+              >Will you now or in the future require visa sponsorship?
+              <span class="asterisk">*</span></label
+            >
+            <select
+              id="job_application_answers_attributes_3_boolean_value"
+              name="job_application[answers_attributes][3][boolean_value]"
+            >
+              <option value="">--</option>
+              <option value="0">No</option>
+              <option value="1">Yes</option>
+            </select>
+          </div>
+          <div class="field">
+            <label
+              for="job_application_answers_attributes_4_answer_selected_options_attributes_0_question_option_id"
+              >How many years of experience do you have?</label
+            >
+            <select
+              id="job_application_answers_attributes_4_answer_selected_options_attributes_0_question_option_id"
+              name="job_application[answers_attributes][4][answer_selected_options_attributes][0][question_option_id]"
+            >
+              <option value="">Please select</option>
+              <option value="11">0-2 years</option>
+              <option value="12">3-5 years</option>
+              <option value="13">6-9 years</option>
+              <option value="14">10+ years</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="job_application_answers_attributes_5_text_value"
+              >Why do you want to work at Example Co?</label
+            >
+            <textarea
+              id="job_application_answers_attributes_5_text_value"
+              name="job_application[answers_attributes][5][text_value]"
+            ></textarea>
+          </div>
+          <div class="field">
+            <label for="job_application_answers_attributes_6_text_value"
+              >What are your salary expectations?</label
+            >
+            <input
+              type="text"
+              id="job_application_answers_attributes_6_text_value"
+              name="job_application[answers_attributes][6][text_value]"
+            />
+          </div>
+          <div class="field">
+            <label
+              ><input
+                type="checkbox"
+                name="job_application[data_compliance][gdpr_consent_given]"
+                value="1"
+              />
+              I consent to Example Co processing my data as described in the privacy notice.</label
+            >
+          </div>
+        </div>
+        <div id="eeoc_fields">
+          <h3>U.S. Equal Employment Opportunity Information (Completion is voluntary)</h3>
+          <div class="field">
+            <label for="job_application_gender">Gender</label>
+            <select id="job_application_gender" name="job_application[gender]">
+              <option value="">Please select</option>
+              <option value="1">Male</option>
+              <option value="2">Female</option>
+              <option value="3">Decline To Self Identify</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="job_application_veteran_status">Veteran Status</label>
+            <select id="job_application_veteran_status" name="job_application[veteran_status]">
+              <option value="">Please select</option>
+              <option value="1">I am not a protected veteran</option>
+              <option value="2">
+                I identify as one or more of the classifications of protected veteran
+              </option>
+              <option value="3">I don't wish to answer</option>
+            </select>
+          </div>
+        </div>
+        <div style="display: none">
+          <label for="job_application_website_confirm">Website confirm</label>
+          <input type="text" id="job_application_website_confirm" name="url_confirm" />
+        </div>
+        <input type="password" id="account_password" name="account_password" />
+        <div class="g-recaptcha" data-sitekey="test-key">
+          <textarea id="g-recaptcha-response" name="g-recaptcha-response"></textarea>
+        </div>
+        <input type="submit" id="submit_app" value="Submit Application" />
+      </form>
+    </div>
+  </body>
+</html>

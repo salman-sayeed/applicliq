@@ -28,7 +28,9 @@ apps/
     src/entrypoints/    popup/ and sidepanel/ (both mount components/JobPanel), dashboard/
                         (extension page), options/ (settings page, also the extension's options
                         page), background.ts, extract.content.ts, job-badge.content.ts (saved-job
-                        page badge, injected by background), picker.content.ts ("pick from page")
+                        page badge, injected by background), picker.content.ts ("pick from page"),
+                        autofill.content.ts (Autofill agent, injected into all frames on demand),
+                        autofill-button.content.ts (optional on-page button, registered at runtime)
     src/components/     JobPanel (save form + per-page draft, tab following in the sidebar),
                         JobForm, SavedJob, RecentJobs, form.css
     src/lib/draft.ts    form drafts in storage.session (per page URL, 24 h), toolbar "•" badge
@@ -40,6 +42,11 @@ apps/
     src/lib/sync.ts     background sync runner, encryption controller + key store (storage.session)
     src/lib/sync-status.ts  sync status in extension storage (popup and badge read it, no Drive code)
     src/lib/features.ts feature permissions: request on enable, remove on disable, start-up check
+                        (sub-toggles with their own permissions too)
+    src/lib/autofill*.ts  autofill.ts (popup: inject/scan/fill/undo per frame, button registration),
+                        autofill-agent.ts (in-page agent), autofill-page.ts (shadow-DOM UI),
+                        autofill-background.ts (tab → job links, Mark as applied, saved answers)
+    src/components/AutofillPanel.svelte  preview + fill + undo (lazy, in JobPanel)
 docs/screenshots/       capture.mjs (dashboard shots), capture-extension.mjs (sidebar, pick from
                         page, right-click menu on fictional postings from demo-job.html)
 docs/google-setup.md    creating the OAuth client IDs (env vars in apps/extension/.env, apps/web/.env)
@@ -82,6 +89,11 @@ packages/
                         (company/title normalizing, Dice similarity, mergeDuplicateJobs), templates
                         (follow-up templates, placeholders, mailto, needs-follow-up), offers
                         (pay per month/year, compareOffers with a user-typed rate)
+    src/autofill/       Autofill. profile.ts + sites.ts in the main entry (profile, saved answers,
+                        records, AUTOFILL_ORIGINS); the engine is `@applicliq/core/autofill` (lazy):
+                        normalize, fields (synonym table, confidence), format (phone/date/salary),
+                        options (pick an option), answers, plan (preview), dom/ (scan + adapters,
+                        fill, rules = never-fill, confirm). __fixtures__: real forms per platform
     src/resumes.ts      resume records (sanitize, word count), resumeSyncEnabled, linkResumeLabels
                         (resumeVersion → resumeId migration), pickResume, copyName
     src/match/          Resume match, pure, imported as `@applicliq/core/match` (lazy, not in the
@@ -275,7 +287,7 @@ with dates within 3 days. LinkedIn imports use source `linkedin` (the scraper's 
 
 `Settings` (`packages/core/src/settings.ts`) is one typed object with a `version` and an
 `updatedAt`, grouped in sections (goals, automation, notifications, jobPages, appearance, regional,
-labels, sync, helpers, insights, resumes, features). It is stored in the `settings` table as two rows: `app` (synced keys) and `device`
+labels, sync, helpers, insights, resumes, autofill, features). It is stored in the `settings` table as two rows: `app` (synced keys) and `device`
 (`DEVICE_KEYS`: notification settings, the weekly recap's switch/day/time, the page badge's
 on/position/sites and device-scoped feature switches, which never leave the
 browser). `helpers` holds the Smart helpers' sub-toggles and options, `notDuplicatePairs` (`idA|idB`,
@@ -375,6 +387,34 @@ deletedAt? }`, tombstones and merge exactly like jobs (`mergeRecords`). Repo: ad
   summary ("Matches 12 of 16 required skills"), never a score. The UI loads the component, the
   matcher and the dictionary lazily; texts over 40k characters go to a web worker
   (`worker.format: 'es'` in both Vite configs).
+
+### Autofill
+
+Feature `autofill` (default off, device, no permissions of its own: "Autofill this form" uses
+`activeTab` + `scripting`, already required). Supported: Greenhouse (`job-boards.greenhouse.io`,
+`boards.greenhouse.io` (redirects), `job-boards.eu.greenhouse.io`), Lever (`jobs.lever.co`,
+`jobs.eu.lever.co`), Ashby (`jobs.ashbyhq.com`), Google Forms (`docs.google.com/forms`),
+Microsoft Forms (`forms.office.com`, which redirects to `forms.cloud.microsoft`). `AUTOFILL_ORIGINS`
+lists them; other sites are read generically.
+
+- **Data**: Dexie table `autofill` (version 5): one profile row (`id: 'profile'`) and saved answers
+  (`kind: 'answer'`), tombstones and merge like resumes. In the Drive snapshot (and encrypted
+  payload) as `autofill` only when `settings.autofill.syncProfile` (default off; turning it on
+  without encryption shows a warning). Backups include it. EEO answers are never stored:
+  `settings.autofill.eeo` is `skip` or `decline`.
+- **Flow**: the popup injects the agent into all frames, scans (adapters per platform, generic
+  labels otherwise), builds a plan (`buildPlan`: high ≥ 0.75 filled, medium ≥ 0.5 "Suggested"),
+  previews it (skippable), fills with native setters + input/change/blur, custom widgets via a
+  verified press (`activate`: pointer events, then click only if nothing happened), Undo.
+  Never: submit, CAPTCHAs, hidden/honeypot/password/disabled fields, file inputs (pointed at),
+  consent/attestation questions, fields with values (unless "Overwrite").
+- **Linking / applied**: job boards save the job on Fill; forms link to a saved job
+  (`alternateUrls`) or prefill a new one. Fill records tab → job in session storage; the
+  confirmation page (`dom/confirm.ts`) asks "Mark as applied?" (or marks it, setting on). Without
+  access to see that page, `markAppliedOnFill` (setting) marks it on Fill.
+- **Button**: sub-toggle `autofill.showButton` (device key) requests `AUTOFILL_ORIGINS` and makes the
+  background register `autofill-button.js` (all frames) with `scripting.registerContentScripts`.
+- Manual test plan: [docs/autofill-testing.md](docs/autofill-testing.md).
 
 ### Smart helpers and Insights
 

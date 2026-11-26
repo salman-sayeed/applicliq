@@ -7,3 +7,4 @@ build
 dist
 packages/core/src/scrapers/__fixtures__
 .claude
+packages/core/src/autofill/__fixtures__

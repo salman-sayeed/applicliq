@@ -81,6 +81,33 @@
     send it to.
   </p>
 
+  <h2>Autofill</h2>
+  <p>
+    Autofill (off unless you turn it on) fills application forms you choose with details you typed
+    in Settings → Autofill profile: your name, pronouns, email, phone, city, country and address,
+    profile links, current title and company, years of experience, work authorization, sponsorship,
+    notice period and start date, relocation and remote preferences, expected salary, education, a
+    “How did you hear about us?” answer, and answers you saved to common questions. It never stores
+    your answers to voluntary equal-opportunity questions (gender, ethnicity, veteran or disability
+    status): it leaves them empty or, if you choose, picks “Decline to self-identify”.
+  </p>
+  <ul>
+    <li>
+      Your profile is used only to fill a form when you click “Autofill this form” (or the optional
+      on-page button), after a preview. AppliCliq never submits a form for you.
+    </li>
+    <li>
+      It stays in your browser. It goes to your Google Drive only if you turn on
+      <strong>Sync autofill profile</strong>; AppliCliq suggests turning on encryption first. It is
+      never sent anywhere else.
+    </li>
+    <li>
+      Reading a form uses access to the tab you opened AppliCliq on. The optional on-page button
+      asks for access to the supported form sites only (Greenhouse, Lever, Ashby, Google Docs for
+      Google Forms, Microsoft Forms) and gives it back when turned off.
+    </li>
+  </ul>
+
   <h2>Resumes and Resume match</h2>
   <p>
     Resume match compares a job description with a resume you pasted, entirely in your browser: it
