@@ -334,6 +334,7 @@ describe('parseSnapshot', () => {
       skipped: 0,
       settings: undefined,
       resumes: [],
+      autofill: [],
     });
   });
 });

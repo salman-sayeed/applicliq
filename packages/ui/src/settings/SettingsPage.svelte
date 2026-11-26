@@ -10,6 +10,7 @@
     { id: 'features', label: 'Features' },
     { id: 'helpers', label: 'Smart helpers', reset: 'helpers', feature: 'smartHelpers' },
     { id: 'resumes', label: 'Resumes', reset: 'resumes', feature: 'resumeMatch' },
+    { id: 'autofill', label: 'Autofill profile', feature: 'autofill', extensionOnly: true },
     { id: 'import', label: 'Import', feature: 'import' },
     { id: 'data', label: 'Sync & data', reset: 'sync' },
     { id: 'about', label: 'About' },
@@ -286,6 +287,38 @@
                 {notify}
                 ondata={() => (section = 'data')}
               />
+            {/if}
+          {:else if section === 'autofill'}
+            {#if featureOff}
+              <p class="bg-surface-muted my-3 rounded-md px-3 py-2 text-sm">
+                Autofill is turned off.
+                <button
+                  type="button"
+                  class="text-accent font-medium hover:underline"
+                  onclick={() => (section = 'features')}
+                >
+                  Turn it on in Features
+                </button>
+              </p>
+            {:else}
+              <!-- Loaded on demand: only people who use Autofill need it. -->
+              {#await import('./sections/AutofillSection.svelte')}
+                <div class="bg-surface-muted my-4 h-24 animate-pulse rounded-md"></div>
+              {:then { default: AutofillSection }}
+                <div>
+                  <AutofillSection
+                    {settings}
+                    {save}
+                    {adapter}
+                    {notify}
+                    ondata={() => (section = 'data')}
+                  />
+                </div>
+              {:catch}
+                <p role="alert" class="text-status-rejected py-4 text-sm">
+                  Could not load the Autofill settings. Reload and try again.
+                </p>
+              {/await}
             {/if}
           {:else if section === 'import'}
             {#if featureOff}

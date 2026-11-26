@@ -109,8 +109,11 @@ export default defineConfig({
           }
         : {}),
       // All-sites access only for the opt-in saved-job page badge (dashboard toggle): it lets the
-      // background see tab URLs and inject the badge into pages of saved jobs. MV2 (Firefox) has
-      // no `optional_host_permissions`; origins go in `optional_permissions` there.
+      // background see tab URLs and inject the badge into pages of saved jobs. It also covers the
+      // narrower requests other features make from a click: Autofill's on-page button asks for
+      // the supported sites only (AUTOFILL_ORIGINS), and "Allow <site>" for a form iframe asks
+      // for that one site. Nothing is granted at install. MV2 (Firefox) has no
+      // `optional_host_permissions`; origins go in `optional_permissions` there.
       ...(manifestVersion === 3
         ? { optional_host_permissions: ['<all_urls>'] }
         : { optional_permissions: ['<all_urls>'] }),

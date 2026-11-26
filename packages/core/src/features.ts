@@ -1,3 +1,4 @@
+import { AUTOFILL_ORIGINS } from './autofill/sites';
 import type { Settings } from './settings';
 
 /**
@@ -37,16 +38,25 @@ export type FeaturePlatform = 'extension' | 'web';
 
 /** A switch for one part of a feature, stored as a boolean in `settings[section][key]`. */
 export type SubToggle = {
-  section: 'helpers' | 'insights';
-  key: HelperToggle | InsightToggle;
+  section: 'helpers' | 'insights' | 'autofill';
+  key: HelperToggle | InsightToggle | AutofillToggle;
   name: string;
   description: string;
   /** Where it works (default: wherever the feature does). */
   platforms?: readonly FeaturePlatform[];
+  /**
+   * Browser permissions this part needs on top of the feature's: asked for from the click that
+   * turns it on (a refusal leaves it off), given back when it or the feature is turned off.
+   * Sub-toggles with permissions must be device keys.
+   */
+  permissions?: FeaturePermissions;
+  /** Plain words for what the permissions allow (shown under the switch). */
+  permissionNotes?: string[];
 };
 
 export type HelperToggle = 'redFlags' | 'duplicates' | 'followUps' | 'offers';
 export type InsightToggle = 'weeklyRecap';
+export type AutofillToggle = 'showButton';
 
 export type FeatureDefinition = {
   id: FeatureId;
@@ -173,13 +183,29 @@ export const FEATURES: readonly FeatureDefinition[] = [
   {
     id: 'autofill',
     name: 'Autofill',
-    description: 'Fill application forms with your saved details.',
+    description:
+      'Fill application forms on Greenhouse, Lever, Ashby, Google Forms and Microsoft Forms with your saved details, after a preview. Never submits a form.',
     defaultEnabled: false,
-    permissions: { origins: ['<all_urls>'] },
-    permissionNotes: ['Read and change application forms on the sites you apply on.'],
+    // "Autofill this form" in the popup or sidebar uses the access the browser gives for the tab
+    // the user opened AppliCliq on (`activeTab`), like saving a job: nothing extra to grant.
+    permissions: {},
+    permissionNotes: [],
     syncScope: 'device',
     platforms: EXTENSION,
-    implemented: false,
+    implemented: true,
+    subToggles: [
+      {
+        section: 'autofill',
+        key: 'showButton',
+        name: 'Show Autofill button on supported sites',
+        description:
+          'A small "Autofill with AppliCliq" button on application forms, and "Mark as applied?" after you submit.',
+        permissions: { origins: [...AUTOFILL_ORIGINS] },
+        permissionNotes: [
+          'Read and change pages on Greenhouse, Lever, Ashby, Google Docs (for Google Forms) and Microsoft Forms.',
+        ],
+      },
+    ],
   },
   {
     id: 'gmailSuggestions',
@@ -236,8 +262,18 @@ export function isWeeklyRecapEnabled(settings: Pick<Settings, 'features' | 'insi
   return isFeatureEnabled(settings, 'insights') && settings.insights.weeklyRecap;
 }
 
-export function needsPermissions(feature: FeatureDefinition): boolean {
-  return !!(feature.permissions.permissions?.length || feature.permissions.origins?.length);
+export function needsPermissions(feature: { permissions?: FeaturePermissions }): boolean {
+  return !!(feature.permissions?.permissions?.length || feature.permissions?.origins?.length);
+}
+
+/** Whether a sub-toggle is on: its feature and its own switch. */
+export function isSubToggleOn(
+  settings: Pick<Settings, 'features' | 'helpers' | 'insights' | 'autofill'>,
+  feature: FeatureId,
+  sub: Pick<SubToggle, 'section' | 'key'>,
+): boolean {
+  const section = settings[sub.section] as Record<string, unknown>;
+  return isFeatureEnabled(settings, feature) && section[sub.key] === true;
 }
 
 /**

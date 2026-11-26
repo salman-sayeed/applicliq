@@ -12,6 +12,7 @@ import {
 } from '../crypto/envelope';
 import type { KeyStore } from '../crypto/key-store';
 import { resumeSyncEnabled } from '../resumes';
+import { autofillSyncEnabled } from '../autofill/profile';
 import type { JobRepository } from '../storage';
 import {
   type DriveClient,
@@ -77,17 +78,21 @@ export function createEncryptionController(deps: EncryptionDeps) {
     return dek;
   }
 
-  /** This device's data as a Drive snapshot; resumes only when resume sync is on. */
+  /**
+   * This device's data as a Drive snapshot; resumes only when resume sync is on, the Autofill
+   * profile only when its sync is on.
+   */
   async function plainSnapshot(): Promise<SyncSnapshot> {
-    const resumes = resumeSyncEnabled(await repo.getSettings())
-      ? await repo.mergeResumesIntoLocal([])
-      : [];
+    const settings = await repo.getSettings();
+    const resumes = resumeSyncEnabled(settings) ? await repo.mergeResumesIntoLocal([]) : [];
+    const autofill = autofillSyncEnabled(settings) ? await repo.mergeAutofillIntoLocal([]) : [];
     return {
       schemaVersion: SCHEMA_VERSION,
       updatedAt: now(),
       records: await repo.mergeIntoLocal([]),
       settings: await repo.getSyncedSettings(),
       ...(resumes.length ? { resumes } : {}),
+      ...(autofill.length ? { autofill } : {}),
     };
   }
 
@@ -217,6 +222,8 @@ export function createEncryptionController(deps: EncryptionDeps) {
         // Resumes come down too; whether they go back up in plain text is the resume setting's
         // call (by default: no, once encryption is off).
         if (remote.resumes.length) await repo.mergeResumesIntoLocal(remote.resumes);
+        // The Autofill profile too; it goes back up only if its own sync setting says so.
+        if (remote.autofill.length) await repo.mergeAutofillIntoLocal(remote.autofill);
         await repo.updateSettings({ features: { encryptedSync: false } });
 
         const [primary, ...extras] = await drive.list();

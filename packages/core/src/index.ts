@@ -25,3 +25,5 @@ export * from './scrapers';
 export * from './sync/encryption';
 export * from './crypto/envelope';
 export * from './crypto/key-store';
+export * from './autofill/profile';
+export * from './autofill/sites';

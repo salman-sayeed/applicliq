@@ -42,18 +42,27 @@ describe('feature registry', () => {
       'insights',
       'encryptedSync',
       'resumeMatch',
+      'autofill',
     ]);
-    expect(isFeatureEnabled(withFeatures({ autofill: true }), 'autofill')).toBe(false);
+    expect(isFeatureEnabled(withFeatures({ gmailSuggestions: true }), 'gmailSuggestions')).toBe(
+      false,
+    );
+    expect(isFeatureEnabled(DEFAULT_SETTINGS, 'autofill')).toBe(false);
+    expect(isFeatureEnabled(withFeatures({ autofill: true }), 'autofill')).toBe(true);
     expect(isFeatureEnabled(DEFAULT_SETTINGS, 'resumeMatch')).toBe(true);
     expect(isFeatureEnabled(DEFAULT_SETTINGS, 'import')).toBe(true);
     expect(isFeatureEnabled(withFeatures({ import: false }), 'import')).toBe(false);
   });
 
   it('removes only permissions no other enabled feature needs', () => {
-    // Planned features count as off, so autofill's access would be removed in full.
+    // Planned features count as off, so their access would be removed in full.
+    expect(
+      permissionsToRemove(withFeatures({ gmailSuggestions: true }), 'gmailSuggestions'),
+    ).toEqual({ permissions: [], origins: ['https://gmail.googleapis.com/*'] });
+    // Autofill itself needs nothing beyond what the popup already has.
     expect(permissionsToRemove(withFeatures({ autofill: true }), 'autofill')).toEqual({
       permissions: [],
-      origins: ['<all_urls>'],
+      origins: [],
     });
     expect(permissionsToRemove(DEFAULT_SETTINGS, 'import')).toEqual({
       permissions: [],

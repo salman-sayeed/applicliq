@@ -3,6 +3,7 @@ import {
   type FeatureId,
   type FeaturePermissions,
   isFeatureEnabled,
+  isSubToggleOn,
   needsPermissions,
 } from '@applicliq/core';
 import { repo } from './db';
@@ -46,6 +47,16 @@ export async function reconcileFeaturePermissions(): Promise<FeatureId[]> {
       .contains(toRequest(feature.permissions))
       .catch(() => false);
     if (!granted) missing.push(feature.id);
+  }
+  // Parts with their own permissions (Autofill's on-page button) are switched off the same way.
+  for (const feature of FEATURES) {
+    for (const sub of feature.subToggles ?? []) {
+      if (!sub.permissions || !isSubToggleOn(settings, feature.id, sub)) continue;
+      const granted = await browser.permissions
+        .contains(toRequest(sub.permissions))
+        .catch(() => false);
+      if (!granted) await repo.updateSettings({ [sub.section]: { [sub.key]: false } });
+    }
   }
   if (missing.length) {
     await repo.updateSettings({

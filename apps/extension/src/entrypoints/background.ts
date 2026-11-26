@@ -12,6 +12,12 @@ import {
 } from '@applicliq/core';
 import { drafts } from '@/lib/draft';
 import { reconcileFeaturePermissions } from '@/lib/features';
+import { syncAutofillButton } from '@/lib/autofill';
+import {
+  checkTabForConfirmation,
+  forgetTab,
+  handleAutofillMessage,
+} from '@/lib/autofill-background';
 import { applyOpenIn, toggleSidebar } from '@/lib/open-in';
 import { setPendingLink } from '@/lib/pending-link';
 import { setTabDraftField } from '@/lib/tab-draft';
@@ -136,12 +142,26 @@ export default defineBackground(() => {
     else void refresh({ ghost: alarm.name === ALARM_GHOST_CHECK });
   });
 
+  // Autofill: the on-page button (when it's on and allowed) and its messages. Returning the
+  // promise sends its value back as the reply.
+  void syncAutofillButton();
+  browser.runtime.onMessage.addListener((message: unknown, sender) => {
+    if (sender.id !== browser.runtime.id) return;
+    const m = message as BackgroundMessage;
+    if (typeof m?.type !== 'string' || !m.type.startsWith('applicliq:autofill-')) return;
+    return handleAutofillMessage(m, sender, () => {
+      void refresh();
+      syncSoon();
+    });
+  });
+
   browser.runtime.onMessage.addListener((message: unknown, sender) => {
     if (sender.id !== browser.runtime.id) return;
     const m = message as BackgroundMessage;
     if (m?.type === 'applicliq:jobs-changed') {
       void refresh();
       void repo.getSettings().then((s) => applyOpenIn(s.jobPages.openIn));
+      void syncAutofillButton();
       syncSoon();
     } else if (m?.type === 'applicliq:picked') {
       // From the picker in the page's top frame; the tab's URL keys the draft.
@@ -175,11 +195,16 @@ export default defineBackground(() => {
   });
 
   // The page badge setting follows the all-sites permission, which the browser can also change.
-  browser.permissions.onAdded.addListener(() => void reconcilePageBadge());
+  browser.permissions.onAdded.addListener(() => {
+    void reconcilePageBadge();
+    void syncAutofillButton();
+  });
   browser.permissions.onRemoved.addListener(() => {
     void reconcilePageBadge();
     // Features whose permissions were taken away in the browser's settings turn off too.
-    void reconcileFeaturePermissions().catch(() => {});
+    void reconcileFeaturePermissions()
+      .catch(() => {})
+      .then(() => syncAutofillButton());
   });
 
   // Tab URLs are only visible with the optional all-sites permission (the page badge setting),
@@ -188,7 +213,10 @@ export default defineBackground(() => {
     if (change.url !== undefined || change.status === 'complete') {
       void updatePageBadge(tabId, tab.url);
     }
+    // A tab whose form AppliCliq filled loaded a new page: the confirmation page?
+    if (change.status === 'complete') void checkTabForConfirmation(tabId);
   });
+  browser.tabs.onRemoved.addListener((tabId) => void forgetTab(tabId));
 });
 
 /** If the popup couldn't open, a badge asks the user to click it to finish. */

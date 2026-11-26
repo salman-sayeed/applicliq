@@ -1,4 +1,5 @@
 import type { SyncedSettings } from '../settings';
+import type { AutofillRecord } from '../autofill/profile';
 import type { JobRecord, ResumeRecord } from '../types';
 
 /**
@@ -83,6 +84,11 @@ export type SyncSnapshot = {
    * tombstone).
    */
   resumes?: ResumeRecord[];
+  /**
+   * Autofill's profile and saved answers, only when the user turned on "Sync autofill profile"
+   * (`autofillSyncEnabled`). Same rules as `resumes`.
+   */
+  autofill?: AutofillRecord[];
 };
 
 export type DriveClientOptions = {

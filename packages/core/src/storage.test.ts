@@ -592,7 +592,7 @@ describe('database upgrade', () => {
     const upgraded = new AppliCliqDB(name, { legacyName: undefined });
     const r = createJobRepository(upgraded, () => clock);
     expect(await r.getJobs()).toEqual([job]);
-    expect(upgraded.verno).toBe(4);
+    expect(upgraded.verno).toBe(5);
     await upgraded.delete();
   });
 });

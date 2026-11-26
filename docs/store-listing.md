@@ -49,6 +49,8 @@ SMART HELPERS AND INSIGHTS (worked out on your device)
 • Offers side by side, with a reminder the day before each deadline
 • Response rates and reply times by source and work type, a weekly recap, and a shareable card
   of your numbers (never company names)
+• Autofill (optional): fill Greenhouse, Lever, Ashby, Google Forms and Microsoft Forms
+  applications from your profile after a preview, with undo. Never submits forms
 • Resume match: paste your resume and see which skills a job asks for are on it and which are
   missing, required or nice to have. No AI, nothing uploaded; resumes stay in your browser unless
   you choose to sync them
@@ -96,18 +98,19 @@ made with [screenshots/capture.mjs](screenshots/capture.mjs)). Suggested order:
 
 **Permission justifications:**
 
-| Permission                            | Justification                                                                                                                                                                |
-| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `activeTab`                           | Reads the job posting on the current tab only when the user opens the popup, presses the save shortcut or uses the right-click menu.                                         |
-| `scripting`                           | Injects the job-details extractor, the "pick from page" helper and a short confirmation into that tab (granted through `activeTab`), and the optional "already saved" badge. |
-| `contextMenus`                        | Adds "Save job to AppliCliq" to links, and "Set as Title / Company / …" to selected text to fix a detail the page didn't give correctly.                                     |
-| `storage`                             | Keeps the sign-in state, sync status, which reminders were already shown, and unsaved form drafts (in session storage, deleted after 24 hours).                              |
-| `sidePanel`                           | Shows the same save-job form in the browser's side panel when the user chooses it, so it stays open beside the posting.                                                      |
-| `alarms`                              | Runs the periodic ghosted-job check, reminders and background sync.                                                                                                          |
-| `notifications`                       | Shows interview and follow-up reminders and goal nudges the user turned on.                                                                                                  |
-| `identity`                            | Signs in to Google so the user can sync their data to their own Google Drive (`drive.appdata` scope only).                                                                   |
-| Optional host permission `<all_urls>` | Only requested when the user turns on the "saved job" badge or lets the side panel follow their tabs; used to read the job page they switch to. Never requested otherwise.   |
-| Remote code                           | No. All code is in the package.                                                                                                                                              |
+| Permission                            | Justification                                                                                                                                                                                                                        |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `activeTab`                           | Reads the job posting on the current tab only when the user opens the popup, presses the save shortcut or uses the right-click menu.                                                                                                 |
+| `scripting`                           | Injects the job-details extractor, the "pick from page" helper and a short confirmation into that tab (granted through `activeTab`), and the optional "already saved" badge.                                                         |
+| `contextMenus`                        | Adds "Save job to AppliCliq" to links, and "Set as Title / Company / …" to selected text to fix a detail the page didn't give correctly.                                                                                             |
+| `storage`                             | Keeps the sign-in state, sync status, which reminders were already shown, and unsaved form drafts (in session storage, deleted after 24 hours).                                                                                      |
+| `sidePanel`                           | Shows the same save-job form in the browser's side panel when the user chooses it, so it stays open beside the posting.                                                                                                              |
+| `alarms`                              | Runs the periodic ghosted-job check, reminders and background sync.                                                                                                                                                                  |
+| `notifications`                       | Shows interview and follow-up reminders and goal nudges the user turned on.                                                                                                                                                          |
+| `identity`                            | Signs in to Google so the user can sync their data to their own Google Drive (`drive.appdata` scope only).                                                                                                                           |
+| Optional host permission `<all_urls>` | Only requested when the user turns on the "saved job" badge or lets the side panel follow their tabs; used to read the job page they switch to. Never requested otherwise.                                                           |
+| Optional site access (Autofill)       | Only when the user turns on "Show Autofill button on supported sites": the Greenhouse, Lever, Ashby, Google Docs (Forms) and Microsoft Forms sites, to show the button and notice the confirmation page. Given back when turned off. |
+| Remote code                           | No. All code is in the package.                                                                                                                                                                                                      |
 
 **Data usage** (check these boxes):
 

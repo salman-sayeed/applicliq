@@ -24,24 +24,46 @@
     platform: SettingsPlatform;
     adapter: DashboardAdapter;
     /** Opens a feature's own settings page. */
-    onoptions?: (page: 'helpers' | 'notifications' | 'data' | 'resumes') => void;
+    onoptions?: (page: 'helpers' | 'notifications' | 'data' | 'resumes' | 'autofill') => void;
   } = $props();
 
   /** Where a feature's options live, if it has a page of them. */
   const OPTIONS: Partial<
-    Record<FeatureId, { page: 'helpers' | 'notifications' | 'resumes'; label: string }>
+    Record<FeatureId, { page: 'helpers' | 'notifications' | 'resumes' | 'autofill'; label: string }>
   > = {
     smartHelpers: { page: 'helpers', label: 'Options and templates' },
     insights: { page: 'notifications', label: 'Weekly recap time' },
     resumeMatch: { page: 'resumes', label: 'Your resumes and skills to ignore' },
+    autofill: { page: 'autofill', label: 'Your profile, saved answers and options' },
   };
 
   function subValue(sub: SubToggle): boolean {
     return (settings[sub.section] as Record<string, unknown>)[sub.key] === true;
   }
 
+  let subErrors = $state<Record<string, string | undefined>>({});
+
+  /**
+   * A part with its own permissions (Autofill's on-page button) asks for them from this click
+   * and gives them back when turned off.
+   */
   function setSub(sub: SubToggle, value: boolean) {
-    void save({ [sub.section]: { [sub.key]: value } });
+    const turn = () => save({ [sub.section]: { [sub.key]: value } });
+    subErrors = { ...subErrors, [sub.key]: undefined };
+    if (!sub.permissions || !needsPermissions(sub)) return void turn();
+    if (value) {
+      if (!platform.requestPermissions) return;
+      // The browser shows its prompt only within the click: ask before any await.
+      platform.requestPermissions(sub.permissions).then(
+        (granted) => {
+          if (granted) return turn();
+          subErrors = { ...subErrors, [sub.key]: 'Permission not granted, so it stays off.' };
+        },
+        () => (subErrors = { ...subErrors, [sub.key]: 'Could not ask for the permission.' }),
+      );
+    } else {
+      void turn().then(() => platform.removePermissions?.(sub.permissions!).catch(() => {}));
+    }
   }
 
   const features = visibleFeatures();
@@ -92,7 +114,15 @@
       );
     } else {
       const unused = permissionsToRemove(settings, feature.id);
-      void turn(false).then(() => platform.removePermissions?.(unused).catch(() => {}));
+      // Parts that hold their own permissions give them back with the feature.
+      const parts = (feature.subToggles ?? []).filter((s) => s.permissions && subValue(s));
+      void turn(false).then(() => {
+        void platform.removePermissions?.(unused).catch(() => {});
+        for (const sub of parts) {
+          void save({ [sub.section]: { [sub.key]: false } });
+          void platform.removePermissions?.(sub.permissions!).catch(() => {});
+        }
+      });
     }
   }
 </script>
@@ -167,6 +197,16 @@
                 <p class="text-ink-muted text-xs leading-relaxed">
                   {sub.description}{subUsable ? '' : ' In the browser extension.'}
                 </p>
+                {#if sub.permissionNotes?.length}
+                  <p class="text-ink-muted mt-0.5 text-xs leading-relaxed">
+                    Asks for permission to: {sub.permissionNotes.join(' ')}
+                  </p>
+                {/if}
+                {#if subErrors[sub.key]}
+                  <p role="alert" class="text-status-rejected mt-0.5 text-xs">
+                    {subErrors[sub.key]}
+                  </p>
+                {/if}
               </div>
               <Toggle
                 label={sub.name}

@@ -160,9 +160,29 @@ export type Settings = {
     /** Skills never flagged as missing (lowercase matching), e.g. "communication". */
     ignoredSkills: string[];
   };
+  /** Autofill (feature `autofill`). The profile itself is in the `autofill` table. */
+  autofill: {
+    /** Sync the profile and saved answers to Google Drive (off: they stay in this browser). */
+    syncProfile: boolean;
+    /** A floating "Autofill with AppliCliq" button on supported sites (needs their access). */
+    showButton: boolean;
+    /** Fill straight away, without the preview. */
+    skipPreview: boolean;
+    /** Offer "Save this answer for next time?" for questions Autofill couldn't fill. */
+    offerToSaveAnswers: boolean;
+    /** On a confirmation page, mark the job applied without asking. */
+    markAppliedAutomatically: boolean;
+    /** Without access to see the confirmation page, mark the job applied when "Fill" is clicked. */
+    markAppliedOnFill: boolean;
+    /** Voluntary EEO questions: leave them empty, or answer "Decline to self-identify". */
+    eeo: EeoChoice;
+  };
   /** Feature switches (see `features.ts`); device-scoped ones are in `DEVICE_KEYS`. */
   features: FeatureSettings;
 };
+
+/** What Autofill does with voluntary EEO questions. The user's own answers are never stored. */
+export type EeoChoice = 'skip' | 'decline';
 
 export type SettingsSection = Exclude<keyof Settings, 'version' | 'updatedAt'>;
 export type SettingsPatch = { [K in SettingsSection]?: Partial<Settings[K]> };
@@ -179,6 +199,7 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
   'helpers',
   'insights',
   'resumes',
+  'autofill',
   'features',
 ];
 
@@ -239,6 +260,15 @@ export const DEFAULT_SETTINGS: Settings = {
   },
   insights: { weeklyRecap: true, weeklyRecapDay: 'sun', weeklyRecapTime: '20:00' },
   resumes: { sync: null, defaultResumeId: '', ignoredSkills: [] },
+  autofill: {
+    syncProfile: false,
+    showButton: false,
+    skipPreview: false,
+    offerToSaveAnswers: true,
+    markAppliedAutomatically: false,
+    markAppliedOnFill: false,
+    eeo: 'skip',
+  },
   features: { ...DEFAULT_FEATURES },
 };
 
@@ -252,6 +282,8 @@ export const DEVICE_KEYS: { readonly [K in SettingsSection]?: readonly (keyof Se
   ],
   jobPages: ['showBadge', 'badgePosition', 'sitesWithBadgeOff', 'openIn'],
   insights: ['weeklyRecap', 'weeklyRecapDay', 'weeklyRecapTime'],
+  // The button needs host access, which is granted per browser.
+  autofill: ['showButton'],
   features: DEVICE_FEATURE_IDS,
 };
 
@@ -470,6 +502,15 @@ export const SETTINGS_SCHEMA: {
     sync: (v) => (v === null ? null : bool(v)),
     defaultResumeId: text(100),
     ignoredSkills: textList(500, 80),
+  },
+  autofill: {
+    syncProfile: bool,
+    showButton: bool,
+    skipPreview: bool,
+    offerToSaveAnswers: bool,
+    markAppliedAutomatically: bool,
+    markAppliedOnFill: bool,
+    eeo: oneOf(['skip', 'decline']),
   },
   features: Object.fromEntries(FEATURE_IDS.map((id) => [id, bool])) as Record<
     FeatureId,
